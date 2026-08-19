@@ -370,8 +370,7 @@
     <a class="link" onclick="scrollToId('f-how')">Fonctionnement</a>
     <a class="link" onclick="scrollToId('f-price')">Tarifs</a>
     <span class="sp"></span>
-    <a class="btn ghost sm" onclick="openLogin()">Se connecter</a>
-    <a class="btn sm" onclick="openLogin()">Espace pro</a>
+    <a class="btn sm" onclick="openLogin()">Se connecter</a>
   </div></div>
   <div class="hero"><div class="wrap">
     <div>
@@ -379,8 +378,7 @@
       <h1>Pilotez votre restaurant : <span class="hl">HACCP</span>, équipe & marges.</h1>
       <p class="sub">Vigie réunit l'hygiène alimentaire, la gestion des équipes, le food cost et la fidélisation dans une seule plateforme. Vos équipiers saisissent tout sur tablette, vous pilotez à distance.</p>
       <div class="cta">
-        <a class="btn" onclick="openLogin()">Accéder à mon espace</a>
-        <a class="btn ghost" onclick="openLogin()">Se connecter</a>
+        <a class="btn" onclick="openLogin()">Se connecter</a>
       </div>
       <div class="trust"><span>✓ <b>HACCP</b> complet</span><span>✓ <b>RH & Planning</b></span><span>✓ <b>Food Cost</b></span><span>✓ <b>Fidélisation</b></span></div>
     </div>
@@ -1426,7 +1424,7 @@ async function afterLogin(session){
 async function doForgot(){
   const email=document.getElementById('fg_email').value.trim(), msg=document.getElementById('fg_msg');
   if(!email){msg.className='msg err';msg.textContent='Renseignez votre email.';return;}
-  const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:'https://fayazraja-stack.github.io/vigie/'});
   if(error){msg.className='msg err';msg.textContent=error.message;return;}
   msg.className='msg ok';msg.textContent="Si un compte existe pour cet email, un lien de réinitialisation vient d'être envoyé. Pensez à vérifier vos spams.";
 }
