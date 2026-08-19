@@ -2044,20 +2044,46 @@ async function fidRedeemConfirm(token){
     const msg=document.getElementById('fid_valmsg');if(msg){if(!data||!data.length){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé.';}else{msg.style.color='#0b7d57';msg.textContent='Lot remis et validé. Le code est désormais invalide.';}}
   }catch(e){const msg=document.getElementById('fid_valmsg');if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
 }
-/* ---- Redemption via deep link (?lot=TOKEN) ---- */
-async function openRedeem(token){
-  try{const {data:w}=await SB.from('fid_wins').select('*').eq('token',token).maybeSingle();
-    if(!w){openInfoHTML('Lot introuvable','<div style="text-align:center;padding:10px">Ce code de lot est introuvable.</div>');return;}
-    if(w.status==='redeemed'){openInfoHTML('Lot déjà utilisé','<div style="text-align:center;padding:10px">Ce lot a déjà été récupéré le '+veFmtDate(w.redeemed_at)+'. Le code est invalide.</div>');return;}
-    openInfoHTML('Valider un lot','<div style="text-align:center;padding:6px"><div class="pv-est" style="color:#0e7c58;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:12px">Lot à remettre</div><h2 style="margin:6px 0">'+escH(w.prize||'')+'</h2><div class="tsub">Code '+escH(w.token)+'</div><button class="btn" style="margin-top:14px" id="rdm_btn" onclick="redeemNow(\''+w.token+'\')">Valider la remise du lot</button><div id="rdm_msg" style="font-size:13px;margin-top:10px"></div></div>');
-  }catch(e){openInfoHTML('Erreur','<div style="padding:10px">'+escH(e.message||e)+'</div>');}
+/* ---- Validation publique via QR (?lot=TOKEN) — aucune connexion requise ---- */
+async function rdmCall(action,token){
+  const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:action,token:token})});
+  const j=await r.json();j._status=r.status;return j;
 }
-async function redeemNow(token){const msg=document.getElementById('rdm_msg');const btn=document.getElementById('rdm_btn');if(btn)btn.disabled=true;
-  try{const {data,error}=await SB.from('fid_wins').update({status:'redeemed',redeemed_at:new Date().toISOString()}).eq('token',token).eq('status','pending').select();if(error)throw error;
-    if(!data||!data.length){if(msg){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé, ou vous n\'avez pas accès à cet établissement.';}if(btn)btn.disabled=false;return;}
-    if(msg){msg.style.color='#0b7d57';msg.textContent='Lot validé et remis. Le code est maintenant invalide.';}if(btn)btn.textContent='Validé';
-    if(clientView==='fid')fidLoad();
-  }catch(e){if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}if(btn)btn.disabled=false;}
+async function startRedeem(token){
+  document.body.classList.remove('authed');go('play');
+  const sec=document.getElementById('play');if(sec){sec.style.background='#faf8f4';sec.style.backgroundImage='none';}
+  const card=document.getElementById('play_card');if(!card)return;
+  card.innerHTML=pvMsg('Vérification du lot…','Un instant.');
+  try{
+    const j=await rdmCall('lookup',token);
+    if(j.error==='not_found'){card.innerHTML=pvMsg('Lot introuvable','Ce code de lot est introuvable ou a été supprimé.');return;}
+    if(j.error){card.innerHTML=pvMsg('Erreur',j.error);return;}
+    if(j.status==='redeemed'){card.innerHTML=pvMsg('Lot déjà utilisé','Ce lot a déjà été récupéré le '+veFmtDate(j.redeemed_at)+'. Le code est définitivement invalide.');return;}
+    let condHtml='';
+    if(j.min_order!=null&&j.min_order>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 13px;font-size:13px;color:#92400e;margin-top:8px;text-align:left">€&nbsp; Récupérable sur présentation d\'une commande d\'un montant minimum de <b>'+Number(j.min_order).toFixed(0)+'€</b>'+(j.est_name?' chez "'+escH((j.est_name||'').toUpperCase())+'"':'')+'.</div>';
+    if(j.available_at){const av=new Date(j.available_at);const late=av>new Date();
+      condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 13px;font-size:13px;color:#1d4ed8;margin-top:8px;text-align:left">🕐&nbsp; '+(late?'Récupérable à partir du <b>'+av.toLocaleDateString('fr-FR')+' à '+av.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b> (délai de '+j.delay_hours+' h).':'Le délai de '+j.delay_hours+' h est écoulé : le lot est récupérable.')+'</div>';}
+    const notYet=j.available_at&&new Date(j.available_at)>new Date();
+    card.innerHTML='<div class="pv-est" style="color:#0e7c58;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:12px">Lot à remettre</div>'
+     +'<h2 style="margin:8px 0 2px">'+escH(j.prize||'')+'</h2>'
+     +(j.est_name?'<div class="pv-sub" style="margin-bottom:2px">'+escH(j.est_name)+'</div>':'')
+     +'<div class="tsub" style="font-family:ui-monospace,monospace;letter-spacing:2px;margin-top:4px">Code : <b>'+escH(token.toUpperCase())+'</b></div>'
+     +condHtml
+     +'<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:12px;padding:10px 13px;font-size:12.5px;color:#991b1b;margin-top:10px;text-align:left">⚠️&nbsp; Bouton réservé au personnel : validez uniquement au moment de la remise du lot en caisse. Une fois validé, le code est définitivement inutilisable.</div>'
+     +'<button class="pv-btn" id="rdm_btn" style="width:100%;margin-top:16px;border-radius:999px;background:#0e7c58"'+(notYet?' disabled':'')+' onclick="rdmDo(\''+escH(token)+'\')">'+(notYet?'Lot pas encore récupérable':'Valider la remise du lot')+'</button>'
+     +'<div id="rdm_msg" style="font-size:13px;margin-top:10px;font-weight:700"></div>';
+  }catch(e){card.innerHTML=pvMsg('Erreur','Impossible de vérifier ce lot. Réessayez.');}
+}
+async function rdmDo(token){
+  const btn=document.getElementById('rdm_btn');const msg=document.getElementById('rdm_msg');
+  if(btn){btn.disabled=true;btn.textContent='Validation…';}
+  try{
+    const j=await rdmCall('redeem',token);
+    if(j.ok){if(btn){btn.textContent='✓ Lot validé';btn.style.background='#16a34a';}if(msg){msg.style.color='#0b7d57';msg.textContent='Lot remis. Le code est désormais définitivement invalide.';}return;}
+    if(j.error==='already_redeemed'){if(btn)btn.textContent='Déjà validé';if(msg){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé'+(j.redeemed_at?' le '+veFmtDate(j.redeemed_at):'')+'.';}return;}
+    if(j.error==='not_yet'){const av=new Date(j.available_at);if(btn){btn.disabled=true;btn.textContent='Lot pas encore récupérable';}if(msg){msg.style.color='#b45309';msg.textContent='Récupérable à partir du '+av.toLocaleDateString('fr-FR')+' à '+av.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'.';}return;}
+    throw new Error(j.error||'Erreur');
+  }catch(e){if(btn){btn.disabled=false;btn.textContent='Valider la remise du lot';}if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
 }
 /* ---- Public play page ---- */
 let PV_STATE=null;
@@ -2965,14 +2991,14 @@ async function authInit(){
   if(!CFG.url||!CFG.key||!window.supabase){ go('vitrine'); return; } // mode démo local (hors-ligne)
   SB=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   if(jeu){ startPlay(jeu); return; } // page de jeu publique — aucun compte requis
+  if(lot){ startRedeem(lot); return; } // validation de lot publique — aucun compte requis
   SB.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){RECOVERY=true;openLogin();showPane('change');document.getElementById('ch_h').textContent='Réinitialisation — choisissez un nouveau mot de passe.';}
     else if(event==='SIGNED_IN' && session && !LOGIN_IN_PROGRESS && !document.body.classList.contains('authed')){afterLogin(session);}
   });
   const {data:{session}}=await SB.auth.getSession();
-  if(lot) PENDING_REDEEM=lot;
   if(session && !RECOVERY){ await afterLogin(session); }
-  else if(!RECOVERY){ go('vitrine'); if(lot){ openLogin(); const m=document.getElementById('lg_msg'); if(m){m.className='msg';m.style.display='block';m.textContent='Connectez-vous en tant que restaurateur pour valider ce lot.';} } }
+  else if(!RECOVERY){ go('vitrine'); }
 }
 
 async function doLogin(){
@@ -2995,7 +3021,6 @@ async function afterLogin(session){
   document.getElementById('ab_user').textContent=ME.email||'';
   setSync('● en ligne · synchronisé','#34d399');
   if(ME.role==='admin'){await enterAdmin();} else {await enterResto();}
-  if(PENDING_REDEEM){const t=PENDING_REDEEM;PENDING_REDEEM=null;setTimeout(function(){openRedeem(t);},250);}
 }
 
 async function doForgot(){
