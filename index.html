@@ -560,6 +560,37 @@
   </div></div>
 </section>
 
+<style>
+#play.active{display:flex}
+.playwrap{min-height:100vh;width:100%;align-items:flex-start;justify-content:center;background:linear-gradient(160deg,#0e7c58,#0b1220);padding:26px 16px 60px;overflow:auto}
+.playcard{background:#fff;border-radius:22px;max-width:440px;width:100%;padding:26px 22px 28px;box-shadow:0 30px 80px rgba(0,0,0,.35);text-align:center;margin-top:12px}
+.playcard .pv-est{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0e7c58;font-weight:800}
+.playcard h2{font-size:23px;margin:6px 0 2px}
+.playcard .pv-sub{color:#64748b;font-size:14px;margin-bottom:16px}
+.wheelwrap{position:relative;width:300px;height:300px;margin:8px auto 6px}
+.wheelwrap canvas{display:block;border-radius:50%;transition:transform 4.6s cubic-bezier(.13,.66,.24,1);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.wheel-ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:26px solid #0b1220;z-index:3;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
+.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:#fff;border:5px solid #0b1220;z-index:2;display:grid;place-items:center;font-weight:800;color:#0b1220;font-size:11px}
+.pv-btn{display:inline-block;border:none;border-radius:12px;background:#0e7c58;color:#fff;font-weight:800;font-size:16px;padding:13px 26px;cursor:pointer;margin-top:10px}
+.pv-btn:disabled{opacity:.5;cursor:default}
+.pv-result{margin-top:16px;padding:16px;border-radius:14px}
+.pv-result.win{background:#ecfdf5;border:1px solid #a7f3d0}
+.pv-result.lose{background:#f1f5f9;border:1px solid #e2e8f0}
+.pv-result h3{margin:0 0 4px;font-size:20px}
+.pv-qr{background:#fff;display:inline-block;padding:10px;border-radius:12px;margin-top:12px}
+.pv-qr img{display:block;width:180px;height:180px;image-rendering:pixelated}
+.pv-token{font-family:ui-monospace,Menlo,monospace;font-size:22px;font-weight:800;letter-spacing:3px;margin-top:8px;color:#0b1220}
+.pv-actions{margin-top:16px;text-align:left}
+.pv-actions .pv-act{display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid #e2e8f0;border-radius:12px;padding:11px 13px;margin-bottom:8px}
+.pv-act a{color:#0e7c58;font-weight:700;text-decoration:none;font-size:14px}
+.pv-act .pv-go{background:#0e7c58;color:#fff;border:none;border-radius:9px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
+.pv-foot{margin-top:18px;font-size:11px;color:#94a3b8}
+.wheelseg-legend{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin-top:6px;font-size:12px;color:#475569}
+.wheelseg-legend span{display:inline-flex;align-items:center;gap:5px}
+.wheelseg-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+</style>
+<section id="play" class="view playwrap"><div class="playcard" id="play_card"><div style="padding:30px;color:#64748b">Chargement du jeu…</div></div></section>
+
 <div class="toast" id="toast"></div>
 
 <!-- ===== Synchronisation temps réel (Supabase) — collez vos clés ci-dessous ===== -->
@@ -570,6 +601,7 @@ window.VIGIE_SYNC = {
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 
 <script>
 /* ============ DATA ============ */
@@ -1341,10 +1373,9 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Produit</th><th>Prix vente</th><th>Coût matière</th><th>Marge brute</th><th>Taux de marge</th></tr></thead><tbody>'
     +rs.map(r=>{const mg=r.prix-r.cout;const tx=Math.round(mg/r.prix*100);return '<tr><td class="tname">'+r.name+'</td><td>'+r.prix.toFixed(2)+' €</td><td>'+r.cout.toFixed(2)+' €</td><td>'+mg.toFixed(2)+' €</td><td><span class="chip '+(tx<60?'warn':'ok')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table></div></div>';
   } else if(clientView==='fid'){
-    const gs=state.games.filter(g=>g.clientId===cid);
-    m.innerHTML=topbar('Fidélisation','Jeux clients via QR code','<button class="btn" onclick="toast(\'QR code affiché (démo)\')"> QR établissement</button>')
-    +'<div class="kpis">'+kpi('Parties jouées',gs.reduce((s,g)=>s+g.plays,0),'ce mois','up')+kpi('Jeux actifs',gs.filter(g=>g.active).length,'sur '+gs.length,'up')+kpi('Taux de retour','32%','clients fidélisés','up')+kpi('Récompenses','127','distribuées','up')+'</div>'
-    +'<div class="cardgrid">'+gs.map(g=>'<div class="minicard"><div style="display:flex;justify-content:space-between;align-items:center"><div class="mt"> '+g.name+'</div>'+(g.active?'<span class="chip ok">actif</span>':'<span class="chip muted">off</span>')+'</div><div class="ms" style="margin-top:6px">Type : '+g.type+'</div><div style="font-size:28px;font-weight:800;margin-top:8px">'+g.plays+'</div><div class="ms">parties jouées</div></div>').join('')+'</div>';
+    m.innerHTML=topbar('Fidélisation','Roue de la fortune — jeux clients par QR code','<button class="btn" onclick="fidNewGame()">＋ Créer une roue</button>')
+    +'<div id="fid_body"><div class="empty" style="padding:24px">Chargement des jeux…</div></div>';
+    fidLoad();
   } else if(clientView==='tablet'){
     m.innerHTML=topbar('Tablette','Lien & paramètres de la tablette terrain','<button class="btn" onclick="go(\'app_terrain\')"> Ouvrir la tablette</button>')
     +'<div class="grid2"><div class="panel"><div class="ph"><h3>Modules activés sur la tablette</h3></div><div class="pb">'
@@ -1357,6 +1388,193 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
   }
 }
 function topbar(t,s,a){return '<div class="topbar"><div><h1>'+t+'</h1><div class="sub">'+s+'</div></div><div class="actions">'+(a||'')+'</div></div>';}
+
+/* ============ FIDÉLITÉ — Roue de la fortune ============ */
+let FID_GAMES=[], FID_WINS=[], FID_EDIT=null;
+const FID_PALETTE=['#0e7c58','#f59e0b','#2563eb','#e11d48','#7c3aed','#0891b2','#65a30d','#db2777','#ea580c','#0d9488'];
+function fidBase(){return location.origin+location.pathname;}
+function qrImg(text,size){size=size||180;try{if(window.qrcode){const qr=qrcode(0,'M');qr.addData(text);qr.make();return '<img src="'+qr.createDataURL(6,2)+'" width="'+size+'" height="'+size+'" alt="QR">';}}catch(e){}return '<div style="font-family:monospace;font-size:11px;word-break:break-all;padding:8px">'+escH(text)+'</div>';}
+function openInfoHTML(title,html){let mask=document.getElementById('info_mask');if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="info_mask"><div class="modal" style="width:440px;max-width:96vw"><div class="mh"><h3 id="info_title"></h3><button class="x" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">✕</button></div><div class="mb" id="info_body"></div></div></div>');mask=document.getElementById('info_mask');}document.getElementById('info_title').textContent=title;document.getElementById('info_body').innerHTML=html;mask.classList.add('on');}
+function fidWinsFor(gid){return FID_WINS.filter(w=>w.game_id===gid);}
+async function fidLoad(){
+  const body=document.getElementById('fid_body');if(!body)return;
+  if(!SB||!CUR){body.innerHTML='<div class="empty" style="padding:24px">Connexion indisponible.</div>';return;}
+  try{
+    const {data:gs}=await SB.from('fid_games').select('*').eq('est_code',CUR).order('created_at',{ascending:false});
+    FID_GAMES=gs||[];
+    const {data:ws}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(300);
+    FID_WINS=ws||[];
+    fidRenderBody();
+  }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Erreur de chargement : '+escH(e.message||e)+'</div>';}
+}
+function fidRenderBody(){
+  const body=document.getElementById('fid_body');if(!body)return;
+  const totalWins=FID_WINS.length, redeemed=FID_WINS.filter(w=>w.status==='redeemed').length, pending=totalWins-redeemed, actifs=FID_GAMES.filter(g=>g.active).length;
+  let html='<div class="kpis">'+kpi('Roues actives',actifs,'sur '+FID_GAMES.length,'up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots récupérés',redeemed,'validés en caisse','up')+kpi('En attente',pending,'à valider',pending?'down':'up')+'</div>';
+  html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Valider un lot</h3><div class="sub">Saisissez le code présenté par le client pour valider la remise</div></div><div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="fid_token" placeholder="Code du lot (ex. 7KQ2M9AB)" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:2px" onkeydown="if(event.key===\'Enter\')fidValidateToken()"><button class="btn" onclick="fidValidateToken()">Vérifier</button></div><div id="fid_valmsg" style="font-size:13px;margin-top:10px;line-height:1.5"></div></div></div>';
+  if(!FID_GAMES.length){
+    html+='<div class="empty" style="padding:40px 20px">Aucune roue pour le moment. Cliquez « Créer une roue » pour lancer votre premier jeu.</div>';
+  } else {
+    html+='<div class="cardgrid">'+FID_GAMES.map(g=>{
+      const cfg=g.config||{};const segs=(cfg.segments||[]);const wins=fidWinsFor(g.id).length;
+      const link=fidBase()+'?jeu='+encodeURIComponent(g.est_code)+'~'+g.id;
+      return '<div class="minicard"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div class="mt">'+escH(g.name)+'</div>'+(g.active?'<span class="chip ok">active</span>':'<span class="chip muted">inactive</span>')+'</div>'
+      +'<div class="ms" style="margin-top:6px">'+segs.length+' cases · '+((cfg.actions||[]).length)+' action(s) pour rejouer</div>'
+      +'<div style="font-size:26px;font-weight:800;margin-top:8px">'+wins+'</div><div class="ms">lot(s) gagné(s)</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">'
+      +'<button class="btn ghost sm" onclick="fidShowQR(\''+g.id+'\')">QR / lien</button>'
+      +'<button class="btn ghost sm" onclick="window.open(\''+link+'\',\'_blank\')">Tester</button>'
+      +'<button class="btn ghost sm" onclick="fidEditGame(\''+g.id+'\')">Modifier</button>'
+      +'<button class="btn ghost sm" onclick="fidToggleGame(\''+g.id+'\')">'+(g.active?'Désactiver':'Activer')+'</button>'
+      +'<button class="btn ghost sm" onclick="fidDeleteGame(\''+g.id+'\')">Suppr.</button>'
+      +'</div></div>';
+    }).join('')+'</div>';
+  }
+  body.innerHTML=html;
+}
+function fidNewGame(){FID_EDIT={id:null,name:'',active:true,segments:[{label:'Café offert',type:'lot',weight:2},{label:'-10% sur l\'addition',type:'reduction',weight:3},{label:'Rejouez une prochaine fois',type:'perdu',weight:4},{label:'Dessert offert',type:'lot',weight:1}],actions:[{label:'Laissez un avis Google',url:''},{label:'Abonnez-vous sur Instagram',url:''}]};fidOpenModal('Nouvelle roue');}
+function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};FID_EDIT={id:g.id,name:g.name||'',active:g.active,segments:(c.segments||[]).map(s=>({label:s.label||'',type:s.type||'lot',weight:s.weight!=null?s.weight:1})),actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''}))};fidOpenModal('Modifier la roue');}
+function fidOpenModal(title){
+  let mask=document.getElementById('fidm_mask');
+  if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="fidm_mask"><div class="modal" style="width:660px;max-width:96vw"><div class="mh"><h3 id="fidm_title">Roue</h3><button class="x" onclick="fidCloseModal()">✕</button></div><div class="mb" id="fidm_body" style="max-height:74vh;overflow:auto"></div><div class="mf"><button class="btn ghost" onclick="fidCloseModal()">Annuler</button><button class="btn" id="fidm_save" onclick="fidSaveGame()">Enregistrer la roue</button></div></div></div>');mask=document.getElementById('fidm_mask');}
+  document.getElementById('fidm_title').textContent=title;fidRenderModalBody();mask.classList.add('on');
+}
+function fidCloseModal(){const m=document.getElementById('fidm_mask');if(m)m.classList.remove('on');}
+function fidRenderModalBody(){
+  const b=document.getElementById('fidm_body');if(!b)return;const e=FID_EDIT;
+  const typeOpts=function(t){return [['lot','Lot / cadeau'],['reduction','Réduction'],['perdu','Perdu / rejouez']].map(function(o){return '<option value="'+o[0]+'"'+(t===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');};
+  let seg='<div class="cm-sec">Cases de la roue</div><p class="tsub" style="margin:-2px 0 10px;font-size:12px">Le « poids » règle la probabilité : plus il est élevé, plus la case sort souvent. Ajoutez des cases « Perdu » pour équilibrer les gains.</p>';
+  seg+='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:11px;color:#94a3b8;font-weight:700">Intitulé</th><th style="text-align:left;font-size:11px;color:#94a3b8;font-weight:700">Type</th><th style="font-size:11px;color:#94a3b8;font-weight:700;width:64px">Poids</th><th></th></tr></thead><tbody>';
+  seg+=e.segments.map(function(s,i){return '<tr><td style="padding:3px 6px 3px 0"><input class="fid-seg-label" value="'+escH(s.label)+'" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td style="padding:3px 6px"><select class="fid-seg-type" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px">'+typeOpts(s.type)+'</select></td><td style="padding:3px 6px"><input class="fid-seg-weight" type="number" min="0" value="'+(s.weight)+'" style="width:60px;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'seg\','+i+')">✕</button></td></tr>';}).join('');
+  seg+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="fidRowAdd(\'seg\')">＋ Ajouter une case</button>';
+  let act='<div class="cm-sec" style="margin-top:18px">Actions pour rejouer</div><p class="tsub" style="margin:-2px 0 10px;font-size:12px">Chaque action réalisée offre au client un tour supplémentaire (avis Google, abonnement Instagram, TikTok…). Renseignez le lien de destination. Laissez vide s\'il n\'y en a pas.</p>';
+  act+='<table style="width:100%;border-collapse:collapse"><tbody>';
+  act+=e.actions.map(function(a,i){return '<tr><td style="padding:3px 6px 3px 0;width:42%"><input class="fid-act-label" value="'+escH(a.label)+'" placeholder="Ex. Laissez un avis Google" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td style="padding:3px 6px"><input class="fid-act-url" value="'+escH(a.url)+'" placeholder="https://…" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'act\','+i+')">✕</button></td></tr>';}).join('');
+  act+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="fidRowAdd(\'act\')">＋ Ajouter une action</button>';
+  b.innerHTML='<div class="field" style="margin-bottom:12px"><label>Nom de la roue *</label><input id="fidm_name" value="'+escH(e.name)+'" placeholder="Ex. Roue de l\'été"></div>'+seg+act;
+}
+function fidCollect(){const e=FID_EDIT;const nm=document.getElementById('fidm_name');if(nm)e.name=nm.value;
+  const labels=document.querySelectorAll('.fid-seg-label'),types=document.querySelectorAll('.fid-seg-type'),weights=document.querySelectorAll('.fid-seg-weight');
+  e.segments=[];for(let i=0;i<labels.length;i++){e.segments.push({label:labels[i].value.trim(),type:types[i].value,weight:Number(weights[i].value)||0});}
+  const al=document.querySelectorAll('.fid-act-label'),au=document.querySelectorAll('.fid-act-url');
+  e.actions=[];for(let i=0;i<al.length;i++){e.actions.push({label:al[i].value.trim(),url:au[i].value.trim()});}
+}
+function fidRowAdd(k){fidCollect();if(k==='seg')FID_EDIT.segments.push({label:'',type:'lot',weight:1});else FID_EDIT.actions.push({label:'',url:''});fidRenderModalBody();}
+function fidRowDel(k,i){fidCollect();if(k==='seg')FID_EDIT.segments.splice(i,1);else FID_EDIT.actions.splice(i,1);fidRenderModalBody();}
+async function fidSaveGame(){fidCollect();const e=FID_EDIT;
+  if(!e.name){toast('Donnez un nom à la roue');return;}
+  const segs=e.segments.filter(function(s){return s.label;});if(segs.length<2){toast('Ajoutez au moins 2 cases avec un intitulé');return;}
+  const actions=e.actions.filter(function(a){return a.label&&a.url;});
+  const cName=(state.clients.find(function(x){return x.est_code===CUR;})||{}).name||'';
+  const config={estName:cName,segments:segs.map(function(s,i){return {id:'s'+i,label:s.label,type:s.type,weight:Math.max(0,s.weight||0),color:FID_PALETTE[i%FID_PALETTE.length]};}),actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
+  const btn=document.getElementById('fidm_save');if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
+  try{
+    if(e.id){const {error}=await SB.from('fid_games').update({name:e.name,config:config}).eq('id',e.id);if(error)throw error;}
+    else{const {error}=await SB.from('fid_games').insert({est_code:CUR,name:e.name,config:config,active:true});if(error)throw error;}
+    fidCloseModal();await fidLoad();toast('Roue enregistrée');
+  }catch(err){toast('Erreur : '+(err.message||err));if(btn){btn.disabled=false;btn.textContent='Enregistrer la roue';}}
+}
+async function fidToggleGame(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;try{const {error}=await SB.from('fid_games').update({active:!g.active}).eq('id',id);if(error)throw error;await fidLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
+function fidDeleteGame(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;openConfirm('Supprimer la roue','Supprimer « '+g.name+' » ? Les lots déjà gagnés resteront valides.',async function(){try{const {error}=await SB.from('fid_games').delete().eq('id',id);if(error)throw error;await fidLoad();toast('Roue supprimée');}catch(e){toast('Erreur : '+(e.message||e));}});}
+function fidShowQR(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;const link=fidBase()+'?jeu='+encodeURIComponent(g.est_code)+'~'+g.id;
+  openInfoHTML('QR de la roue — '+g.name,'<div style="text-align:center">'+qrImg(link,200)+'<div class="tsub" style="margin-top:10px">À imprimer sur vos flyers. Les clients scannent ce code pour jouer.</div><div style="margin-top:10px;word-break:break-all;font-size:12px"><a href="'+link+'" target="_blank">'+escH(link)+'</a></div></div>');
+}
+async function fidValidateToken(){const el=document.getElementById('fid_token');const msg=document.getElementById('fid_valmsg');if(!el||!msg)return;const t=(el.value||'').trim().toUpperCase();if(!t){msg.innerHTML='';return;}
+  msg.style.color='#334155';msg.textContent='Vérification…';
+  try{const {data:w}=await SB.from('fid_wins').select('*').eq('token',t).maybeSingle();
+    if(!w){msg.style.color='#b91c1c';msg.innerHTML='Code introuvable. Vérifiez la saisie.';return;}
+    if(w.est_code!==CUR){msg.style.color='#b91c1c';msg.innerHTML='Ce lot appartient à un autre établissement.';return;}
+    if(w.status==='redeemed'){msg.style.color='#b91c1c';msg.innerHTML='Lot déjà récupéré le '+veFmtDate(w.redeemed_at)+'. Ce code est invalide.';return;}
+    msg.style.color='#0b7d57';msg.innerHTML='Lot valide : <b>'+escH(w.prize||'')+'</b> &nbsp;<button class="btn sm" onclick="fidRedeemConfirm(\''+w.token+'\')">Valider la remise</button>';
+  }catch(e){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}
+}
+async function fidRedeemConfirm(token){
+  try{const {data,error}=await SB.from('fid_wins').update({status:'redeemed',redeemed_at:new Date().toISOString()}).eq('token',token).eq('status','pending').select();if(error)throw error;
+    const {data:ws}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(300);FID_WINS=ws||[];fidRenderBody();
+    const msg=document.getElementById('fid_valmsg');if(msg){if(!data||!data.length){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé.';}else{msg.style.color='#0b7d57';msg.textContent='Lot remis et validé. Le code est désormais invalide.';}}
+  }catch(e){const msg=document.getElementById('fid_valmsg');if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
+}
+/* ---- Redemption via deep link (?lot=TOKEN) ---- */
+async function openRedeem(token){
+  try{const {data:w}=await SB.from('fid_wins').select('*').eq('token',token).maybeSingle();
+    if(!w){openInfoHTML('Lot introuvable','<div style="text-align:center;padding:10px">Ce code de lot est introuvable.</div>');return;}
+    if(w.status==='redeemed'){openInfoHTML('Lot déjà utilisé','<div style="text-align:center;padding:10px">Ce lot a déjà été récupéré le '+veFmtDate(w.redeemed_at)+'. Le code est invalide.</div>');return;}
+    openInfoHTML('Valider un lot','<div style="text-align:center;padding:6px"><div class="pv-est" style="color:#0e7c58;font-weight:800;letter-spacing:2px;text-transform:uppercase;font-size:12px">Lot à remettre</div><h2 style="margin:6px 0">'+escH(w.prize||'')+'</h2><div class="tsub">Code '+escH(w.token)+'</div><button class="btn" style="margin-top:14px" id="rdm_btn" onclick="redeemNow(\''+w.token+'\')">Valider la remise du lot</button><div id="rdm_msg" style="font-size:13px;margin-top:10px"></div></div>');
+  }catch(e){openInfoHTML('Erreur','<div style="padding:10px">'+escH(e.message||e)+'</div>');}
+}
+async function redeemNow(token){const msg=document.getElementById('rdm_msg');const btn=document.getElementById('rdm_btn');if(btn)btn.disabled=true;
+  try{const {data,error}=await SB.from('fid_wins').update({status:'redeemed',redeemed_at:new Date().toISOString()}).eq('token',token).eq('status','pending').select();if(error)throw error;
+    if(!data||!data.length){if(msg){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé, ou vous n\'avez pas accès à cet établissement.';}if(btn)btn.disabled=false;return;}
+    if(msg){msg.style.color='#0b7d57';msg.textContent='Lot validé et remis. Le code est maintenant invalide.';}if(btn)btn.textContent='Validé';
+    if(clientView==='fid')fidLoad();
+  }catch(e){if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}if(btn)btn.disabled=false;}
+}
+/* ---- Public play page ---- */
+let PV_STATE=null;
+async function startPlay(param){
+  document.body.classList.remove('authed');go('play');
+  const card=document.getElementById('play_card');
+  const sep=param.indexOf('~');if(sep<0){card.innerHTML=pvMsg('Lien invalide','Ce lien de jeu est incorrect.');return;}
+  const est=decodeURIComponent(param.slice(0,sep)),gid=param.slice(sep+1);
+  try{
+    const {data:g}=await SB.from('fid_games').select('*').eq('id',gid).eq('est_code',est).maybeSingle();
+    if(!g){card.innerHTML=pvMsg('Jeu introuvable','Ce jeu n\'existe pas ou a été supprimé.');return;}
+    if(!g.active){card.innerHTML=pvMsg('Jeu indisponible','Ce jeu est actuellement désactivé. Revenez bientôt !');return;}
+    PV_STATE={est:est,gid:gid,game:g,spins:0,extra:0,usedActions:{},_rot:0,spinning:false};
+    pvRender();
+  }catch(e){card.innerHTML=pvMsg('Erreur','Impossible de charger le jeu. Réessayez plus tard.');}
+}
+function pvMsg(t,s){return '<div class="pv-est">Vigie</div><h2>'+escH(t)+'</h2><div class="pv-sub">'+escH(s)+'</div>';}
+function pvRender(){
+  const card=document.getElementById('play_card');const S=PV_STATE;const cfg=S.game.config||{};const segs=cfg.segments||[];
+  const canSpin=(S.spins===0)||(S.extra>0);
+  const legend='<div class="wheelseg-legend">'+segs.map(function(s){return '<span><i style="background:'+((s.type==='perdu')?'#cbd5e1':(s.color||'#0e7c58'))+'"></i>'+escH(s.label)+'</span>';}).join('')+'</div>';
+  card.innerHTML='<div class="pv-est">'+escH(cfg.estName||'Jeu concours')+'</div><h2>Tournez la roue</h2><div class="pv-sub">Tentez votre chance et repartez peut-être avec un lot !</div>'
+  +'<div class="wheelwrap"><div class="wheel-ptr"></div><canvas id="pv_canvas" width="300" height="300"></canvas><div class="wheel-hub">TOURNER</div></div>'
+  +legend
+  +'<div><button class="pv-btn" id="pv_spin" onclick="pvSpin()"'+(canSpin?'':' disabled')+'>'+(S.spins===0?'Lancer la roue':'Rejouer')+'</button></div>'
+  +'<div id="pv_result"></div><div id="pv_actions"></div>'
+  +'<div class="pv-foot">Un lot par personne · tours bonus en réalisant les actions proposées</div>';
+  setTimeout(function(){pvDrawWheel(segs);},30);
+}
+function pvDrawWheel(segs){
+  const cv=document.getElementById('pv_canvas');if(!cv||!cv.getContext)return;const ctx=cv.getContext('2d');const n=segs.length;if(!n)return;const cx=150,cy=150,r=148,seg=2*Math.PI/n;
+  ctx.clearRect(0,0,300,300);
+  for(let i=0;i<n;i++){const a0=-Math.PI/2+i*seg,a1=a0+seg;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();ctx.fillStyle=(segs[i].type==='perdu')?'#e2e8f0':(segs[i].color||'#0e7c58');ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();
+    const mid=a0+seg/2;ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=(segs[i].type==='perdu')?'#475569':'#ffffff';ctx.font='bold 12px system-ui,-apple-system,sans-serif';const lab=(segs[i].label||'').slice(0,16);if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='left';ctx.fillText(lab,-(r-12),4);}else{ctx.textAlign='right';ctx.fillText(lab,r-12,4);}ctx.restore();}
+}
+async function pvSpin(){
+  const S=PV_STATE;if(!S||S.spinning)return;if(!(S.spins===0||S.extra>0))return;
+  const btn=document.getElementById('pv_spin');const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='';
+  S.spinning=true;if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:'spin',est_code:S.est,game_id:S.gid})});
+    const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Erreur');
+    const segs=(S.game.config||{}).segments||[];const n=segs.length;const seg=360/n;const idx=j.index;
+    const align=(360-(idx*seg+seg/2))%360;let prev=S._rot||0;let target=prev-(prev%360)+360*6+align;if(target<=prev)target+=360;S._rot=target;
+    const cv=document.getElementById('pv_canvas');if(cv)cv.style.transform='rotate('+target+'deg)';
+    if(S.spins===0)S.spins++;else{S.extra--;S.spins++;}
+    setTimeout(function(){pvShowResult(j);},4700);
+  }catch(e){S.spinning=false;if(btn){btn.disabled=false;btn.textContent='Réessayer';}const rz2=document.getElementById('pv_result');if(rz2)rz2.innerHTML='<div class="pv-result lose">Une erreur est survenue. Réessayez.</div>';}
+}
+function pvShowResult(j){
+  const S=PV_STATE;S.spinning=false;const rz=document.getElementById('pv_result');const btn=document.getElementById('pv_spin');const cfg=S.game.config||{};
+  if(j.win){const redeemLink=fidBase()+'?lot='+j.token;
+    rz.innerHTML='<div class="pv-result win"><h3>Gagné !</h3><div>Vous remportez : <b>'+escH(j.prize||'')+'</b></div><div class="pv-qr">'+qrImg(redeemLink,180)+'</div><div class="pv-token">'+escH(j.token)+'</div><div class="tsub" style="margin-top:8px;font-size:12px">Présentez ce code au restaurant pour récupérer votre lot. Valable une seule fois.</div></div>';
+  }else{rz.innerHTML='<div class="pv-result lose"><h3>Pas de chance…</h3><div>Vous n\'avez rien gagné cette fois-ci.</div></div>';}
+  pvRenderActions();
+  if(btn){if(S.extra>0){btn.disabled=false;btn.textContent='Rejouer ('+S.extra+' tour'+(S.extra>1?'s':'')+')';}else{btn.disabled=true;btn.textContent=(cfg.actions&&cfg.actions.length)?'Réalisez une action pour rejouer':'Merci d\'avoir joué';}}
+}
+function pvRenderActions(){
+  const S=PV_STATE;const cfg=S.game.config||{};const acts=cfg.actions||[];const box=document.getElementById('pv_actions');if(!box)return;
+  const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
+  if(!remaining.length){box.innerHTML=acts.length?'<div class="pv-foot">Vous avez utilisé toutes les actions bonus. Merci d\'avoir joué !</div>':'';return;}
+  box.innerHTML='<div class="pv-actions"><div style="font-weight:800;margin:6px 0 8px;text-align:center">Gagnez un tour de plus</div>'+remaining.map(function(a){return '<div class="pv-act"><span style="font-size:14px">'+escH(a.label)+'</span><button class="pv-go" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url)+'\')">J\'y vais</button></div>';}).join('')+'</div>';
+}
+function pvDoAction(id,url){const S=PV_STATE;if(S.usedActions[id])return;S.usedActions[id]=1;S.extra=(S.extra||0)+1;try{if(url)window.open(decodeURIComponent(url),'_blank');}catch(e){}
+  const btn=document.getElementById('pv_spin');if(btn){btn.disabled=false;btn.textContent='Rejouer ('+S.extra+' tour'+(S.extra>1?'s':'')+')';}
+  pvRenderActions();if(window.toast)toast('Tour bonus débloqué');
+}
 function tempChart(cid){const days=[];const t=new Date();t.setHours(0,0,0,0);for(let i=4;i>=0;i--){const d=new Date(t);d.setDate(d.getDate()-i);days.push(d);}
   const rs=cRel(cid).filter(r=>r.equipId==='e1'||r.equipId==='e3');
   const data=days.map(d=>{const nd=new Date(d);nd.setDate(nd.getDate()+1);const dr=rs.filter(r=>r.at>=d&&r.at<nd);const avg=dr.length?dr.reduce((s,r)=>s+r.value,0)/dr.length:null;const bad=dr.some(r=>r.status==='alerte');return {d,avg,bad};});
@@ -1852,15 +2070,21 @@ function openLogin(){document.getElementById('authgate').classList.add('on');sho
 function closeLogin(){document.getElementById('authgate').classList.remove('on');}
 function showPane(p){document.querySelectorAll('#authgate .auth-pane').forEach(x=>x.classList.remove('on'));const el=document.getElementById('pane_'+p);if(el)el.classList.add('on');}
 
+let PENDING_REDEEM=null;
 async function authInit(){
+  const params=new URLSearchParams(location.search);
+  const jeu=params.get('jeu'), lot=params.get('lot');
   if(!CFG.url||!CFG.key||!window.supabase){ go('vitrine'); return; } // mode démo local (hors-ligne)
   SB=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  if(jeu){ startPlay(jeu); return; } // page de jeu publique — aucun compte requis
   SB.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){RECOVERY=true;openLogin();showPane('change');document.getElementById('ch_h').textContent='Réinitialisation — choisissez un nouveau mot de passe.';}
     else if(event==='SIGNED_IN' && session && !LOGIN_IN_PROGRESS && !document.body.classList.contains('authed')){afterLogin(session);}
   });
   const {data:{session}}=await SB.auth.getSession();
-  if(session && !RECOVERY){ await afterLogin(session); } else if(!RECOVERY){ go('vitrine'); }
+  if(lot) PENDING_REDEEM=lot;
+  if(session && !RECOVERY){ await afterLogin(session); }
+  else if(!RECOVERY){ go('vitrine'); if(lot){ openLogin(); const m=document.getElementById('lg_msg'); if(m){m.className='msg';m.style.display='block';m.textContent='Connectez-vous en tant que restaurateur pour valider ce lot.';} } }
 }
 
 async function doLogin(){
@@ -1883,6 +2107,7 @@ async function afterLogin(session){
   document.getElementById('ab_user').textContent=ME.email||'';
   setSync('● en ligne · synchronisé','#34d399');
   if(ME.role==='admin'){await enterAdmin();} else {await enterResto();}
+  if(PENDING_REDEEM){const t=PENDING_REDEEM;PENDING_REDEEM=null;setTimeout(function(){openRedeem(t);},250);}
 }
 
 async function doForgot(){
