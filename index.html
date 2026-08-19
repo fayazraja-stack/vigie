@@ -503,6 +503,7 @@
       <div class="nav-i" onclick="adminNav('plans',this)">Abonnements</div>
       <div class="nav-i" onclick="adminNav('alerts',this)">Alertes réseau</div>
       <div class="nav-i" onclick="adminNav('veille',this)">Veille &amp; prospection</div>
+      <div class="nav-i" onclick="adminNav('crm',this)">Base de données client</div>
       <div class="cat">Gestion système</div>
       <div class="nav-i" onclick="adminNav('system',this)">Réseaux & franchises</div>
       <div class="cat">Bibliothèques</div>
@@ -844,6 +845,11 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="tsub" style="margin-top:10px;font-size:12px;line-height:1.5">'+(t==='inspections'?'Source : Ministère de l\'Agriculture — résultats des contrôles officiels d\'hygiène alimentaire (Alim\'confiance). Un établissement classé « à corriger de manière urgente » est un prospect prioritaire.':'Source : annuaire des entreprises (base Sirene). L\'adresse et la raison sociale sont publiques ; les emails ne le sont pas et devront être obtenus autrement.')+'</div>'
     +'</div></div>'
     +'<div id="veille_results"><div class="empty" style="padding:30px 20px">Saisissez un département puis cliquez « Rechercher ».</div></div>';
+  } else if(adminView==='crm'){
+    m.innerHTML='<div class="topbar"><div><h1>Base de données client</h1><div class="sub">Coordonnées collectées via les jeux, tous établissements confondus</div></div><div class="actions"><button class="btn ghost" onclick="adminCrmExport()">↓ Export Excel</button></div></div>'
+    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="acrm_search" placeholder="Rechercher (nom, email, établissement…)" oninput="adminCrmFilter()"></div></div>'
+    +'<div id="acrm_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
+    adminCrmLoad();
   } else if(adminView==='system'){
     const nets=state.networks||[];
     const rows=nets.map(n=>{const count=(state.clients||[]).filter(c=>c.network===n.name).length;return '<tr><td class="tname">'+escH(n.name)+'</td><td>'+count+' client'+(count>1?'s':'')+'</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="netRename(\''+n.id+'\')"> Renommer</button> <button class="btn ghost sm" onclick="netDelete(\''+n.id+'\')">Suppr.</button></td></tr>';}).join('');
@@ -1223,6 +1229,7 @@ const CLIENT_NAV=[
   {cat:'Gestion'},
   {v:'food',ic:'',t:'Food Cost',mod:'food'},
   {v:'fid',ic:'',t:'Fidélisation',mod:'fid'},
+  {v:'crm',ic:'',t:'Base de données client'},
   {cat:'Configuration'},
   {v:'tablet',ic:'',t:'Tablette'},
   {v:'wiki',ic:'',t:'Wiki & Aide'},
@@ -1370,15 +1377,30 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'<div class="panel"><div class="ph"><h3>Récapitulatif par employé</h3><div class="actions"><button class="btn ghost sm" onclick="toast(\'Suppression d heures (démo)\')"> Supprimer des heures</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Employé</th><th>Poste</th><th>Total heures</th><th>Jours travaillés</th><th></th></tr></thead><tbody>'
     +filtered.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return '<tr'+(e.active===false?' style="opacity:.5"':'')+'><td class="tname">'+e.name+'</td><td>'+(j.name||'—')+'</td><td class="tname">'+fmtHM(e.hReal*60)+'</td><td>'+(e.joursTravailles||0)+' jour'+((e.joursTravailles||0)>1?'s':'')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="toast(\'Détail des pointages (démo)\')"> Détail</button></td></tr>';}).join('')+'</tbody></table></div></div>';
   } else if(clientView==='food'){
-    const rs=state.recipes.filter(r=>r.clientId===cid);
-    m.innerHTML=topbar('Food Cost','Fiches techniques, coût matière & marges','<button class="btn" onclick="toast(\'Nouvelle fiche technique (démo)\')">＋ Fiche</button>')
-    +'<div class="kpis">'+kpi('Fiches',rs.length,'produits','up')+kpi('Marge moyenne',Math.round(rs.reduce((s,r)=>s+(r.prix-r.cout)/r.prix,0)/rs.length*100)+'%','sur le menu','up')+kpi('Coût matière moy.',(rs.reduce((s,r)=>s+r.cout/r.prix,0)/rs.length*100).toFixed(0)+'%','du PV','up')+kpi('Sous seuil (60%)',rs.filter(r=>(r.prix-r.cout)/r.prix<0.6).length,'à revoir','down')+'</div>'
-    +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Produit</th><th>Prix vente</th><th>Coût matière</th><th>Marge brute</th><th>Taux de marge</th></tr></thead><tbody>'
-    +rs.map(r=>{const mg=r.prix-r.cout;const tx=Math.round(mg/r.prix*100);return '<tr><td class="tname">'+r.name+'</td><td>'+r.prix.toFixed(2)+' €</td><td>'+r.cout.toFixed(2)+' €</td><td>'+mg.toFixed(2)+' €</td><td><span class="chip '+(tx<60?'warn':'ok')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table></div></div>';
+    state.recipes=state.recipes||[];state.foodIng=state.foodIng||[];
+    const rs=state.recipes.filter(r=>r.clientId===cid);const ings=state.foodIng.filter(g=>g.clientId===cid);
+    const tab=foodTab||'fiches';
+    const withPV=rs.filter(function(r){return (Number(r.prix)||0)>0;});
+    const avgMarge=withPV.length?Math.round(withPV.reduce(function(s,r){return s+(r.prix-foodCostOf(r))/r.prix;},0)/withPV.length*100):0;
+    const avgCM=withPV.length?Math.round(withPV.reduce(function(s,r){return s+foodCostOf(r)/r.prix;},0)/withPV.length*100):0;
+    const sousSeuil=withPV.filter(function(r){return (r.prix-foodCostOf(r))/r.prix<0.7;}).length;
+    m.innerHTML=topbar('Food Cost','Fiches techniques, coût matière & marges',tab==='fiches'?'<button class="btn" onclick="foodRecipeOpen()">＋ Nouvelle fiche</button>':'<button class="btn" onclick="foodIngForm()">＋ Nouvel ingrédient</button>')
+    +'<div class="kpis">'+kpi('Fiches techniques',rs.length,'au menu','up')+kpi('Marge brute moyenne',avgMarge+'%','sur le menu',avgMarge>=65?'up':'down')+kpi('Coût matière moyen',avgCM+'%','du prix de vente',avgCM<=35?'up':'down')+kpi('Fiches à surveiller',sousSeuil,'marge < 70%',sousSeuil?'down':'up')+'</div>'
+    +'<div class="seg-mini" style="margin-bottom:16px"><button class="'+(tab==='fiches'?'active':'')+'" onclick="setFoodTab(\'fiches\')">Fiches techniques ('+rs.length+')</button><button class="'+(tab==='ing'?'active':'')+'" onclick="setFoodTab(\'ing\')">Ingrédients ('+ings.length+')</button></div>';
+    if(tab==='fiches'){
+      m.innerHTML+='<div class="panel"><div class="pb" style="padding:0">'+(rs.length?('<table><thead><tr><th>Fiche</th><th>Prix de vente</th><th>Coût matière</th><th>Marge brute</th><th>Food cost</th><th></th></tr></thead><tbody>'+rs.map(function(r){const c=foodCostOf(r);const pv=Number(r.prix)||0;const mg=pv-c;const tx=pv>0?Math.round(mg/pv*100):0;const cm=pv>0?Math.round(c/pv*100):0;return '<tr><td><div class="tname">'+escH(r.name)+'</div><div class="tsub">'+((r.lines||[]).length)+' ingrédient(s)</div></td><td>'+pv.toFixed(2)+' €</td><td>'+c.toFixed(2)+' €</td><td>'+mg.toFixed(2)+' € ('+tx+'%)</td><td><span class="chip '+(cm>35?'warn':'ok')+'">'+cm+'%</span></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodRecipeOpen(\''+r.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="crudDel(\'recipes\',\''+r.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucune fiche technique. Créez d\'abord vos ingrédients, puis vos fiches : le coût matière et les marges se calculent automatiquement.</div>')+'</div></div>';
+    } else {
+      m.innerHTML+='<div class="panel"><div class="pb" style="padding:0">'+(ings.length?('<table><thead><tr><th>Ingrédient</th><th>Unité</th><th>Prix unitaire</th><th>Utilisé dans</th><th></th></tr></thead><tbody>'+ings.map(function(g){const used=rs.filter(function(r){return (r.lines||[]).some(function(l){return l.ingId===g.id;});}).length;return '<tr><td class="tname">'+escH(g.name)+'</td><td>'+escH(g.unit||'')+'</td><td>'+(Number(g.price)||0).toFixed(3)+' € / '+escH(g.unit||'u')+'</td><td>'+used+' fiche(s)</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="crudDel(\'foodIng\',\''+g.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucun ingrédient. Ajoutez vos matières premières avec leur prix unitaire pour calculer le coût de vos fiches.</div>')+'</div></div>';
+    }
   } else if(clientView==='fid'){
     m.innerHTML=topbar('Fidélisation','Roue de la fortune — jeux clients par QR code','<button class="btn" onclick="fidNewGame()">＋ Créer une roue</button>')
     +'<div id="fid_body"><div class="empty" style="padding:24px">Chargement des jeux…</div></div>';
     fidLoad();
+  } else if(clientView==='crm'){
+    m.innerHTML=topbar('Base de données client','Coordonnées collectées via vos jeux — exportable','<button class="btn ghost" onclick="crmExport()">↓ Export Excel</button>')
+    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="crm_search" placeholder="Rechercher (nom, email, téléphone…)" oninput="crmFilter()"></div></div>'
+    +'<div id="crm_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
+    crmLoad();
   } else if(clientView==='tablet'){
     m.innerHTML=topbar('Tablette','Lien & paramètres de la tablette terrain','<button class="btn" onclick="go(\'app_terrain\')"> Ouvrir la tablette</button>')
     +'<div class="grid2"><div class="panel"><div class="ph"><h3>Modules activés sur la tablette</h3></div><div class="pb">'
@@ -1404,6 +1426,92 @@ function fidExportLeads(){const leads=FID_WINS.filter(function(w){return w.custo
   leads.forEach(function(w){rows.push([w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
   const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');
   const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='contacts-jeux.csv';a.click();}
+/* ---- Base de données client (restaurateur) ---- */
+let CRM_ROWS=[];
+async function crmLoad(){
+  const body=document.getElementById('crm_body');if(!body)return;if(!SB||!CUR){body.innerHTML='<div class="empty" style="padding:24px">Indisponible.</div>';return;}
+  try{const {data}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(2000);
+    CRM_ROWS=(data||[]).filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});crmRender();
+  }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Erreur : '+escH(e.message||e)+'</div>';}
+}
+function crmRender(){
+  const body=document.getElementById('crm_body');if(!body)return;
+  if(!CRM_ROWS.length){body.innerHTML='<div class="empty" style="padding:40px 20px">Aucune donnée client pour le moment. Les coordonnées saisies par les joueurs (nom, téléphone, email) apparaîtront ici automatiquement.</div>';return;}
+  body.innerHTML='<div class="panel"><div class="ph"><h3>'+CRM_ROWS.length+' contact(s)</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot gagné</th><th>Statut</th><th>Date</th></tr></thead><tbody id="crm_tbody">'
+   +CRM_ROWS.map(function(w){return '<tr data-s="'+escH(((w.customer_name||'')+' '+(w.customer_email||'')+' '+(w.customer_phone||'')).toLowerCase())+'"><td class="tname">'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td><td>'+escH(w.prize||'')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">lot remis</span>':'<span class="chip warn">à remettre</span>')+'</td><td class="tsub">'+veFmtDate(w.claimed_at||w.created_at)+'</td></tr>';}).join('')
+   +'</tbody></table></div></div>';
+}
+function crmFilter(){const q=((document.getElementById('crm_search')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#crm_tbody tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
+function crmExport(){if(!CRM_ROWS.length){toast('Aucune donnée à exporter');return;}
+  const rows=[['Nom','Email','Telephone','Lot','Statut','Date']];
+  CRM_ROWS.forEach(function(w){rows.push([w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
+  const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='base-clients.csv';a.click();}
+/* ---- Base de données client (admin, tous établissements) ---- */
+let ACRM_ROWS=[];
+function adminEstName(code){const c=(state.clients||[]).find(function(x){return x.est_code===code;});return c?c.name:code;}
+async function adminCrmLoad(){
+  const body=document.getElementById('acrm_body');if(!body)return;
+  try{const {data}=await SB.from('fid_wins').select('*').order('created_at',{ascending:false}).limit(5000);
+    ACRM_ROWS=(data||[]).filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});adminCrmRender();
+  }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Erreur : '+escH(e.message||e)+'</div>';}
+}
+function adminCrmRender(){
+  const body=document.getElementById('acrm_body');if(!body)return;
+  if(!ACRM_ROWS.length){body.innerHTML='<div class="empty" style="padding:40px 20px">Aucune donnée client collectée pour le moment.</div>';return;}
+  body.innerHTML='<div class="panel"><div class="ph"><h3>'+ACRM_ROWS.length+' contact(s)</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Établissement</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot</th><th>Statut</th><th>Date</th></tr></thead><tbody id="acrm_tbody">'
+   +ACRM_ROWS.map(function(w){const en=adminEstName(w.est_code);return '<tr data-s="'+escH(((w.customer_name||'')+' '+(w.customer_email||'')+' '+(w.customer_phone||'')+' '+en).toLowerCase())+'"><td class="tname">'+escH(en)+'</td><td>'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td><td>'+escH(w.prize||'')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">remis</span>':'<span class="chip warn">à remettre</span>')+'</td><td class="tsub">'+veFmtDate(w.claimed_at||w.created_at)+'</td></tr>';}).join('')
+   +'</tbody></table></div></div>';
+}
+function adminCrmFilter(){const q=((document.getElementById('acrm_search')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#acrm_tbody tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
+function adminCrmExport(){if(!ACRM_ROWS.length){toast('Aucune donnée à exporter');return;}
+  const rows=[['Etablissement','Nom','Email','Telephone','Lot','Statut','Date']];
+  ACRM_ROWS.forEach(function(w){rows.push([adminEstName(w.est_code),w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
+  const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='base-clients-global.csv';a.click();}
+/* ============ FOOD COST ============ */
+let foodTab='fiches', FOOD_EDIT=null;
+function setFoodTab(t){foodTab=t;renderClient('food');}
+function foodCostOf(r){if(!r)return 0;state.foodIng=state.foodIng||[];let c=0;(r.lines||[]).forEach(function(l){const g=state.foodIng.find(function(x){return x.id===l.ingId;});if(g)c+=(Number(g.price)||0)*(Number(l.qty)||0);});if(!c&&r.cout)c=Number(r.cout)||0;return c;}
+function foodIngForm(id){state.foodIng=state.foodIng||[];const g=id?state.foodIng.find(function(x){return x.id===id;}):null;
+  openForm(id?'Modifier l\'ingrédient':'Nouvel ingrédient',[{key:'name',label:'Nom de l\'ingrédient',value:g?g.name:''},{key:'unit',label:'Unité',type:'select',options:['kg','g','L','cl','pièce','portion'],value:g?g.unit:'kg'},{key:'price',label:'Prix unitaire (€ par unité)',type:'number',value:g?g.price:''}],function(v){
+    if(!v.name||!String(v.name).trim()){toast('Nom requis');return;}
+    if(g){g.name=String(v.name).trim();g.unit=v.unit;g.price=Number(v.price)||0;}else{state.foodIng.push({id:'ing'+Date.now(),clientId:CID,name:String(v.name).trim(),unit:v.unit,price:Number(v.price)||0});}
+    renderClient('food');toast('Ingrédient enregistré');});
+}
+function foodRecipeOpen(id){state.recipes=state.recipes||[];state.foodIng=state.foodIng||[];
+  const r=id?state.recipes.find(function(x){return x.id===id;}):null;
+  FOOD_EDIT=r?{id:r.id,name:r.name||'',prix:r.prix!=null?r.prix:'',lines:(r.lines||[]).map(function(l){return {ingId:l.ingId,qty:l.qty};})}:{id:null,name:'',prix:'',lines:[]};
+  let mask=document.getElementById('food_mask');
+  if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="food_mask"><div class="modal" style="width:640px;max-width:96vw"><div class="mh"><h3 id="food_title">Fiche technique</h3><button class="x" onclick="document.getElementById(\'food_mask\').classList.remove(\'on\')">✕</button></div><div class="mb" id="food_body" style="max-height:74vh;overflow:auto"></div><div class="mf"><button class="btn ghost" onclick="document.getElementById(\'food_mask\').classList.remove(\'on\')">Annuler</button><button class="btn" onclick="foodRecipeSave()">Enregistrer la fiche</button></div></div></div>');mask=document.getElementById('food_mask');}
+  document.getElementById('food_title').textContent=id?'Modifier la fiche':'Nouvelle fiche technique';
+  foodRecipeBody();mask.classList.add('on');
+}
+function foodRecapHTML(cost,pv){const mg=pv-cost;const tx=pv>0?Math.round(mg/pv*100):0;const cm=pv>0?Math.round(cost/pv*100):0;
+  return '<div class="progline"><div class="lbl">Coût matière</div><div style="font-weight:800">'+cost.toFixed(2)+' €</div></div><div class="progline"><div class="lbl">Marge brute</div><div style="font-weight:800">'+mg.toFixed(2)+' € ('+tx+'%)</div></div><div class="progline"><div class="lbl">Food cost</div><div style="font-weight:800;color:'+(cm>35?'#c2410c':'#0b7d57')+'">'+cm+'%</div></div>';}
+function foodRecipeBody(){
+  const b=document.getElementById('food_body');if(!b)return;const e=FOOD_EDIT;const ings=state.foodIng.filter(function(g){return g.clientId===CID;});
+  const cost=foodCostOf({lines:e.lines});const pv=Number(e.prix)||0;
+  let lines='<div class="cm-sec">Ingrédients</div>';
+  if(!ings.length){lines+='<p class="tsub" style="margin:-2px 0 8px">Aucun ingrédient enregistré. Ajoutez-en d\'abord dans l\'onglet « Ingrédients ».</p>';}
+  lines+='<table style="width:100%;border-collapse:collapse"><tbody>';
+  lines+=e.lines.map(function(l,i){const opts=ings.map(function(g){return '<option value="'+g.id+'"'+(g.id===l.ingId?' selected':'')+'>'+escH(g.name)+' ('+escH(g.unit||'')+')</option>';}).join('');
+    return '<tr><td style="padding:3px 6px 3px 0"><select class="food-ln-ing" onchange="foodRecap()" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"><option value="">— Choisir un ingrédient —</option>'+opts+'</select></td><td style="padding:3px 6px;width:120px"><input class="food-ln-qty" type="number" min="0" step="0.001" value="'+(l.qty!=null?l.qty:'')+'" placeholder="Quantité" oninput="foodRecap()" style="width:110px;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="foodLineDel('+i+')">✕</button></td></tr>';}).join('');
+  lines+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="foodLineAdd()">＋ Ajouter un ingrédient</button>';
+  b.innerHTML='<div class="cm-grid"><div class="field"><label>Nom de la fiche *</label><input id="food_name" value="'+escH(e.name)+'" placeholder="Ex. Pizza Margherita"></div><div class="field"><label>Prix de vente (€)</label><input id="food_prix" type="number" step="0.01" value="'+escH(e.prix)+'" oninput="foodRecap()"></div></div>'+lines
+   +'<div class="cm-sec" style="margin-top:16px">Récapitulatif</div><div class="panel" id="food_recap"><div class="pb">'+foodRecapHTML(cost,pv)+'</div></div>';
+}
+function foodCollectLines(){const e=FOOD_EDIT;const ings=document.querySelectorAll('.food-ln-ing'),qts=document.querySelectorAll('.food-ln-qty');e.lines=[];for(let i=0;i<ings.length;i++){e.lines.push({ingId:ings[i].value||'',qty:Number(qts[i].value)||0});}
+  const nm=document.getElementById('food_name');if(nm)e.name=nm.value;const pr=document.getElementById('food_prix');if(pr)e.prix=pr.value;}
+function foodRecap(){foodCollectLines();const e=FOOD_EDIT;const cost=foodCostOf({lines:e.lines.filter(function(l){return l.ingId;})});const pv=Number(e.prix)||0;const box=document.querySelector('#food_recap .pb');if(box)box.innerHTML=foodRecapHTML(cost,pv);}
+function foodLineAdd(){foodCollectLines();FOOD_EDIT.lines.push({ingId:'',qty:''});foodRecipeBody();}
+function foodLineDel(i){foodCollectLines();FOOD_EDIT.lines.splice(i,1);foodRecipeBody();}
+function foodRecipeSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name||'').trim();const prix=Number(e.prix)||0;
+  if(!nm){toast('Nom de la fiche requis');return;}
+  const lines=e.lines.filter(function(l){return l.ingId;});
+  state.recipes=state.recipes||[];
+  if(e.id){const r=state.recipes.find(function(x){return x.id===e.id;});if(r){r.name=nm;r.prix=prix;r.lines=lines;delete r.cout;}}
+  else{state.recipes.push({id:'rec'+Date.now(),clientId:CID,name:nm,prix:prix,lines:lines});}
+  document.getElementById('food_mask').classList.remove('on');renderClient('food');toast('Fiche enregistrée');
+}
 async function fidLoad(){
   const body=document.getElementById('fid_body');if(!body)return;
   if(!SB||!CUR){body.innerHTML='<div class="empty" style="padding:24px">Connexion indisponible.</div>';return;}
