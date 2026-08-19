@@ -240,6 +240,15 @@
   .side .locked{opacity:.55}
   .side .lk{font-size:11px;margin-left:4px}
   .dp-search{width:100%;padding:10px 13px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;box-sizing:border-box}
+  .cl-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .cl-filters .dp-search{flex:1;min-width:220px;width:auto}
+  .cl-filters select{padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px;font-size:13px;background:#fff}
+  .dp-steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .dp-st{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:#94a3b8;background:#f1f5f9;border-radius:20px;padding:7px 13px}
+  .dp-st .n{width:20px;height:20px;border-radius:50%;background:#cbd5e1;color:#fff;display:grid;place-items:center;font-size:11px}
+  .dp-st.cur{color:#0f766e;background:#ecfdf5}.dp-st.cur .n{background:var(--brand)}
+  .dp-st.done{color:#0f766e}.dp-st.done .n{background:var(--brand)}
+  .dp-nav{display:flex;justify-content:space-between;align-items:center;margin-top:20px;gap:10px}
   .dp-search.sm{width:auto;padding:5px 9px;font-size:12px;margin-left:8px;font-weight:400}
   .dp-list{max-height:230px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .dp-grp{margin-bottom:12px}
@@ -493,6 +502,8 @@
       <div class="nav-i" onclick="adminNav('deploy',this)"><span class="ic">🚀</span> Déploiement</div>
       <div class="nav-i" onclick="adminNav('plans',this)"><span class="ic">💳</span> Abonnements</div>
       <div class="nav-i" onclick="adminNav('alerts',this)"><span class="ic">🔔</span> Alertes réseau</div>
+      <div class="cat">Gestion système</div>
+      <div class="nav-i" onclick="adminNav('system',this)"><span class="ic">⚙️</span> Réseaux & franchises</div>
       <div class="cat">Bibliothèques</div>
       <div class="nav-i" onclick="adminNav('catalog',this)"><span class="ic">📦</span> Catalogue</div>
       <div class="nav-i" onclick="adminNav('photos',this)"><span class="ic">🖼️</span> Photothèque</div>
@@ -757,7 +768,7 @@ function scrollToId(id){document.getElementById(id).scrollIntoView({behavior:'sm
 
 /* ============ ADMIN ============ */
 let adminView='dash';
-function adminNav(v,el){adminView=v;document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));if(el)el.classList.add('active');renderAdmin(v);}
+function adminNav(v,el){if(v==='deploy'&&el)dpResetWizard();adminView=v;document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));if(el)el.classList.add('active');renderAdmin(v);}
 function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('admin_main');
   const totalAlerts=state.clients.reduce((s,c)=>s+openAlerts(c.id).length,0);
   const actifs=state.clients.filter(c=>c.status==='actif').length;
@@ -769,13 +780,29 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+(openAlerts(c.id).length?'<span class="chip bad">'+openAlerts(c.id).length+' ⚠︎</span>':'<span class="chip ok">0</span>')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td></tr>').join('')
     +'</tbody></table></div></div><div class="panel"><div class="ph"><h3>Alertes récentes réseau</h3></div><div class="pb">'+netAlerts()+'</div></div></div>';
   } else if(adminView==='clients'){
-    m.innerHTML='<div class="topbar"><div><h1>Clients</h1><div class="sub">'+state.clients.length+' établissements</div></div><div class="actions"><button class="btn" onclick="openCreate()">＋ Nouveau client</button></div></div><div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Contact</th><th>Ville</th><th>Plan</th><th>Depuis</th><th>Statut</th><th></th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.contact+'</td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+new Date(c.since).toLocaleDateString('fr-FR')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td><td><button class="btn ghost sm" onclick="adminClientDetail(\''+c.est_code+'\')">Gérer →</button></td></tr>').join('')+'</tbody></table></div></div>';
+    const cities=Array.from(new Set((state.clients||[]).map(c=>c.city).filter(Boolean))).sort();
+    const nets=cmNetworks();
+    const optList=arr=>arr.map(x=>'<option value="'+escH(x)+'">'+escH(x)+'</option>').join('');
+    m.innerHTML='<div class="topbar"><div><h1>Clients</h1><div class="sub" id="cl_count">'+state.clients.length+' établissement(s)</div></div><div class="actions"><button class="btn ghost" onclick="exportClientsCsv()">⬇︎ Export Excel</button><button class="btn" onclick="openCreate()">＋ Nouveau client</button></div></div>'
+    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><div class="cl-filters"><input class="dp-search" id="cl_search" placeholder="Rechercher (nom, responsable, ville, email…)" oninput="clientApplyFilter()">'
+    +'<select id="cl_fnet" onchange="clientApplyFilter()"><option value="">Tous réseaux</option>'+optList(nets)+'</select>'
+    +'<select id="cl_fcity" onchange="clientApplyFilter()"><option value="">Toutes villes</option>'+optList(cities)+'</select>'
+    +'<select id="cl_fstatus" onchange="clientApplyFilter()"><option value="">Tous statuts</option><option>actif</option><option>essai</option><option>suspendu</option></select>'
+    +'<select id="cl_fplan" onchange="clientApplyFilter()"><option value="">Toutes formules</option><option>Starter</option><option>Business</option><option>Réseau</option></select>'
+    +'<button class="btn ghost sm" onclick="clientResetFilter()">Réinitialiser</button></div></div></div>'
+    +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Réseau</th><th>Contact</th><th>Ville</th><th>Plan</th><th>Statut</th><th></th></tr></thead><tbody id="cl_tbody">'
+    +state.clients.map(c=>'<tr data-est="'+escH(c.est_code)+'" data-search="'+escH((c.name+' '+(c.contact||'')+' '+(c.city||'')+' '+(c.owner_email||'')+' '+(c.network||'')).toLowerCase())+'" data-net="'+escH(c.network||'')+'" data-city="'+escH(c.city||'')+'" data-status="'+escH(c.status||'')+'" data-plan="'+escH(c.plan||'')+'"><td><div class="tname">'+escH(c.name)+'</div><div class="tsub">'+escH(c.type||'')+'</div></td><td>'+(c.network?'<span class="chip muted">'+escH(c.network)+'</span>':'—')+'</td><td>'+escH(c.contact||'—')+'</td><td>'+escH(c.city||'—')+'</td><td><span class="chip muted">'+escH(c.plan||'')+'</span></td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status||'')+'</span>')+'</td><td><button class="btn ghost sm" onclick="adminClientDetail(\''+c.est_code+'\')">Gérer →</button></td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='plans'){
     m.innerHTML='<div class="topbar"><div><h1>Abonnements</h1><div class="sub">Répartition & revenu récurrent</div></div></div><div class="kpis">'+['Starter','Business','Réseau'].map(p=>kpi(p,state.clients.filter(c=>c.plan===p).length+' clients',({Starter:'49 €',Business:'99 €','Réseau':'290 €'})[p]+'/mois','up')).join('')+kpi('MRR total',mrr+' €','récurrent','up')+'</div><div class="panel"><div class="ph"><h3>Détail</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Client</th><th>Plan</th><th>Mensualité</th><th>Statut</th></tr></thead><tbody>'
     +state.clients.map(c=>'<tr><td class="tname">'+c.name+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='alerts'){
     m.innerHTML='<div class="topbar"><div><h1>Alertes réseau</h1><div class="sub">'+totalAlerts+' alerte(s) sur le parc</div></div></div><div class="panel"><div class="pb">'+netAlerts(true)+'</div></div>';
+  } else if(adminView==='system'){
+    const nets=state.networks||[];
+    const rows=nets.map(n=>{const count=(state.clients||[]).filter(c=>c.network===n.name).length;return '<tr><td class="tname">'+escH(n.name)+'</td><td>'+count+' client'+(count>1?'s':'')+'</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="netRename(\''+n.id+'\')">✏️ Renommer</button> <button class="btn ghost sm" onclick="netDelete(\''+n.id+'\')">🗑</button></td></tr>';}).join('');
+    m.innerHTML='<div class="topbar"><div><h1>Réseaux de franchise</h1><div class="sub">Créez vos réseaux ici ; ils apparaîtront dans la liste déroulante à la création d\'un client et pour le déploiement groupé</div></div></div>'
+    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="net_name" placeholder="Nom du réseau (ex. G La Dalle)" style="flex:1;min-width:220px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px" onkeydown="if(event.key===\'Enter\')netAdd()"><button class="btn" onclick="netAdd()">＋ Créer le réseau</button></div><div id="net_msg" style="font-size:12px;margin-top:8px"></div></div></div>'
+    +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Réseau</th><th>Clients rattachés</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="3"><div class="empty" style="padding:20px">Aucun réseau. Créez-en un ci-dessus.</div></td></tr>')+'</tbody></table></div></div>';
   } else if(adminView==='photos'){
     const lib=adminPhotoTab;const list=state[lib]||[];
     m.innerHTML='<div class="topbar"><div><h1>Photothèque</h1><div class="sub">Images partagées à tous les clients — utilisées lors de la création d\'équipements et de produits</div></div><div class="actions"><label class="btn" style="cursor:pointer">⬆︎ Ajouter une photo<input type="file" accept="image/*" hidden onchange="adminPhotoUpload(event)"></label></div></div>'
@@ -815,36 +842,59 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="field"><label>N° TVA</label><input id="cd_tva" value="'+escH(c.tva||'')+'"></div>'
     +'<div class="field"><label>Formule</label><select id="cd_plan">'+planOpts+'</select></div>'
     +'<div class="field"><label>Prix mensuel (€)</label><input id="cd_price" type="number" value="'+escH(c.price!=null&&c.price!==''?c.price:'')+'"></div>'
-    +'<div class="field"><label>Réseau / franchise</label><input id="cd_network" list="dl_networks" value="'+escH(c.network||'')+'" placeholder="Ex. G La Dalle"></div>'
+    +'<div class="field"><label>Réseau / franchise</label><select id="cd_network">'+netOptionsHTML(c.network||'')+'</select></div>'
     +'</div><div style="margin-top:14px"><button class="btn" onclick="adminSaveEst(\''+c.est_code+'\')">💾 Enregistrer les infos</button> <span id="cd_savemsg" style="font-size:12px;margin-left:8px"></span></div></div></div>'
     +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Modules activés</h3></div><div class="pb"><div class="cm-mods" id="cd_modules">'
     +ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(mods.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')
     +'</div><div style="margin-top:12px"><button class="btn sm" onclick="adminSaveModules(\''+c.est_code+'\')">Enregistrer les modules</button></div></div></div>'
     +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Accès au compte (multi-sites)</h3></div><div class="pb"><div id="cd_access"><div class="empty">Chargement…</div></div>'
     +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="cd_addemail" type="email" placeholder="email à rattacher à cet établissement" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px"><button class="btn sm" onclick="adminAddAccess(\''+c.est_code+'\')">＋ Rattacher</button></div><div id="cd_addmsg" style="font-size:12px;margin-top:8px;line-height:1.5"></div></div></div>';
-    adminLoadAccess(c.est_code);cmFillNetworkList();
+    adminLoadAccess(c.est_code);
   } else if(adminView==='deploy'){
-    m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Ajouter du matériel, des produits ou des modules à un ou plusieurs clients — même un réseau entier d\'un coup</div></div></div>'
-    +'<div class="panel"><div class="pb">'
-    +'<div class="cm-sec">1. Clients ciblés</div>'
-    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span class="tsub">Sélection rapide par réseau :</span><select id="dp_network" onchange="dpSelectNetwork()" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:9px"><option value="">— Choisir un réseau —</option></select></div>'
-    +'<input class="dp-search" id="dp_csearch" placeholder="Rechercher un client…" oninput="dpFilterClients()">'
-    +'<label class="cm-mod" style="margin:8px 0;max-width:220px"><input type="checkbox" id="dp_all" onchange="dpToggleAll()"> Tout sélectionner</label>'
-    +'<div id="dp_clients" class="dp-list"></div><div id="dp_count" class="tsub" style="margin-top:6px">0 client sélectionné</div>'
-    +'<div class="cm-sec">2. Équipements à ajouter <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_equip\',this.value)"></div><div id="dp_equip"></div>'
-    +'<div class="cm-sec">Friteuses</div><div id="dp_frit" class="cm-mods"></div>'
-    +'<div class="cm-sec">Produits DLC <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_prod\',this.value)"></div><div id="dp_prod"></div>'
-    +'<div class="cm-sec">3. Modules (optionnel)</div><label class="cm-mod" style="max-width:380px"><input type="checkbox" id="dp_applymods" onchange="dpToggleModsPanel()"> Mettre à jour les modules des clients sélectionnés</label><div id="dp_modules" class="cm-mods" style="display:none;margin-top:8px">'+ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'" checked> '+escH(MODULE_LABELS[k])+'</label>').join('')+'</div>'
-    +'<div style="margin-top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="adminRunDeployMulti()">🚀 Déployer</button><span id="dp_msg" style="font-size:12px"></span></div>'
-    +'<p class="tsub" style="margin-top:8px;font-size:12px">Les éléments cochés sont <b>ajoutés</b> à l\'existant (rien n\'est supprimé) et remontent en temps réel chez les clients.</p>'
-    +'</div></div>';
-    dpRenderClients();dpFillNetworkSelect();dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';});catBoxes('dp_frit',FRITEUSE_CATALOG);dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';});
+    const steps=[['clients','Clients'],['equip','Équipements'],['frit','Friteuses'],['prod','Produits'],['modules','Modules'],['recap','Récapitulatif']];
+    const stepper='<div class="dp-steps">'+steps.map((s,i)=>'<div class="dp-st'+(i+1===dpStep?' cur':'')+(i+1<dpStep?' done':'')+'"><span class="n">'+(i+1<dpStep?'✓':(i+1))+'</span> '+s[1]+'</div>').join('')+'</div>';
+    const stepKey=steps[dpStep-1][0];let content='';
+    if(stepKey==='clients'){
+      content='<div class="cm-sec">Étape 1 — Choisir le(s) client(s)</div>'
+        +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span class="tsub">Sélection rapide par réseau :</span><select id="dp_network" onchange="dpSelectNetwork()" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:9px"><option value="">— Choisir un réseau —</option></select></div>'
+        +'<input class="dp-search" id="dp_csearch" placeholder="Rechercher un client…" oninput="dpFilterClients()">'
+        +'<label class="cm-mod" style="margin:8px 0;max-width:220px"><input type="checkbox" id="dp_all" onchange="dpToggleAll()"> Tout sélectionner</label>'
+        +'<div id="dp_clients" class="dp-list"></div><div id="dp_count" class="tsub" style="margin-top:6px">0 client sélectionné</div>';
+    } else if(stepKey==='equip'){
+      content='<div class="cm-sec">Étape 2 — Équipements à ajouter <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_equip\',this.value)"></div><div id="dp_equip"></div>';
+    } else if(stepKey==='frit'){
+      content='<div class="cm-sec">Étape 3 — Friteuses à ajouter</div><div id="dp_frit" class="cm-mods"></div>';
+    } else if(stepKey==='prod'){
+      content='<div class="cm-sec">Étape 4 — Produits DLC à ajouter <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_prod\',this.value)"></div><div id="dp_prod"></div>';
+    } else if(stepKey==='modules'){
+      content='<div class="cm-sec">Étape 5 — Modules (optionnel)</div><label class="cm-mod" style="max-width:400px"><input type="checkbox" id="dp_applymods" '+(dpSel.applyMods?'checked':'')+' onchange="dpToggleModsPanel()"> Mettre à jour les modules des clients sélectionnés</label><div id="dp_modules" class="cm-mods" style="'+(dpSel.applyMods?'':'display:none;')+'margin-top:8px">'+ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(dpSel.modules.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')+'</div>';
+    } else if(stepKey==='recap'){
+      content='<div class="cm-sec">Étape 6 — Récapitulatif</div>'+dpSummaryHTML()+'<div style="margin-top:16px"><button class="btn" onclick="dpConfirmDeploy()">🚀 Déployer</button> <span id="dp_msg" style="font-size:12px;margin-left:8px"></span></div>';
+    }
+    const navBtns='<div class="dp-nav">'+(dpStep>1?'<button class="btn ghost" onclick="dpPrev()">← Précédent</button>':'<span></span>')+(dpStep<steps.length?'<button class="btn" onclick="dpNext()">Suivant →</button>':'<span></span>')+'</div>';
+    m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Assistant pas à pas — ajouter matériel / produits / modules à un ou plusieurs clients</div></div></div>'+stepper+'<div class="panel"><div class="pb">'+content+navBtns+'</div></div>';
+    if(stepKey==='clients'){dpRenderClients();dpFillNetworkSelect();}
+    else if(stepKey==='equip'){dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';},dpSel.equip);}
+    else if(stepKey==='frit'){catBoxes('dp_frit',FRITEUSE_CATALOG,dpSel.frit);}
+    else if(stepKey==='prod'){dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';},dpSel.prod);}
   }
 }
 let adminSelEst=null;
 let adminDeploySel=null;
+let dpStep=1;
+let dpSel={clients:[],equip:[],frit:[],prod:[],applyMods:false,modules:[]};
+function dpResetWizard(){dpStep=1;dpSel={clients:[],equip:[],frit:[],prod:[],applyMods:false,modules:ALL_MODULES.slice()};}
+function dpCaptureStep(){
+  if(document.getElementById('dp_clients'))dpSel.clients=Array.from(document.querySelectorAll('#dp_clients input:checked')).map(x=>x.value);
+  if(document.getElementById('dp_equip'))dpSel.equip=cmSel('dp_equip');
+  if(document.getElementById('dp_frit'))dpSel.frit=cmSel('dp_frit');
+  if(document.getElementById('dp_prod'))dpSel.prod=cmSel('dp_prod');
+  if(document.getElementById('dp_applymods')){dpSel.applyMods=document.getElementById('dp_applymods').checked;dpSel.modules=Array.from(document.querySelectorAll('#dp_modules input:checked')).map(x=>x.value);}
+}
+function dpNext(){dpCaptureStep();if(dpStep===1&&!dpSel.clients.length){toast('Sélectionnez au moins un client.');return;}if(dpStep<6)dpStep++;renderAdmin('deploy');}
+function dpPrev(){dpCaptureStep();if(dpStep>1)dpStep--;renderAdmin('deploy');}
 function dpRenderClients(){const c=document.getElementById('dp_clients');if(!c)return;
-  c.innerHTML=(state.clients||[]).map(cl=>'<label class="cm-mod dp-cli" data-name="'+escH((cl.name+' '+cl.est_code+' '+(cl.city||'')).toLowerCase())+'"><input type="checkbox" value="'+cl.est_code+'" onchange="dpUpdateCount()"> '+escH(cl.name)+'</label>').join('')||'<div class="empty">Aucun client. Créez-en d\'abord dans l\'onglet Clients.</div>';
+  c.innerHTML=(state.clients||[]).map(cl=>'<label class="cm-mod dp-cli" data-name="'+escH((cl.name+' '+cl.est_code+' '+(cl.city||'')).toLowerCase())+'"><input type="checkbox" value="'+cl.est_code+'"'+(dpSel.clients.indexOf(cl.est_code)>=0?' checked':'')+' onchange="dpUpdateCount()"> '+escH(cl.name)+' <small style="color:#94a3b8">'+escH(cl.city||'')+'</small></label>').join('')||'<div class="empty">Aucun client. Créez-en d\'abord dans l\'onglet Clients.</div>';
   dpUpdateCount();}
 function dpFilterClients(){const q=((document.getElementById('dp_csearch')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#dp_clients label').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});}
 function dpToggleAll(){const on=document.getElementById('dp_all').checked;document.querySelectorAll('#dp_clients label').forEach(l=>{if(l.style.display!=='none'){const cb=l.querySelector('input');if(cb)cb.checked=on;}});dpUpdateCount();}
@@ -852,20 +902,32 @@ function dpUpdateCount(){const n=document.querySelectorAll('#dp_clients input:ch
 function dpFillNetworkSelect(){const s=document.getElementById('dp_network');if(!s)return;const nets=cmNetworks();s.innerHTML='<option value="">— Choisir un réseau —</option>'+nets.map(n=>'<option value="'+escH(n)+'">'+escH(n)+'</option>').join('');}
 function dpSelectNetwork(){const net=(document.getElementById('dp_network')||{}).value||'';document.querySelectorAll('#dp_clients input').forEach(cb=>{const c=(state.clients||[]).find(x=>x.est_code===cb.value);cb.checked=!!net&&c&&c.network===net;});const all=document.getElementById('dp_all');if(all)all.checked=false;dpUpdateCount();}
 function dpToggleModsPanel(){const p=document.getElementById('dp_modules');if(p)p.style.display=document.getElementById('dp_applymods').checked?'':'none';}
-function dpBuildPicker(containerId,catalog,groupOf){const groups={};(catalog||[]).forEach(it=>{const g=groupOf(it)||'Autres';(groups[g]=groups[g]||[]).push(it);});const c=document.getElementById(containerId);if(!c)return;
-  c.innerHTML=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cm-mods">'+groups[g].map(it=>'<label class="cm-mod" data-name="'+escH((it.name||'').toLowerCase())+'"><input type="checkbox" value="'+it.key+'"> '+(it.photo?'<img src="'+it.photo+'" style="width:20px;height:20px;border-radius:5px;object-fit:cover">':(it.icon?it.icon+' ':''))+escH(it.name)+'</label>').join('')+'</div></div>').join('');}
+function dpBuildPicker(containerId,catalog,groupOf,selected){const sel=selected||[];const groups={};(catalog||[]).forEach(it=>{const g=groupOf(it)||'Autres';(groups[g]=groups[g]||[]).push(it);});const c=document.getElementById(containerId);if(!c)return;
+  c.innerHTML=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cm-mods">'+groups[g].map(it=>'<label class="cm-mod" data-name="'+escH((it.name||'').toLowerCase())+'"><input type="checkbox" value="'+it.key+'"'+(sel.indexOf(it.key)>=0?' checked':'')+'> '+(it.photo?'<img src="'+it.photo+'" style="width:20px;height:20px;border-radius:5px;object-fit:cover">':(it.icon?it.icon+' ':''))+escH(it.name)+'</label>').join('')+'</div></div>').join('');}
 function dpFilter(containerId,q){q=(q||'').toLowerCase().trim();document.querySelectorAll('#'+containerId+' label.cm-mod').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});document.querySelectorAll('#'+containerId+' .dp-grp').forEach(gr=>{const any=Array.from(gr.querySelectorAll('label.cm-mod')).some(l=>l.style.display!=='none');gr.style.display=any?'':'none';});}
-async function adminRunDeployMulti(){
-  const codes=Array.from(document.querySelectorAll('#dp_clients input:checked')).map(x=>x.value);const msg=document.getElementById('dp_msg');
-  const set=(c,t)=>{if(msg){msg.style.color=c;msg.textContent=t;}};
-  if(!codes.length){set('#b91c1c','Sélectionnez au moins un client.');return;}
-  const eq=cmSel('dp_equip'),fr=cmSel('dp_frit'),pr=cmSel('dp_prod');
-  const applyMods=document.getElementById('dp_applymods').checked;
-  const modules=applyMods?Array.from(document.querySelectorAll('#dp_modules input:checked')).map(x=>x.value):null;
-  if(!eq.length&&!fr.length&&!pr.length&&!applyMods){set('#b91c1c','Sélectionnez au moins un élément ou activez la mise à jour des modules.');return;}
+function dpSummaryHTML(){
+  const clients=(state.clients||[]).filter(c=>dpSel.clients.indexOf(c.est_code)>=0);
+  const nm=(arr,cat)=>arr.map(k=>{const it=(cat||[]).find(x=>x.key===k);return it?it.name:k;});
+  const eqN=nm(dpSel.equip,EQUIP_CATALOG),frN=nm(dpSel.frit,FRITEUSE_CATALOG),prN=nm(dpSel.prod,PRODUCT_CATALOG);
+  const line=(label,arr)=>'<div style="margin-bottom:10px"><b>'+label+'</b> ('+arr.length+') : '+(arr.length?escH(arr.join(', ')):'<span class="tsub">aucun</span>')+'</div>';
+  let h='<div class="panel" style="background:#f8fafc"><div class="pb">';
+  h+='<div style="margin-bottom:10px"><b>Clients ciblés</b> ('+clients.length+') : '+(clients.length?escH(clients.map(c=>c.name).join(', ')):'<span class="tsub">aucun</span>')+'</div>';
+  h+=line('Équipements',eqN)+line('Friteuses',frN)+line('Produits',prN);
+  h+='<div><b>Modules</b> : '+(dpSel.applyMods?(escH(dpSel.modules.map(k=>MODULE_LABELS[k]).join(', '))+' — mis à jour'):'<span class="tsub">inchangés</span>')+'</div>';
+  h+='</div></div>';return h;
+}
+function dpConfirmDeploy(){
+  if(!dpSel.clients.length){toast('Aucun client sélectionné.');return;}
+  if(!dpSel.equip.length&&!dpSel.frit.length&&!dpSel.prod.length&&!dpSel.applyMods){toast('Rien à déployer : sélectionnez des éléments ou activez les modules.');return;}
+  const n=dpSel.clients.length;
+  openConfirm('Confirmer le déploiement','Déployer sur '+n+' client'+(n>1?'s':'')+' : '+dpSel.equip.length+' équipement(s), '+dpSel.frit.length+' friteuse(s), '+dpSel.prod.length+' produit(s)'+(dpSel.applyMods?' + mise à jour des modules':'')+' ?',adminRunDeployWizard);
+}
+async function adminRunDeployWizard(){
+  const msg=document.getElementById('dp_msg');const set=(c,t)=>{if(msg){msg.style.color=c;msg.textContent=t;}};
+  const codes=dpSel.clients.slice(),eq=dpSel.equip,fr=dpSel.frit,pr=dpSel.prod,modules=dpSel.applyMods?dpSel.modules:null;
   set('#334155','Déploiement sur '+codes.length+' client(s)…');let done=0,fail=0;
   for(const code of codes){try{await dpDeployOne(code,eq,fr,pr,modules);done++;}catch(e){fail++;}}
-  await loadAdminData();set(fail?'#b45309':'#047857','✅ Déployé sur '+done+' client(s)'+(fail?(' · '+fail+' échec(s)'):'')+'.');toast('Déploiement terminé ('+done+'/'+codes.length+')');
+  await loadAdminData();set(fail?'#b45309':'#047857','✅ Déployé sur '+done+' client(s)'+(fail?(' · '+fail+' échec(s)'):'')+'. Vous pouvez lancer un nouveau déploiement.');toast('Déploiement terminé ('+done+'/'+codes.length+')');
 }
 async function dpDeployOne(code,eq,fr,pr,modules){
   const {data,error}=await SB.from('app_state').select('data').eq('est_code',code).maybeSingle();if(error)throw error;
@@ -916,6 +978,16 @@ function adminRevoke(email,code){openConfirm('Retirer l\'accès','Retirer l\'acc
   try{const {data:{session}}=await SB.auth.getSession();const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'revoke',email,est_code:code})});
     const j=await res.json().catch(()=>({error:'Réponse invalide'}));if(!res.ok||j.error)throw new Error(j.error||('Erreur '+res.status));adminLoadAccess(code);toast('Accès retiré');}catch(e){toast('Erreur : '+(e.message||e));}
 });}
+function clientApplyFilter(){const g=id=>(document.getElementById(id)||{}).value||'';const q=g('cl_search').toLowerCase().trim(),net=g('cl_fnet'),city=g('cl_fcity'),st=g('cl_fstatus'),pl=g('cl_fplan');
+  let n=0;document.querySelectorAll('#cl_tbody tr').forEach(tr=>{const ok=(!q||(tr.getAttribute('data-search')||'').indexOf(q)>=0)&&(!net||tr.getAttribute('data-net')===net)&&(!city||tr.getAttribute('data-city')===city)&&(!st||tr.getAttribute('data-status')===st)&&(!pl||tr.getAttribute('data-plan')===pl);tr.style.display=ok?'':'none';if(ok)n++;});
+  const c=document.getElementById('cl_count');if(c)c.textContent=n+' / '+(state.clients||[]).length+' établissement(s)';}
+function clientResetFilter(){['cl_search','cl_fnet','cl_fcity','cl_fstatus','cl_fplan'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});clientApplyFilter();}
+function csvCell(v){v=(v==null?'':String(v));if(/[";\n]/.test(v))v='"'+v.replace(/"/g,'""')+'"';return v;}
+function exportClientsCsv(){const ests=Array.from(document.querySelectorAll('#cl_tbody tr')).filter(tr=>tr.style.display!=='none').map(tr=>tr.getAttribute('data-est'));
+  const cols=['Nom','Type','Réseau','Ville','Code postal','Adresse','Responsable','Téléphone','Email','Raison sociale','SIRET','TVA','Formule','Prix','Statut','Depuis'];
+  const lines=[cols.join(';')];
+  (state.clients||[]).filter(c=>ests.indexOf(c.est_code)>=0).forEach(c=>{lines.push([c.name,c.type,c.network,c.city,c.postal_code,c.address,c.contact,c.phone,c.owner_email,c.legal_name,c.siret,c.tva,c.plan,c.price,c.status,c.since].map(csvCell).join(';'));});
+  const csv='﻿'+lines.join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='clients-vigie.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('Export de '+ests.length+' client(s)');}
 let adminPhotoTab='equipPhotos';
 function setAdminPhotoTab(t){adminPhotoTab=t;renderAdmin('photos');}
 function adminPhotoDel(id){const p=state[adminPhotoTab].find(x=>x.id===id);openConfirm('Supprimer la photo','Voulez-vous vraiment supprimer '+((p&&p.label)||'cette photo')+' de la bibliothèque ? Cette action est définitive.',()=>{const i=state[adminPhotoTab].findIndex(x=>x.id===id);if(i>=0)state[adminPhotoTab].splice(i,1);renderAdmin('photos');saveAdminPhotos();toast('Photo supprimée de la bibliothèque');});}
@@ -925,15 +997,16 @@ function netAlerts(all){let items=[];state.clients.forEach(c=>openAlerts(c.id).f
   return items.map(o=>{const e=eqById(o.r.equipId);return '<div class="alert-i"><div class="ai bad">🌡️</div><div><div class="at">'+o.c.name+' — '+e.name+'</div><div class="as">'+o.r.value+' °C (cible '+seuilTxt(e)+') · '+(o.r.action||'action en attente')+'</div></div><div class="aw">'+ago(o.r.at)+'</div></div>';}).join('');}
 function openCreate(){cmPopulateCatalogs();cmResetForm();document.getElementById('cm_mask').classList.add('on');}
 function closeCreate(){document.getElementById('cm_mask').classList.remove('on');}
-function catBoxes(containerId,catalog){const c=document.getElementById(containerId);if(!c)return;c.innerHTML=catalog.map(it=>'<label class="cm-mod"><input type="checkbox" value="'+it.key+'"> '+(it.icon?it.icon+' ':'')+escH(it.name)+'</label>').join('');}
+function catBoxes(containerId,catalog,selected){const sel=selected||[];const c=document.getElementById(containerId);if(!c)return;c.innerHTML=catalog.map(it=>'<label class="cm-mod"><input type="checkbox" value="'+it.key+'"'+(sel.indexOf(it.key)>=0?' checked':'')+'> '+(it.icon?it.icon+' ':'')+escH(it.name)+'</label>').join('');}
 function cmPopulateCatalogs(){catBoxes('cm_equip',EQUIP_CATALOG);catBoxes('cm_frit',FRITEUSE_CATALOG);catBoxes('cm_prod',PRODUCT_CATALOG);}
 function cmApplyPreset(){const t=(document.getElementById('cm_type')||{}).value;const p=TYPE_PRESETS[t]||{equip:[],prod:[],frit:[]};
   document.querySelectorAll('#cm_equip input').forEach(c=>c.checked=(p.equip||[]).indexOf(c.value)>=0);
   document.querySelectorAll('#cm_frit input').forEach(c=>c.checked=(p.frit||[]).indexOf(c.value)>=0);
   document.querySelectorAll('#cm_prod input').forEach(c=>c.checked=(p.prod||[]).indexOf(c.value)>=0);}
 function cmSel(containerId){return Array.from(document.querySelectorAll('#'+containerId+' input:checked')).map(x=>x.value);}
-function cmNetworks(){const s=new Set();(state.clients||[]).forEach(c=>{if(c.network)s.add(c.network);});return Array.from(s).sort();}
-function cmFillNetworkList(){const dl=document.getElementById('dl_networks');if(dl)dl.innerHTML=cmNetworks().map(n=>'<option value="'+escH(n)+'">').join('');}
+function cmNetworks(){const s=new Set();(state.networks||[]).forEach(n=>{if(n&&n.name)s.add(n.name);});(state.clients||[]).forEach(c=>{if(c.network)s.add(c.network);});return Array.from(s).sort();}
+function netOptionsHTML(selected){return '<option value="">— Aucun réseau —</option>'+cmNetworks().map(n=>'<option value="'+escH(n)+'"'+(n===selected?' selected':'')+'>'+escH(n)+'</option>').join('');}
+function cmFillNetworkList(sel){const el=document.getElementById('cm_network');if(el)el.innerHTML=netOptionsHTML(sel||'');}
 function cmResetForm(){['cm_name','cm_code','cm_address','cm_cp','cm_city','cm_legal','cm_siret','cm_tva','cm_contact','cm_phone','cm_email','cm_price','cm_network'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el._touched=false;}});const s=document.getElementById('cm_start');if(s)s.value=new Date().toISOString().slice(0,10);document.querySelectorAll('#cm_modules input').forEach(c=>c.checked=true);const msg=document.getElementById('cm_msg');if(msg)msg.style.display='none';cmFillNetworkList();}
 function cmSuggestCode(){const c=document.getElementById('cm_code');if(c&&!c._touched){c.value=slugCode(document.getElementById('cm_name').value);}}
 function slugCode(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||('etab-'+Math.floor(Math.random()*1e4));}
@@ -1589,7 +1662,7 @@ document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mas
 +'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
 +'<div class="cm-sec">Informations légales</div><div class="cm-grid"><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>SIRET</label><input id="cm_siret" placeholder="123 456 789 00012"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
 +'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
-+'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise (optionnel)</label><input id="cm_network" list="dl_networks" placeholder="Ex. G La Dalle"><datalist id="dl_networks"></datalist></div></div>'
++'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise (optionnel)</label><select id="cm_network"><option value="">— Aucun réseau —</option></select></div></div>'
 +'<div class="cm-sec">Modules activés</div><div id="cm_modules" class="cm-mods"><label class="cm-mod"><input type="checkbox" value="haccp" checked> 🛡️ HACCP & hygiène</label><label class="cm-mod"><input type="checkbox" value="rh" checked> 👥 RH & Planning</label><label class="cm-mod"><input type="checkbox" value="food" checked> 💰 Food Cost</label><label class="cm-mod"><input type="checkbox" value="fid" checked> 🎮 Fidélisation</label></div>'
 +'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
 
@@ -1729,7 +1802,27 @@ async function loadAdminData(){
   const {data:rows}=await SB.from('app_state').select('est_code,data');
   (rows||[]).forEach(r=>{if(r.est_code==='__admin__')return;const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
   state.huiles=state.friteuses; reviveState(state);
-  await loadCatalog(); await loadAdminPhotos();
+  await loadCatalog(); await loadAdminPhotos(); await loadNetworks();
+}
+async function loadNetworks(){
+  try{const {data}=await SB.from('networks').select('*').order('name',{ascending:true});state.networks=data||[];}catch(e){state.networks=state.networks||[];}
+}
+async function netAdd(){const el=document.getElementById('net_name');const name=(el.value||'').trim();const msg=document.getElementById('net_msg');
+  if(!name){msg.style.color='#b91c1c';msg.textContent='Indiquez un nom de réseau.';return;}
+  try{const {error}=await SB.from('networks').insert({name});if(error)throw error;el.value='';await loadNetworks();renderAdmin('system');toast('Réseau créé');}
+  catch(e){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(String(e.message||'').indexOf('duplicate')>=0?'ce réseau existe déjà.':(e.message||e));}
+}
+function netRename(id){const n=(state.networks||[]).find(x=>x.id===id);if(!n)return;
+  openForm('Renommer le réseau',[{key:'name',label:'Nom du réseau',value:n.name}],async v=>{const name=(v.name||'').trim();if(!name){toast('Nom requis');return;}
+    try{const {error}=await SB.from('networks').update({name}).eq('id',id);if(error)throw error;
+      await SB.from('establishments').update({network:name}).eq('network',n.name);
+      await loadNetworks();await loadAdminData();renderAdmin('system');toast('Réseau renommé');}catch(e){toast('Erreur : '+(e.message||e));}});
+}
+function netDelete(id){const n=(state.networks||[]).find(x=>x.id===id);if(!n)return;
+  openConfirm('Supprimer le réseau','Supprimer le réseau « '+n.name+' » ? Les clients rattachés ne seront plus dans ce réseau (ils ne sont pas supprimés).',async()=>{
+    try{const {error}=await SB.from('networks').delete().eq('id',id);if(error)throw error;
+      await SB.from('establishments').update({network:null}).eq('network',n.name);
+      await loadNetworks();await loadAdminData();renderAdmin('system');toast('Réseau supprimé');}catch(e){toast('Erreur : '+(e.message||e));}});
 }
 async function loadCatalog(){
   try{const {data}=await SB.from('catalog').select('*').eq('active',true).order('sub',{ascending:true});
