@@ -1062,7 +1062,7 @@ async function submitCreate(){const g=id=>document.getElementById(id);
     await loadAdminData();closeCreate();renderAdmin('clients');
     let sm;
     if(j.invited) sm='Le compte « '+est_name+' » a bien été créé et validé.\n\nUn email d\'invitation vient d\'être envoyé à '+email+' pour qu\'il définisse son mot de passe et accède à son espace.\n\nVous n\'avez rien d\'autre à faire.';
-    else if(j.provisionalPassword) sm='Le compte « '+est_name+' » a été créé, mais l\'email automatique n\'a pas pu être envoyé'+(j.emailError?' ('+j.emailError+')':'')+'.\n\nTransmettez ces accès au client :\nEmail : '+email+'\nMot de passe provisoire : '+j.provisionalPassword;
+    else if(j.provisionalPassword) sm='Le compte « '+est_name+' » a bien été créé et validé ✅\n\nTransmettez ces accès au restaurateur :\n\n• Adresse : '+location.origin+location.pathname+'\n• Email : '+email+'\n• Mot de passe provisoire : '+j.provisionalPassword+'\n\nÀ sa première connexion, il choisira son propre mot de passe.';
     else sm='L\'établissement « '+est_name+' » a été rattaché au compte '+email+' (compte déjà existant).\n\nIl apparaîtra dans son sélecteur d\'établissements.';
     openConfirm('✅ Compte validé et créé',sm,function(){},'Parfait',false,true);
   }catch(e){show('#fef2f2','#b91c1c','Erreur : '+escH(e.message||e));}
