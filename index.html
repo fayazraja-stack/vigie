@@ -1977,12 +1977,38 @@ function fidActAdd(){fidCollect();const t=(document.getElementById('fidm_acttype
 function fidActDel(i){fidCollect();FID_EDIT.actions.splice(i,1);fidRenderModalBody();}
 function fidLotAdd(){fidCollect();FID_EDIT.lots.push({label:'',type:'lot',percent:10,cases:1,photo:'',photoPath:''});fidRenderModalBody();}
 function fidLotDel(i){fidCollect();FID_EDIT.lots.splice(i,1);fidRenderModalBody();}
-function fidTestProba(){fidCollect();const e=FID_EDIT;const segs=fidBuildSegments(e);if(!segs.length){toast('Ajoutez des lots');return;}
-  const total=segs.reduce(function(s,x){return s+(x.weight||0);},0)||1;const counts={};const N=5000;
+function fidTestProba(){fidCollect();
+  openInfoHTML('Test de Probabilités',
+   '<div style="font-size:13.5px;color:#64748b;margin:-2px 0 14px;text-align:left;line-height:1.5">Simule 1000 tirages pour vérifier que les probabilités configurées sont bien respectées par l\'algorithme</div>'
+   +'<div style="text-align:left"><button class="btn" style="border-radius:999px;background:#0b1220;border-color:#0b1220;padding:12px 24px;font-size:14.5px" onclick="fidTestProbaRun()">▷&nbsp;&nbsp;Lancer le test (1000 tirages)</button></div>'
+   +'<div id="fid_test_out" style="margin-top:16px"></div>');
+}
+function fidTestProbaRun(){
+  const e=FID_EDIT;const out=document.getElementById('fid_test_out');if(!out||!e)return;
+  const segs=fidBuildSegments(e);
+  if(!segs.length){out.innerHTML='<div class="tsub" style="text-align:left">Ajoutez des lots avant de lancer le test.</div>';return;}
+  const total=segs.reduce(function(s,x){return s+(x.weight||0);},0)||1;const N=1000;const counts={};
   for(let k=0;k<N;k++){let r=Math.random()*total;let pick=segs[segs.length-1];for(let i=0;i<segs.length;i++){r-=segs[i].weight||0;if(r<=0){pick=segs[i];break;}}counts[pick.label]=(counts[pick.label]||0)+1;}
   const byLabel={};segs.forEach(function(s){byLabel[s.label]=(byLabel[s.label]||0)+(s.weight||0);});
-  const rows=Object.keys(byLabel).map(function(l){const cfg=byLabel[l]/total*100;const obs=(counts[l]||0)/N*100;return '<tr><td class="tname">'+escH(l)+'</td><td>'+cfg.toFixed(2)+'%</td><td>'+obs.toFixed(2)+'%</td></tr>';}).join('');
-  openInfoHTML('Test probabilités — '+N+' tirages simulés','<table style="width:100%"><thead><tr><th style="text-align:left">Lot</th><th style="text-align:left">Configuré</th><th style="text-align:left">Observé</th></tr></thead><tbody>'+rows+'</tbody></table><div class="tsub" style="font-size:12px;margin-top:10px">Simulation locale : les tirages réels utilisent les mêmes probabilités, calculées côté serveur.</div>');}
+  if(e.hundredWin&&byLabel['Perdu']==null)byLabel['Perdu']=0;
+  const row=function(k,v){return '<div style="display:flex;justify-content:space-between;font-size:14px;margin:3px 0"><span style="color:#334155">'+k+'</span><b style="font-family:ui-monospace,monospace">'+v+'</b></div>';};
+  let maxDev=0;
+  const order=Object.keys(byLabel).sort(function(a,b){return (a==='Perdu'?-1:0)-(b==='Perdu'?-1:0);});
+  const cards=order.map(function(l){
+    const cfg=byLabel[l]/total*100;const n=counts[l]||0;const obs=n/N*100;const dev=obs-cfg;if(byLabel[l]>0)maxDev=Math.max(maxDev,Math.abs(dev));
+    return '<div style="background:#fff;border:1px solid #eef2f7;border-radius:16px;padding:14px 16px;margin-bottom:10px;text-align:left;box-shadow:0 2px 8px rgba(15,23,42,.04)">'
+     +'<div style="display:flex;justify-content:space-between;font-weight:800;font-size:16px;margin-bottom:8px"><span>'+escH(l)+'</span><span style="color:#64748b;font-weight:600;font-size:14px">'+n+' fois</span></div>'
+     +row('Probabilité configurée',cfg.toFixed(2)+'%')
+     +row('Résultat obtenu',obs.toFixed(2)+'%')
+     +row('Déviation',(dev>=0?'+':'−')+Math.abs(dev).toFixed(2)+'%')
+     +'<div style="height:8px;border-radius:999px;background:#f59e0b;overflow:hidden;margin-top:9px"><div style="height:100%;width:'+Math.min(100,obs).toFixed(1)+'%;background:#0b1220"></div></div>'
+     +'</div>';
+  }).join('');
+  const alert=maxDev>3.5
+    ?'<div style="border:1.5px solid #fca5a5;border-radius:14px;padding:12px 14px;color:#dc2626;font-size:13.5px;margin-bottom:14px;text-align:left;line-height:1.5">⚠ Déviation importante détectée (&gt;3.5%). L\'algorithme de probabilités pourrait avoir un problème.</div>'
+    :'<div style="border:1.5px solid #86efac;background:#f0fdf4;border-radius:14px;padding:12px 14px;color:#16a34a;font-size:13.5px;margin-bottom:14px;text-align:left;line-height:1.5">✓ Aucune déviation anormale (max '+maxDev.toFixed(2)+'%). Les probabilités configurées sont bien respectées.</div>';
+  out.innerHTML=alert+'<div style="font-weight:900;font-size:17px;margin:2px 0 10px;text-align:left">Résultats ('+N+' tirages)</div>'+cards;
+}
 function fidCollect(){const e=FID_EDIT;if(!e)return;
   const nm=document.getElementById('fidm_name');if(nm)e.name=nm.value;
   const gr=document.querySelector('input[name="fidm_gtype"]:checked');if(gr)e.gameType=gr.value;
