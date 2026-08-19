@@ -1059,14 +1059,12 @@ async function submitCreate(){const g=id=>document.getElementById(id);
     if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
     let network=g('cm_network').value;if(network==='__indep__')network='';
     try{await SB.from('establishments').update({network:network||null}).eq('est_code',est_code);}catch(e){}
-    if(j.invited){
-      show('#ecfdf5','#047857','✅ Compte créé.<br>Un <b>email d\'invitation</b> a été envoyé à <b>'+escH(email)+'</b> pour qu\'il définisse son mot de passe et accède à son espace. Vous n\'avez rien d\'autre à faire.');
-    } else if(j.provisionalPassword){
-      show('#fffbeb','#92400e','✅ Compte créé, mais l\'email automatique n\'a pas pu être envoyé'+(j.emailError?' ('+escH(j.emailError)+')':'')+'.<br>Transmettez manuellement ces accès :<br>Email : <b>'+escH(email)+'</b> · Mot de passe provisoire : <b>'+escH(j.provisionalPassword)+'</b>');
-    } else {
-      show('#ecfdf5','#047857','✅ Établissement <b>'+escH(est_name)+'</b> rattaché à <b>'+escH(email)+'</b> (compte existant).<br><small>Le nouvel établissement apparaîtra dans son sélecteur.</small>');
-    }
-    await loadAdminData();renderAdmin('clients');
+    await loadAdminData();closeCreate();renderAdmin('clients');
+    let sm;
+    if(j.invited) sm='Le compte « '+est_name+' » a bien été créé et validé.\n\nUn email d\'invitation vient d\'être envoyé à '+email+' pour qu\'il définisse son mot de passe et accède à son espace.\n\nVous n\'avez rien d\'autre à faire.';
+    else if(j.provisionalPassword) sm='Le compte « '+est_name+' » a été créé, mais l\'email automatique n\'a pas pu être envoyé'+(j.emailError?' ('+j.emailError+')':'')+'.\n\nTransmettez ces accès au client :\nEmail : '+email+'\nMot de passe provisoire : '+j.provisionalPassword;
+    else sm='L\'établissement « '+est_name+' » a été rattaché au compte '+email+' (compte déjà existant).\n\nIl apparaîtra dans son sélecteur d\'établissements.';
+    openConfirm('✅ Compte validé et créé',sm,function(){},'Parfait',false,true);
   }catch(e){show('#fef2f2','#b91c1c','Erreur : '+escH(e.message||e));}
   btn.disabled=false;btn.textContent=old;
 }
@@ -1495,7 +1493,7 @@ function formSubmit(){const vals={};document.querySelectorAll('#form_body [data-
 
 /* confirmation modale */
 let _confirmYes=null;
-function openConfirm(title,msg,onYes,okLabel,danger){_confirmYes=onYes;document.getElementById('cf_title').textContent=title;document.getElementById('cf_msg').textContent=msg;const ok=document.getElementById('cf_ok');if(ok){ok.textContent=okLabel||'Confirmer';ok.className='btn'+(danger===false?'':' danger');}document.getElementById('cf_mask').classList.add('on');}
+function openConfirm(title,msg,onYes,okLabel,danger,hideCancel){_confirmYes=onYes;document.getElementById('cf_title').textContent=title;document.getElementById('cf_msg').textContent=msg;const ok=document.getElementById('cf_ok');if(ok){ok.textContent=okLabel||'Confirmer';ok.className='btn'+(danger===false?'':' danger');}const cc=document.getElementById('cf_cancel');if(cc)cc.style.display=hideCancel?'none':'';document.getElementById('cf_mask').classList.add('on');}
 function confirmClose(){document.getElementById('cf_mask').classList.remove('on');}
 function confirmYes(){document.getElementById('cf_mask').classList.remove('on');if(_confirmYes)_confirmYes();}
 
@@ -1725,7 +1723,7 @@ document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_ma
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
 
 /* confirmation modal */
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cf_mask"><div class="modal" style="width:420px"><div class="mh"><h3 id="cf_title">Confirmer</h3><button class="x" onclick="confirmClose()">✕</button></div><div class="mb"><p id="cf_msg" style="color:var(--slate);font-size:14px;line-height:1.5"></p></div><div class="mf"><button class="btn ghost" onclick="confirmClose()">Annuler</button><button class="btn danger" id="cf_ok" onclick="confirmYes()">Confirmer</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cf_mask"><div class="modal" style="width:420px"><div class="mh"><h3 id="cf_title">Confirmer</h3><button class="x" onclick="confirmClose()">✕</button></div><div class="mb"><p id="cf_msg" style="color:var(--slate);font-size:14px;line-height:1.5;white-space:pre-wrap"></p></div><div class="mf"><button class="btn ghost" id="cf_cancel" onclick="confirmClose()">Annuler</button><button class="btn danger" id="cf_ok" onclick="confirmYes()">Confirmer</button></div></div></div>');
 
 /* image picker modal */
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="img_mask"><div class="modal" style="width:560px"><div class="mh"><h3>Choisir une image</h3><button class="x" onclick="imgClose()">✕</button></div><div class="mb"><p class="tsub" style="margin-bottom:10px">Photothèque partagée (gérée par l\'administrateur) — ou importez la vôtre.</p><div id="img_grid" class="imggrid"></div><div style="margin-top:14px"><label class="btn ghost" style="cursor:pointer">⬆︎ Importer ma photo<input type="file" accept="image/*" hidden onchange="imgUpload(event)"></label></div></div></div></div>');
