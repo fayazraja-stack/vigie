@@ -778,7 +778,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     m.innerHTML='<div class="topbar"><div><h1>Vue d\'ensemble</h1><div class="sub">Parc clients & santé du réseau</div></div><div class="actions"><button class="btn" onclick="openCreate()">＋ Nouveau client</button></div></div>'
     +'<div class="kpis">'+kpi('Clients actifs',actifs,'sur '+state.clients.length,'up')+kpi('Relevés du jour',state.clients.reduce((s,c)=>s+todayRel(c.id).length,0),'réseau','up')+kpi('Alertes ouvertes',totalAlerts,'à traiter',totalAlerts?'down':'up')+kpi('MRR',mrr+' €','récurrent','up')+'</div>'
     +'<div class="grid2"><div class="panel"><div class="ph"><h3>Établissements</h3><div class="actions"><button class="btn ghost sm" onclick="openCreate()">＋ Ajouter</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Ville</th><th>Plan</th><th>Alertes</th><th>Statut</th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+(openAlerts(c.id).length?'<span class="chip bad">'+openAlerts(c.id).length+' </span>':'<span class="chip ok">0</span>')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td></tr>').join('')
+    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+(openAlerts(c.id).length?'<span class="chip bad">'+openAlerts(c.id).length+' </span>':'<span class="chip ok">0</span>')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':(c.status==='prospect'?'<span class="chip muted">prospect</span>':'<span class="chip warn">'+escH(c.status||'essai')+'</span>'))+'</td></tr>').join('')
     +'</tbody></table></div></div><div class="panel"><div class="ph"><h3>Alertes récentes réseau</h3></div><div class="pb">'+netAlerts()+'</div></div></div>';
   } else if(adminView==='clients'){
     const cities=Array.from(new Set((state.clients||[]).map(c=>c.city).filter(Boolean))).sort();
@@ -788,14 +788,14 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="panel" style="margin-bottom:16px"><div class="pb"><div class="cl-filters"><input class="dp-search" id="cl_search" placeholder="Rechercher (nom, responsable, ville, email…)" oninput="clientApplyFilter()">'
     +'<select id="cl_fnet" onchange="clientApplyFilter()"><option value="">Tous réseaux</option>'+optList(nets)+'</select>'
     +'<select id="cl_fcity" onchange="clientApplyFilter()"><option value="">Toutes villes</option>'+optList(cities)+'</select>'
-    +'<select id="cl_fstatus" onchange="clientApplyFilter()"><option value="">Tous statuts</option><option>actif</option><option>essai</option><option>suspendu</option></select>'
+    +'<select id="cl_fstatus" onchange="clientApplyFilter()"><option value="">Tous statuts</option><option>actif</option><option>prospect</option><option>essai</option><option>suspendu</option></select>'
     +'<select id="cl_fplan" onchange="clientApplyFilter()"><option value="">Toutes formules</option><option>Starter</option><option>Business</option><option>Réseau</option></select>'
     +'<button class="btn ghost sm" onclick="clientResetFilter()">Réinitialiser</button></div></div></div>'
     +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Réseau</th><th>Contact</th><th>Ville</th><th>Plan</th><th>Statut</th><th></th></tr></thead><tbody id="cl_tbody">'
     +state.clients.map(c=>'<tr data-est="'+escH(c.est_code)+'" data-search="'+escH((c.name+' '+(c.contact||'')+' '+(c.city||'')+' '+(c.owner_email||'')+' '+(c.network||'')).toLowerCase())+'" data-net="'+escH(c.network||'')+'" data-city="'+escH(c.city||'')+'" data-status="'+escH(c.status||'')+'" data-plan="'+escH(c.plan||'')+'"><td><div class="tname">'+escH(c.name)+'</div><div class="tsub">'+escH(c.type||'')+'</div></td><td>'+(c.network?'<span class="chip muted">'+escH(c.network)+'</span>':'—')+'</td><td>'+escH(c.contact||'—')+'</td><td>'+escH(c.city||'—')+'</td><td><span class="chip muted">'+escH(c.plan||'')+'</span></td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status||'')+'</span>')+'</td><td><button class="btn ghost sm" onclick="adminClientDetail(\''+c.est_code+'\')">Gérer →</button></td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='plans'){
     m.innerHTML='<div class="topbar"><div><h1>Abonnements</h1><div class="sub">Répartition & revenu récurrent</div></div></div><div class="kpis">'+['Starter','Business','Réseau'].map(p=>kpi(p,state.clients.filter(c=>c.plan===p).length+' clients',({Starter:'49 €',Business:'99 €','Réseau':'290 €'})[p]+'/mois','up')).join('')+kpi('MRR total',mrr+' €','récurrent','up')+'</div><div class="panel"><div class="ph"><h3>Détail</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Client</th><th>Plan</th><th>Mensualité</th><th>Statut</th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td class="tname">'+c.name+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td></tr>').join('')+'</tbody></table></div></div>';
+    +state.clients.map(c=>'<tr><td class="tname">'+c.name+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':(c.status==='prospect'?'<span class="chip muted">prospect</span>':'<span class="chip warn">'+escH(c.status||'essai')+'</span>'))+'</td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='alerts'){
     m.innerHTML='<div class="topbar"><div><h1>Alertes réseau</h1><div class="sub">'+totalAlerts+' alerte(s) sur le parc</div></div></div><div class="panel"><div class="pb">'+netAlerts(true)+'</div></div>';
   } else if(adminView==='veille'){
@@ -1026,17 +1026,17 @@ async function veilleOpenings(){
   if(!/^\d{2,3}$/.test(dept)){box.innerHTML='<div class="empty" style="padding:20px;color:#b91c1c">Saisissez un code département valide (ex. 34, 75, 971).</div>';return;}
   box.innerHTML='<div class="empty" style="padding:24px">Recherche des immatriculations en cours…</div>';
   try{
-    let all=[];
-    for(let p=1;p<=3;p++){
-      const r=await fetch('https://recherche-entreprises.api.gouv.fr/search?activite_principale=56.10A,56.10B,56.10C&departement='+dept+'&per_page=25&page='+p);
-      const j=await r.json();const res=j.results||[];
+    let all=[];let scanned=0;
+    for(let p=1;p<=8;p++){
+      const r=await fetch('https://recherche-entreprises.api.gouv.fr/search?activite_principale=56.10A,56.10B,56.10C,56.30B&departement='+dept+'&per_page=25&page='+p);
+      const j=await r.json();const res=j.results||[];scanned+=res.length;
       res.forEach(c=>{const ms=c.matching_etablissements||[];const me=ms.find(e=>String(e.code_postal||'').slice(0,dept.length)===dept)||ms[0]||{};if(me.etat_administratif&&me.etat_administratif!=='A')return;const dc=me.date_creation||c.date_creation||'';if(dc==='1900-01-01')return;all.push({name:c.nom_complet||'—',dc:dc,adr:me.adresse||'',cp:me.code_postal||'',city:me.libelle_commune||'',siret:me.siret||''});});
-      if(!res.length)break;
+      if(res.length<25)break;
     }
     const seen={};all=all.filter(x=>{if(!x.siret)return true;if(seen[x.siret])return false;seen[x.siret]=1;return true;});
-    all.sort((a,b)=>(b.dc||'').localeCompare(a.dc||''));all=all.slice(0,40);
+    all.sort((a,b)=>(b.dc||'').localeCompare(a.dc||''));all=all.slice(0,60);
     if(!all.length){box.innerHTML='<div class="empty" style="padding:24px">Aucun restaurant actif trouvé pour ce département.</div>';return;}
-    box.innerHTML='<div class="panel"><div class="ph"><h3>'+all.length+' restaurant(s)</h3><div class="sub">Les plus récemment immatriculés en tête</div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Raison sociale</th><th>Adresse</th><th>Immatriculation</th><th></th></tr></thead><tbody>'
+    box.innerHTML='<div class="panel"><div class="ph"><h3>'+all.length+' restaurant(s) actif(s)</h3><div class="sub">Les plus récemment immatriculés en tête · '+scanned+' entreprises analysées · restauration (traditionnelle, rapide, cafétéria) et brasseries</div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Raison sociale</th><th>Adresse</th><th>Immatriculation</th><th></th></tr></thead><tbody>'
     +all.map(x=>{const adr=x.adr||[x.cp,x.city].filter(Boolean).join(' ');const data=encodeURIComponent(JSON.stringify({name:x.name,siret:x.siret,address:x.adr,cp:x.cp,city:x.city}));return '<tr><td class="tname">'+escH(x.name)+'</td><td class="tsub">'+escH(adr)+'</td><td style="white-space:nowrap">'+veFmtDate(x.dc)+'</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="veilleToClient(\''+data+'\')">Créer une fiche</button></td></tr>';}).join('')
     +'</tbody></table></div></div>';
   }catch(e){box.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Impossible de récupérer les données : '+escH(String(e.message||e))+'</div>';}
@@ -1144,6 +1144,26 @@ async function submitCreate(){const g=id=>document.getElementById(id);
     else if(j.provisionalPassword) sm='Le compte « '+est_name+' » a bien été créé et validé \n\nTransmettez ces accès au restaurateur :\n\n• Adresse : '+location.origin+location.pathname+'\n• Email : '+email+'\n• Mot de passe provisoire : '+j.provisionalPassword+'\n\nÀ sa première connexion, il choisira son propre mot de passe.';
     else sm='L\'établissement « '+est_name+' » a été rattaché au compte '+email+' (compte déjà existant).\n\nIl apparaîtra dans son sélecteur d\'établissements.';
     openConfirm(' Compte validé et créé',sm,function(){},'Parfait',false,true);
+  }catch(e){show('#fef2f2','#b91c1c','Erreur : '+escH(e.message||e));}
+  btn.disabled=false;btn.textContent=old;
+}
+async function submitProspect(){const g=id=>document.getElementById(id);
+  const est_name=g('cm_name').value.trim(), est_code=slugCode(g('cm_code').value.trim()||g('cm_name').value.trim());
+  const msg=g('cm_msg'), btn=g('cm_btn2');
+  const show=(bg,fg,html)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=html;};
+  if(!est_name){show('#fef2f2','#b91c1c','Le <b>nom de l\'établissement</b> suffit pour enregistrer la fiche, mais il est obligatoire.');return;}
+  if(!SB){show('#fef2f2','#b91c1c','Connexion Supabase indisponible.');return;}
+  btn.disabled=true;const old=btn.textContent;btn.textContent='Enregistrement…';show('#f1f5f9','#334155','Enregistrement de la fiche…');
+  try{
+    const {data:{session}}=await SB.auth.getSession();
+    let network=g('cm_network').value;if(network==='__indep__')network='';
+    const payload={action:'save_prospect',est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:g('cm_email').value.trim(),plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules:cmMods(),status:'prospect'};
+    const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify(payload)});
+    const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
+    if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
+    try{await SB.from('establishments').update({network:network||null}).eq('est_code',est_code);}catch(e){}
+    await loadAdminData();closeCreate();renderAdmin('clients');
+    openConfirm('Fiche enregistrée',"La fiche « "+est_name+" » a été enregistrée comme prospect (sans compte).\n\nVous la retrouverez dans la liste des clients avec le statut « prospect ». Dès que vous obtenez son email, ouvrez sa fiche → Accès, et créez son compte : les informations déjà saisies (adresse, SIRET…) seront conservées.",function(){},'Parfait',false,true);
   }catch(e){show('#fef2f2','#b91c1c','Erreur : '+escH(e.message||e));}
   btn.disabled=false;btn.textContent=old;
 }
@@ -1763,11 +1783,11 @@ function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une va
 /* create-client modal */
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal" style="width:640px;max-width:96vw"><div class="mh"><h3>Nouveau client — compte clé en main</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb" style="max-height:72vh;overflow:auto"><p class="tsub" style="margin-bottom:6px">Créez un accès complet et pré-configuré pour un restaurateur. Franchisé multi-sites : réutilisez le même email avec un nouveau code établissement.</p>'
 +'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
-+'<div class="cm-sec">Informations légales</div><p class="tsub" style="margin:-2px 0 8px;font-size:12px"> Saisissez le SIRET puis cliquez  : la raison sociale, l\'adresse, la ville et la TVA se remplissent automatiquement.</p><div class="cm-grid"><div class="field"><label>SIRET (remplissage auto)</label><div style="display:flex;gap:6px"><input id="cm_siret" placeholder="14 chiffres" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();cmFetchSiret();}"><button type="button" class="btn ghost sm" onclick="cmFetchSiret()" title="Récupérer les infos">Remplir</button></div></div><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
++'<div class="cm-sec">Informations légales</div><p class="tsub" style="margin:-2px 0 8px;font-size:12px"> Saisissez le SIRET puis cliquez « Remplir » : la raison sociale, l\'adresse, la ville et la TVA se remplissent automatiquement.</p><div class="cm-grid"><div class="field"><label>SIRET (remplissage auto)</label><div style="display:flex;gap:6px"><input id="cm_siret" placeholder="14 chiffres" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();cmFetchSiret();}"><button type="button" class="btn ghost sm" onclick="cmFetchSiret()" title="Récupérer les infos">Remplir</button></div></div><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
 +'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
 +'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise *</label><select id="cm_network"><option value="">— Choisir —</option></select></div></div>'
 +'<div class="cm-sec">Modules activés</div><div id="cm_modules" class="cm-mods"><label class="cm-mod"><input type="checkbox" value="haccp" checked> HACCP & hygiène</label><label class="cm-mod"><input type="checkbox" value="rh" checked> RH & Planning</label><label class="cm-mod"><input type="checkbox" value="food" checked> Food Cost</label><label class="cm-mod"><input type="checkbox" value="fid" checked> Fidélisation</label></div>'
-+'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
++'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn ghost" id="cm_btn2" onclick="submitProspect()" title="Enregistrer les informations sans créer de compte (utile quand vous n\'avez pas encore l\'email)">Enregistrer la fiche</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
 
 /* ===== Catalogue (base éditable) ===== */
 let catEditId=null, catEditKind='equip', catPhoto=null, catTab='equip';
