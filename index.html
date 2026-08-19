@@ -2003,35 +2003,71 @@ function pvDrawWheel(segs){
   ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle=b.color||'#0e7c58';ctx.lineWidth=3;ctx.stroke();
 }
 function pvRenderControls(){
-  const S=PV_STATE;const box=document.getElementById('pv_controls');if(!box)return;const b=S.brand;const cfg=S.game.config||{};const hasActions=(cfg.actions||[]).length>0;
+  const S=PV_STATE;const box=document.getElementById('pv_controls');if(!box)return;const b=S.brand;const cfg=S.game.config||{};const acts=cfg.actions||[];
+  const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
   const scratch=(cfg.gameType==='scratch');
-  let label,dis;
-  if(S.credits>0){dis=false;label=(S.played===0?(scratch?'Obtenir mon ticket':'Lancer la roue'):'Rejouer'+(S.credits>1?' ('+S.credits+')':''));}
-  else{dis=true;label=hasActions?'Réalisez une action pour jouer':'Indisponible';}
-  box.innerHTML='<button class="pv-btn" id="pv_spin" style="background:'+escH(b.color)+'"'+(dis?' disabled':'')+' onclick="pvSpin()">'+label+'</button>';
+  let label,dis=false;
+  if(S.credits>0){label=(S.played===0?(scratch?'Obtenir mon ticket':'Lancer la roue'):'Rejouer'+(S.credits>1?' ('+S.credits+')':''));}
+  else if(remaining.length){label=(S.played===0?(scratch?'Obtenir mon ticket':'Lancer la roue'):'Rejouer');}
+  else{dis=true;label=S.played>0?'Vous avez utilisé tous vos tours':'Indisponible';}
+  box.innerHTML='<button class="pv-btn" id="pv_spin" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+'"'+(dis?' disabled':'')+' onclick="pvMainBtn()">'+label+'</button>';
+}
+function pvMainBtn(){
+  const S=PV_STATE;if(!S||S.spinning)return;
+  if(S.credits>0){pvSpin();return;}
+  const acts=(S.game.config||{}).actions||[];const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
+  if(remaining.length)pvOpenActionModal(remaining[0]);
 }
 function pvRenderActions(){
   const S=PV_STATE;const cfg=S.game.config||{};const acts=cfg.actions||[];const box=document.getElementById('pv_actions');if(!box)return;
   const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
-  if(!remaining.length){box.innerHTML='';return;}
-  const heading=(S.credits<=0&&S.played===0)?'Pour jouer, réalisez une action :':'Gagnez un tour de plus :';
-  box.innerHTML='<div class="pv-actions"><div style="font-weight:800;margin:8px 0 8px;text-align:center">'+heading+'</div>'+remaining.map(function(a){
-    const pend=S.pending===a.id;
-    const btn=pend?'<button class="pv-go" style="background:'+escH(S.brand.color)+'" onclick="pvVerify(\''+a.id+'\')">J\'ai terminé</button>':'<button class="pv-go" style="background:'+escH(S.brand.color)+'" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url)+'\')">J\'y vais</button>';
-    return '<div class="pv-act"><span style="font-size:14px">'+escH(a.label)+'</span>'+btn+'</div>';
-  }).join('')+'</div>';
+  if(!remaining.length||S.credits>0){box.innerHTML='';return;}
+  box.innerHTML='<div class="tsub" style="font-size:12px;margin-top:8px">'+(S.played===0?'Une action rapide vous sera demandée pour débloquer le jeu.':'Réalisez une nouvelle action pour rejouer ('+remaining.length+' restante'+(remaining.length>1?'s':'')+').')+'</div>';
 }
-function pvDoAction(id,url){const S=PV_STATE;if(S.usedActions[id])return;S.pending=id;try{if(url)window.open(decodeURIComponent(url),'_blank');}catch(e){}
-  pvRenderActions();
+function pvModal(html){
+  var m=document.getElementById('pv_modal');
+  if(!m){document.body.insertAdjacentHTML('beforeend','<div id="pv_modal" style="position:fixed;inset:0;background:rgba(11,18,32,.62);z-index:9999;display:flex;align-items:center;justify-content:center;padding:18px"><div id="pv_modal_card" style="background:#fff;border-radius:20px;padding:24px 22px;text-align:center;max-width:340px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35);max-height:88vh;overflow-y:auto"></div></div>');m=document.getElementById('pv_modal');}
+  m.style.display='flex';document.getElementById('pv_modal_card').innerHTML=html;
+}
+function pvModalClose(){var m=document.getElementById('pv_modal');if(m)m.style.display='none';}
+function pvOpenActionModal(a){
+  const S=PV_STATE;const b=S.brand;
+  pvModal('<div style="width:64px;height:64px;border-radius:50%;background:'+pvHexA(b.color,0.14)+';display:grid;place-items:center;margin:0 auto 12px"><div style="width:34px;height:34px;border-radius:50%;background:'+escH(b.color)+'"></div></div>'
+   +'<h3 style="margin:0 0 6px;color:#0b1220">Encore une étape !</h3>'
+   +'<div style="font-size:14px;color:#475569;margin-bottom:6px">Pour débloquer votre '+(S.played===0?'partie':'nouvelle partie')+', réalisez l\'action suivante :</div>'
+   +'<div style="font-weight:900;font-size:16px;color:'+escH(b.color)+';margin-bottom:16px">'+escH(a.label||'')+'</div>'
+   +'<button class="pv-btn" id="pv_act_btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url||'')+'\')">J\'y vais</button>'
+   +'<div id="pv_act_hint" class="tsub" style="font-size:11.5px;margin-top:10px">Vous serez redirigé, puis vous reviendrez sur cette page.</div>'
+   +'<div style="margin-top:10px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Annuler</a></div>');
+}
+function pvDoAction(id,url){const S=PV_STATE;if(S.usedActions[id]||S.verifying)return;S.pending=id;
+  try{if(url)window.open(decodeURIComponent(url),'_blank');}catch(e){}
+  var btn=document.getElementById('pv_act_btn');
+  if(btn){btn.textContent='J\'ai terminé';btn.onclick=function(){pvVerify(id);};}
+  var hint=document.getElementById('pv_act_hint');if(hint)hint.textContent='Une fois l\'action réalisée, revenez ici puis cliquez sur « J\'ai terminé ».';
   var handler=function(){if(document.visibilityState==='visible'&&S.pending===id){document.removeEventListener('visibilitychange',handler);setTimeout(function(){pvVerify(id);},400);}};
   document.addEventListener('visibilitychange',handler);
 }
-function pvVerify(id){const S=PV_STATE;if(S.usedActions[id])return;S.pending=null;pvShowVerify(true);
-  setTimeout(function(){S.usedActions[id]=1;S.credits=(S.credits||0)+1;pvShowVerify(false);pvRenderControls();pvRenderActions();if(window.toast)toast('Action validée — tour débloqué');},3000);
+function pvGrantCredit(id){const S=PV_STATE;if(S.usedActions[id])return;S.usedActions[id]=1;S.credits=(S.credits||0)+1;pvRenderControls();pvRenderActions();}
+function pvVerify(id){const S=PV_STATE;if(S.usedActions[id]||S.verifying)return;S.pending=null;S.verifying=true;
+  var btn=document.getElementById('pv_act_btn');
+  if(!btn){S.verifying=false;pvGrantCredit(id);return;}
+  btn.disabled=true;btn.style.background='#cbd5e1';btn.style.color='#475569';btn.style.opacity='1';btn.onclick=null;
+  var hint=document.getElementById('pv_act_hint');if(hint)hint.textContent='Nous confirmons votre action, merci de patienter.';
+  var left=30;
+  function paint(el){el.innerHTML='<span class="pvspin" style="width:14px;height:14px;border-width:2px;border-color:#94a3b8;border-top-color:#475569;display:inline-block;vertical-align:-2px;margin:0 8px 0 0"></span>Vérification en cours… '+left+' s';}
+  paint(btn);
+  var iv=setInterval(function(){
+    left--;
+    var b2=document.getElementById('pv_act_btn');
+    if(!b2){clearInterval(iv);S.verifying=false;pvGrantCredit(id);return;}
+    if(left>0){paint(b2);return;}
+    clearInterval(iv);S.verifying=false;pvGrantCredit(id);
+    b2.disabled=false;b2.style.background=S.brand.color;b2.style.color=pvContrast(S.brand.color);b2.textContent='Cliquez pour accéder au jeu';
+    b2.onclick=function(){pvModalClose();try{var c=document.getElementById('pv_controls');if(c)c.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}};
+    var h2=document.getElementById('pv_act_hint');if(h2)h2.textContent='Action vérifiée. Bonne chance !';
+  },1000);
 }
-function pvShowVerify(on){var ov=document.getElementById('pv_verify');
-  if(on){if(!ov){document.body.insertAdjacentHTML('beforeend','<div id="pv_verify" style="position:fixed;inset:0;background:rgba(11,18,32,.72);z-index:9999;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:16px;padding:26px 28px;text-align:center;max-width:300px"><div class="pvspin"></div><div style="font-weight:800;margin-top:14px">Vérification en cours…</div><div class="tsub" style="font-size:12px;margin-top:4px">Nous confirmons votre action, un instant.</div></div></div>');}else ov.style.display='flex';}
-  else if(ov)ov.style.display='none';}
 async function pvSpin(){
   const S=PV_STATE;if(!S||S.spinning||S.credits<=0)return;
   const btn=document.getElementById('pv_spin');const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='';
@@ -2078,54 +2114,64 @@ function pvAfterSpin(j){
   else{const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='<div class="pv-result lose"><h3>Pas de chance…</h3><div>Vous n\'avez rien gagné cette fois-ci.</div></div>';pvRenderControls();pvRenderActions();}
 }
 function pvShowWinStep(){
-  const S=PV_STATE;const rz=document.getElementById('pv_result');const b=S.brand;if(!rz||!S.lastWin)return;
-  rz.innerHTML='<div class="pv-result win" style="text-align:center"><h3 style="color:#0b7d57">GAGNÉ !</h3>'
-   +(S.lastWin.photo?'<img src="'+S.lastWin.photo+'" style="width:84px;height:84px;object-fit:cover;border-radius:14px;margin:8px auto;display:block">':'')
-   +'<div style="font-weight:800;font-size:17px;margin-bottom:12px">'+escH(S.lastWin.prize||'')+'</div>'
-   +'<button class="pv-btn" style="background:'+escH(b.color)+';width:100%" onclick="pvShowLeadForm()">Recevoir mon lot</button></div>';
-  try{rz.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
+  const S=PV_STATE;const b=S.brand;if(!S.lastWin)return;
+  pvModal('<div style="font-size:14px;letter-spacing:4px;font-weight:900;color:#0b7d57;margin-bottom:4px">GAGNÉ !</div>'
+   +'<h3 style="margin:0 0 12px;color:#0b1220">Félicitations, vous remportez :</h3>'
+   +(S.lastWin.photo?'<img src="'+S.lastWin.photo+'" style="width:96px;height:96px;object-fit:cover;border-radius:16px;margin:0 auto 10px;display:block;box-shadow:0 8px 22px rgba(0,0,0,.15)">':'')
+   +'<div style="font-weight:900;font-size:19px;color:'+escH(b.color)+';margin-bottom:16px">'+escH(S.lastWin.prize||'')+'</div>'
+   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0" onclick="pvShowLeadForm()">Cliquez pour recevoir votre lot</button>');
 }
 function pvShowLeadForm(){
-  const S=PV_STATE;const rz=document.getElementById('pv_result');const b=S.brand;if(!rz)return;
-  rz.innerHTML='<div class="pv-result win"><h3>Vous avez gagné '+escH((S.lastWin&&S.lastWin.prize)||'')+' !</h3><div style="margin-bottom:10px">Renseignez vos coordonnées pour récupérer votre gain.</div>'
-   +'<div style="text-align:left"><input id="pv_prenom" placeholder="Prénom *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"><input id="pv_email" type="email" placeholder="Email *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"><input id="pv_tel" placeholder="Numéro de téléphone *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"></div>'
-   +'<button class="pv-btn" style="background:'+escH(b.color)+';width:100%" onclick="pvSubmitLead()">Valider</button>'
-   +'<div id="pv_lead_msg" style="font-size:12px;color:#b91c1c;margin-top:8px"></div>'
-   +'<div class="tsub" style="font-size:11px;margin-top:8px">Vos informations sont transmises au restaurant pour la remise du lot.</div></div>';
+  const S=PV_STATE;const b=S.brand;
+  const inp='width:100%;box-sizing:border-box;padding:11px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px;font-size:14px';
+  pvModal('<h3 style="margin:0 0 4px">Vous avez gagné '+escH((S.lastWin&&S.lastWin.prize)||'')+' !</h3>'
+   +'<div style="font-size:13px;color:#475569;margin-bottom:12px">Renseignez vos coordonnées pour récupérer votre gain.</div>'
+   +'<div style="text-align:left"><input id="pv_prenom" placeholder="Prénom *" style="'+inp+'"><input id="pv_email" type="email" placeholder="Email *" style="'+inp+'"><input id="pv_tel" type="tel" placeholder="Numéro de téléphone *" style="'+inp+'"></div>'
+   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:2px" onclick="pvSubmitLead()">Valider</button>'
+   +'<div id="pv_lead_msg" style="font-size:12px;color:#b91c1c;margin-top:8px;font-weight:700"></div>'
+   +'<div class="tsub" style="font-size:11px;margin-top:8px">Vos informations sont transmises au restaurant pour la remise du lot.</div>');
 }
 async function pvSubmitLead(){
   const S=PV_STATE;const gv=function(id){return (document.getElementById(id)||{}).value||'';};
   const prenom=gv('pv_prenom').trim(),tel=gv('pv_tel').trim(),email=gv('pv_email').trim();
   const msg=document.getElementById('pv_lead_msg');
   if(!prenom||!tel||!email){if(msg)msg.textContent='Merci de remplir tous les champs.';return;}
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(msg)msg.textContent='Adresse email invalide.';return;}
-  S.lead={name:prenom,phone:tel,email:email};
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){if(msg)msg.textContent='Adresse email invalide.';return;}
+  const telN=tel.replace(/[\s.\-()]/g,'');
+  if(!/^(?:\+33|0033|0)[1-9]\d{8}$/.test(telN)){if(msg)msg.textContent='Numéro de téléphone invalide (ex. 06 12 34 56 78).';return;}
+  S.lead={name:prenom,phone:telN,email:email};
   pvClaim();
 }
 async function pvClaim(){
-  const S=PV_STATE;if(!S.lastWin)return;const rz=document.getElementById('pv_result');
-  if(rz)rz.innerHTML='<div class="pv-result win"><h3>Un instant…</h3><div>Nous préparons votre lot.</div></div>';
+  const S=PV_STATE;if(!S.lastWin)return;
+  pvModal('<div class="pvspin"></div><h3 style="margin:14px 0 4px">Un instant…</h3><div style="font-size:13px;color:#475569">Nous préparons votre lot.</div>');
   try{
     const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify(Object.assign({action:'claim',id:S.lastWin.id},S.lead||{}))});
     const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Erreur');
     pvShowPrize(j.token,j.prize||S.lastWin.prize);
-  }catch(e){if(rz)rz.innerHTML='<div class="pv-result lose">Erreur lors de la validation. Réessayez.</div>';}
+  }catch(e){pvModal('<h3 style="margin:0 0 6px;color:#b91c1c">Erreur</h3><div style="font-size:13px;color:#475569;margin-bottom:12px">Erreur lors de la validation. Réessayez.</div><button class="pv-btn" style="background:'+escH(S.brand.color)+';color:'+pvContrast(S.brand.color)+';width:100%;margin-top:0" onclick="pvShowLeadForm()">Réessayer</button>');}
 }
-function pvShowPrize(token,prize){
-  const S=PV_STATE;const rz=document.getElementById('pv_result');if(!rz)return;const redeemLink=fidBase()+'?lot='+token;
+function pvPrizeHTML(token,prize){
+  const S=PV_STATE;const redeemLink=fidBase()+'?lot='+token;
   const b=S.brand;const cond=(S.game.config||{}).conditions||{};const photo=(S.lastWin&&S.lastWin.photo)||'';
   let condHtml='';
   if(cond.minOrder!=null&&cond.minOrder>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;font-size:12px;color:#92400e;margin-top:8px;text-align:left">Lot remis pour toute commande d\'au moins <b>'+Number(cond.minOrder).toFixed(0)+' €</b> chez '+escH(b.title||'l\'établissement')+'.</div>';
   if(cond.delayHours&&cond.delayHours>0)condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-size:12px;color:#1d4ed8;margin-top:8px;text-align:left">Lot récupérable <b>'+cond.delayHours+' h</b> après l\'obtention.</div>';
   condHtml+='<div style="background:#fef2f2;border-left:3px solid #dc2626;border-radius:10px;padding:9px 12px;font-size:12px;color:#991b1b;margin-top:8px;text-align:left">Faites valider le lot en caisse uniquement : une fois le QR code scanné et validé, il devient définitivement inutilisable.</div>';
-  rz.innerHTML='<div class="pv-result win" style="text-align:center"><h3 style="color:#0b7d57">Félicitations !</h3><div class="tsub">Vous avez gagné :</div>'
+  return '<h3 style="color:#0b7d57;margin:0 0 2px">Félicitations !</h3><div class="tsub">Vous avez gagné :</div>'
    +(photo?'<img src="'+photo+'" style="width:76px;height:76px;object-fit:cover;border-radius:14px;margin:8px auto 2px;display:block">':'')
    +'<div style="font-weight:900;font-size:18px;color:'+escH(b.color)+';margin-bottom:8px">'+escH(prize||'')+'</div>'
    +'<div class="pv-qr">'+qrImg(redeemLink,180)+'<div class="tsub" style="font-size:12px;margin-top:6px">Code : <b>'+escH(token)+'</b></div></div>'
-   +(condHtml?'<div style="font-weight:800;font-size:13px;margin-top:12px;color:#b45309">Conditions de récupération</div>'+condHtml:'')
-   +'<div class="tsub" style="margin-top:10px;font-size:12px;font-weight:700">Prenez une capture d\'écran pour conserver votre lot.</div></div>';
+   +'<div style="font-weight:800;font-size:13px;margin-top:12px;color:#b45309">Conditions de récupération</div>'+condHtml
+   +'<div class="tsub" style="margin-top:10px;font-size:12px;font-weight:700">Prenez une capture d\'écran pour conserver votre lot.</div>';
+}
+function pvShowPrize(token,prize){
+  const S=PV_STATE;
+  const html=pvPrizeHTML(token,prize);
+  pvModal(html+'<div style="margin-top:12px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Fermer</a></div>');
+  const rz=document.getElementById('pv_result');
+  if(rz){rz.innerHTML='<div class="pv-result win" style="text-align:center">'+html+'</div>';}
   S.lastWin=null;pvRenderControls();pvRenderActions();
-  try{rz.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}
 }
 function tempChart(cid){const days=[];const t=new Date();t.setHours(0,0,0,0);for(let i=4;i>=0;i--){const d=new Date(t);d.setDate(d.getDate()-i);days.push(d);}
   const rs=cRel(cid).filter(r=>r.equipId==='e1'||r.equipId==='e3');
