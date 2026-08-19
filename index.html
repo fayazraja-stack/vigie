@@ -1514,6 +1514,35 @@ function fidBase(){return location.origin+location.pathname;}
 function qrImg(text,size){size=size||180;try{if(window.qrcode){const qr=qrcode(0,'M');qr.addData(text);qr.make();return '<img src="'+qr.createDataURL(6,2)+'" width="'+size+'" height="'+size+'" alt="QR">';}}catch(e){}return '<div style="font-family:monospace;font-size:11px;word-break:break-all;padding:8px">'+escH(text)+'</div>';}
 function openInfoHTML(title,html){let mask=document.getElementById('info_mask');if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="info_mask"><div class="modal" style="width:440px;max-width:96vw"><div class="mh"><h3 id="info_title"></h3><button class="x" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">✕</button></div><div class="mb" id="info_body"></div></div></div>');mask=document.getElementById('info_mask');}document.getElementById('info_title').textContent=title;document.getElementById('info_body').innerHTML=html;mask.classList.add('on');}
 function fidWinsFor(gid){return FID_WINS.filter(w=>w.game_id===gid&&w.status!=='lost');}
+let FID_LOTS_PERIOD='month';
+function fidSetLotsPeriod(v){FID_LOTS_PERIOD=v;fidRenderBody();}
+function fidLotsRows(){const now=new Date();
+  return FID_WINS.filter(function(w){return w.status==='redeemed'&&w.redeemed_at;}).filter(function(w){
+    const d=new Date(w.redeemed_at);
+    if(FID_LOTS_PERIOD==='month')return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+    if(FID_LOTS_PERIOD==='last'){const lm=new Date(now.getFullYear(),now.getMonth()-1,1);return d.getMonth()===lm.getMonth()&&d.getFullYear()===lm.getFullYear();}
+    return true;});}
+function fidGameName(id){const g=FID_GAMES.find(function(x){return x.id===id;});return g?g.name:'';}
+function fidLotsCsv(){const rem=fidLotsRows();if(!rem.length){toast('Aucun lot remis sur cette période');return;}
+  let csv='﻿Date de remise;Produit offert;Jeu;Code\n';
+  rem.slice().sort(function(a,b){return new Date(a.redeemed_at)-new Date(b.redeemed_at);}).forEach(function(w){const d=new Date(w.redeemed_at);
+    csv+=d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+';"'+String(w.prize||'').replace(/"/g,'""')+'";"'+String(fidGameName(w.game_id)).replace(/"/g,'""')+'";'+w.token+'\n';});
+  const b=new Blob([csv],{type:'text/csv;charset=utf-8'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='lots_offerts_vigie.csv';a.click();toast('Export Excel (CSV) généré');}
+function fidLotsPdf(){const rem=fidLotsRows();if(!rem.length){toast('Aucun lot remis sur cette période');return;}
+  const est=(state.clients.find(function(c){return c.est_code===CUR;})||{});
+  const byP={};rem.forEach(function(w){byP[w.prize]=(byP[w.prize]||0)+1;});
+  const perLabel={month:'Mois en cours',last:'Mois dernier',all:'Tout l\'historique'};
+  const rows=rem.slice().sort(function(a,b){return new Date(a.redeemed_at)-new Date(b.redeemed_at);}).map(function(w){const d=new Date(w.redeemed_at);
+    return '<tr><td>'+d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</td><td>'+escH(w.prize||'')+'</td><td>'+escH(fidGameName(w.game_id))+'</td><td style="font-family:monospace">'+escH(w.token)+'</td></tr>';}).join('');
+  const tot=Object.keys(byP).sort(function(a,b){return byP[b]-byP[a];}).map(function(p){return '<tr><td>'+escH(p)+'</td><td style="text-align:right"><b>'+byP[p]+'</b></td></tr>';}).join('');
+  const w=window.open('','_blank');if(!w){toast('Autorisez les pop-ups pour générer le PDF');return;}
+  w.document.write('<html><head><title>Lots offerts — '+escH(est.name||CUR)+'</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:32px;color:#0b1220}h1{font-size:20px;margin:0}h2{font-size:15px;margin:24px 0 8px}table{width:100%;border-collapse:collapse;font-size:12.5px}th,td{border:1px solid #cbd5e1;padding:6px 9px;text-align:left}th{background:#f1f5f9}.sub{color:#64748b;font-size:12.5px;margin:4px 0 0}</style></head><body>'
+   +'<h1>Registre des lots offerts (gratuités)</h1><div class="sub">'+escH(est.name||'')+' — Période : '+perLabel[FID_LOTS_PERIOD]+' — Édité le '+new Date().toLocaleDateString('fr-FR')+' — '+rem.length+' lot(s) remis</div>'
+   +'<h2>Totaux par produit</h2><table><thead><tr><th>Produit offert</th><th style="text-align:right">Quantité remise</th></tr></thead><tbody>'+tot+'</tbody></table>'
+   +'<h2>Détail des remises</h2><table><thead><tr><th>Date de remise</th><th>Produit</th><th>Jeu</th><th>Code</th></tr></thead><tbody>'+rows+'</tbody></table>'
+   +'<div class="sub" style="margin-top:18px">Document généré par Vigie — remises validées en caisse via code unique.</div>'
+   +'</body></html>');
+  w.document.close();setTimeout(function(){try{w.print();}catch(e){}},400);}
 function fidExportLeads(){const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});if(!leads.length){toast('Aucun contact à exporter');return;}
   const rows=[['Nom','Email','Telephone','Lot','Statut','Date']];
   leads.forEach(function(w){rows.push([w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
@@ -1798,7 +1827,19 @@ function fidRenderBody(){
     html+='<div class="panel"><div class="ph"><h3>Détail par jeu</h3></div><div class="pb" style="padding:0">'+(FID_GAMES.length?('<table><thead><tr><th>Jeu</th><th>Type</th><th>Lots gagnés</th><th>Remis</th><th>En attente</th><th>Taux de remise</th></tr></thead><tbody>'
       +FID_GAMES.map(function(g){const ws=fidWinsFor(g.id);const rd=ws.filter(function(w){return w.status==='redeemed';}).length;const pd=ws.length-rd;const tx=ws.length?Math.round(rd/ws.length*100):0;const cfg=g.config||{};
         return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+fidTypeName(cfg.gameType)+'</span></td><td>'+ws.length+'</td><td>'+rd+'</td><td>'+(pd?'<span class="chip warn">'+pd+'</span>':'0')+'</td><td><span class="chip '+(tx>=50?'ok':'muted')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:30px">Aucun jeu pour le moment.</div>')+'</div></div>';
-    html+=helpBox([['Lots gagnés','nombre de gains générés par vos jeux (chaque gain crée un code unique).'],['Lots remis','gains validés en caisse — le code devient définitivement invalide.'],['En attente','gains non encore récupérés : pensez à les valider quand le client se présente.']]);
+    const rem=fidLotsRows();const byP={};rem.forEach(function(w){byP[w.prize]=(byP[w.prize]||0)+1;});
+    const perLabel={month:'Mois en cours',last:'Mois dernier',all:'Tout l\'historique'};
+    html+='<div class="panel" style="margin-top:16px"><div class="ph"><h3>Lots remis — gratuités offertes</h3><div class="sub">Registre des produits offerts via les jeux (sortie de stock), à transmettre à votre comptable</div></div><div class="pb">'
+     +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px">'
+     +'<select onchange="fidSetLotsPeriod(this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px">'+['month','last','all'].map(function(k){return '<option value="'+k+'"'+(FID_LOTS_PERIOD===k?' selected':'')+'>'+perLabel[k]+'</option>';}).join('')+'</select>'
+     +'<span class="chip muted">'+rem.length+' lot'+(rem.length>1?'s':'')+' remis</span>'
+     +'<span style="flex:1"></span>'
+     +'<button class="btn ghost sm" onclick="fidLotsCsv()">Export Excel (CSV)</button> <button class="btn ghost sm" onclick="fidLotsPdf()">Export PDF</button></div>'
+     +(rem.length?('<table><thead><tr><th>Produit offert</th><th>Quantité remise</th><th>Dernière remise</th></tr></thead><tbody>'
+       +Object.keys(byP).sort(function(a,b){return byP[b]-byP[a];}).map(function(p){const last=rem.filter(function(w){return w.prize===p;}).sort(function(a,b){return new Date(b.redeemed_at)-new Date(a.redeemed_at);})[0];return '<tr><td class="tname">'+escH(p)+'</td><td><b>'+byP[p]+'</b></td><td class="tsub">'+veFmtDate(last.redeemed_at)+'</td></tr>';}).join('')
+       +'</tbody></table>'):'<div class="empty" style="padding:24px">Aucun lot remis sur cette période.</div>')
+     +'</div></div>';
+    html+=helpBox([['Lots gagnés','nombre de gains générés par vos jeux (chaque gain crée un code unique).'],['Lots remis','gains validés en caisse — le code devient définitivement invalide.'],['En attente','gains non encore récupérés : pensez à les valider quand le client se présente.'],['Gratuités & stock','chaque lot remis est une sortie de stock offerte : exportez le registre en Excel ou PDF pour votre comptable.']]);
     body.innerHTML=html;return;
   }
   html='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Tous les jeux ('+FID_GAMES.length+')</h3></div><div class="pb" style="padding:0;overflow:auto">'
@@ -2491,7 +2532,13 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     b.innerHTML='<div class="tb-title-k">Tablette opérationnelle</div><div class="tb-title">Choisissez un module</div><div class="modgrid">'
     +'<div class="modcard" onclick="tbGo(\'badge\')"><div class="k">● Module</div><h3>Badgeuse</h3><p>Pointage arrivée / départ des employés.</p><div class="arr">Ouvrir →</div></div>'
     +'<div class="modcard" onclick="tbGo(\'identify\')"><div class="k">● Module</div><h3>HACCP</h3><p>Hygiène & sécurité alimentaire.</p><div class="arr">Ouvrir →</div></div>'
+    +'<div class="modcard" onclick="tbGo(\'fidval\')"><div class="k">● Module</div><h3>Fidélité</h3><p>Valider le lot gagné d\'un client (code du QR).</p><div class="arr">Ouvrir →</div></div>'
     +'</div>';
+  } else if(s==='fidval'){
+    b.innerHTML='<div class="tb-title-k">Fidélité</div><div class="tb-title" style="margin-bottom:18px">Valider un lot</div>'
+    +'<div style="max-width:520px;margin:0 auto"><div class="field"><label>Code du lot (présenté par le client)</label><input id="tbf_code" placeholder="EX. 7KQ2M9AB" autocomplete="off" style="text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:3px;font-size:20px;text-align:center;padding:14px" onkeydown="if(event.key===\'Enter\')tbFidCheck()"></div>'
+    +'<button class="btn block" onclick="tbFidCheck()">Vérifier le code</button>'
+    +'<div id="tbf_out" style="margin-top:16px"></div></div>';
   } else if(s==='badge'){
     b.innerHTML='<div class="tb-title-k">Badgeuse</div><div class="tb-title">Qui pointe ?</div><div class="emp-grid">'
     +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>'<div class="emp" onclick="badgePoint(\''+e.name+'\')"><div class="av">'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl"><span class="chip muted">'+e.role+'</span></div></div>').join('')+'</div>';
@@ -2708,6 +2755,37 @@ function rhPlanExport(){const cid=CID;const days=['Lundi','Mardi','Mercredi','Je
 function rhHeuresExport(){const cid=CID;const rows=state.employees.filter(e=>e.clientId===cid&&(!histEmp||e.id===histEmp)).map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return [e.name,j.name||'',fmtHM(e.hReal*60),(e.joursTravailles||0)+' j'];});
   _simplePdf('Historique des heures',new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})+' - Convention '+state.rhCfg.convention,['Employe','Poste','Total heures','Jours'],[40,210,360,470],[26,20,16,10],rows,'historique-heures-vigie.pdf');}
 function h6(go,k,title,desc,bg,cnt){return '<div class="h6" style="background:'+bg+'" onclick="tbGo(\''+go+'\')"><div class="ic">'+({temp:'',clean:'',oil:'',dlclabel:'',recep:'',trace:''})[go]+'</div><div class="k">'+k+'</div><h3>'+title+'</h3><p>'+desc+'</p><div class="arr">→</div>'+(cnt?'<div class="cnt"> '+cnt+'</div>':'')+'</div>';}
+function tbFidEst(){const c=state.clients.find(function(x){return x.id===CID;})||{};return c.est_code||window.CUR||'';}
+async function tbFidCheck(){
+  const el=document.getElementById('tbf_code');const out=document.getElementById('tbf_out');if(!el||!out)return;
+  const t=(el.value||'').trim().toUpperCase();if(!t){out.innerHTML='';return;}
+  out.innerHTML='<div style="text-align:center;color:var(--muted)">Vérification…</div>';
+  try{
+    const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:'lookup',token:t,est_code:tbFidEst()})});
+    const j=await r.json();
+    if(j.error==='not_found'){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Code introuvable. Vérifiez la saisie.</div>';return;}
+    if(j.error==='wrong_estab'){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Ce lot appartient à un autre établissement.</div>';return;}
+    if(j.error){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Erreur : '+escH(j.error)+'</div>';return;}
+    if(j.status==='redeemed'){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Lot déjà récupéré le '+veFmtDate(j.redeemed_at)+'. Code invalide.</div>';return;}
+    const notYet=j.available_at&&new Date(j.available_at)>new Date();
+    let cond='';
+    if(j.min_order!=null&&j.min_order>0)cond+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;font-size:13px;color:#92400e;margin-top:8px;text-align:left">Commande minimum : <b>'+Number(j.min_order).toFixed(0)+' €</b></div>';
+    if(notYet){const av=new Date(j.available_at);cond+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-size:13px;color:#1d4ed8;margin-top:8px;text-align:left">Récupérable à partir du <b>'+av.toLocaleDateString('fr-FR')+' '+av.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b></div>';}
+    out.innerHTML='<div style="background:#e7f7f0;border-radius:14px;padding:16px;text-align:center"><div style="font-size:12px;font-weight:800;letter-spacing:2px;color:#0b7d57">LOT À REMETTRE</div><div style="font-size:21px;font-weight:900;margin:6px 0 2px">'+escH(j.prize||'')+'</div><div style="font-size:12px;color:var(--muted);font-family:ui-monospace,monospace;letter-spacing:2px">Code '+escH(t)+'</div>'+cond
+     +'<button class="btn block" style="margin-top:12px"'+(notYet?' disabled':'')+' onclick="tbFidRedeem(\''+escH(t)+'\')">'+(notYet?'Pas encore récupérable':'✓ Valider la remise du lot')+'</button><div id="tbf_msg" style="font-size:13px;margin-top:8px;font-weight:700"></div></div>';
+  }catch(e){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Erreur réseau. Réessayez.</div>';}
+}
+async function tbFidRedeem(t){
+  const msg=document.getElementById('tbf_msg');
+  try{
+    const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:'redeem',token:t,est_code:tbFidEst()})});
+    const j=await r.json();
+    if(j.ok){toast('Lot validé et remis');const el=document.getElementById('tbf_code');if(el)el.value='';const out=document.getElementById('tbf_out');if(out)out.innerHTML='<div style="background:#e7f7f0;border-radius:12px;padding:14px;color:#0b7d57;font-weight:800;text-align:center">✓ Lot remis. Le code est désormais invalide.</div>';return;}
+    if(j.error==='already_redeemed'){if(msg){msg.style.color='#be123c';msg.textContent='Ce lot a déjà été validé.';}return;}
+    if(j.error==='not_yet'){if(msg){msg.style.color='#b45309';msg.textContent='Lot pas encore récupérable.';}return;}
+    if(msg){msg.style.color='#be123c';msg.textContent='Erreur : '+(j.error||'?');}
+  }catch(e){if(msg){msg.style.color='#be123c';msg.textContent='Erreur réseau.';}}
+}
 function tbLogin(id){tbUser=id;tbStack=[];tbRender('haccp');}
 function badgePoint(name){toast(' '+name.split(' ')[0]+' pointé(e) à '+fmtTime(new Date()));setTimeout(()=>{tbStack=[];tbRender('modules');},600);}
 function tbToggleClean(id){const t=state.postes.find(p=>p.id===id);t.done=!t.done;t.by=t.done?(state.employees.find(e=>e.id===tbUser)||{}).name||'—':null;t.at=t.done?new Date():null;tbRender('clean');toast(t.done?'✓ Nettoyage signé : '+t.name:'Décoché');}
