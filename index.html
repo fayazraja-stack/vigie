@@ -589,6 +589,8 @@
 .pv-foot{margin-top:18px;font-size:11px;color:#94a3b8}
 .pvspin{width:42px;height:42px;border-radius:50%;border:5px solid #e2e8f0;border-top-color:#0e7c58;margin:0 auto;animation:pvspin 0.8s linear infinite}
 @keyframes pvspin{to{transform:rotate(360deg)}}
+.pvstar{display:inline-block;font-size:36px;line-height:1;color:#f5b301;text-shadow:0 3px 8px rgba(245,179,1,.4);margin:0 2px;animation:pvstar .55s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes pvstar{0%{transform:scale(0) rotate(-25deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
 /* ---- Documents façon Drive ---- */
 .drive-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
 .drive-folder{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 14px 12px;text-align:center;cursor:pointer;transition:box-shadow .15s,transform .15s;position:relative}
@@ -2032,10 +2034,19 @@ function pvModal(html){
 function pvModalClose(){var m=document.getElementById('pv_modal');if(m)m.style.display='none';}
 function pvOpenActionModal(a){
   const S=PV_STATE;const b=S.brand;
-  pvModal('<div style="width:64px;height:64px;border-radius:50%;background:'+pvHexA(b.color,0.14)+';display:grid;place-items:center;margin:0 auto 12px"><div style="width:34px;height:34px;border-radius:50%;background:'+escH(b.color)+'"></div></div>'
-   +'<h3 style="margin:0 0 6px;color:#0b1220">Encore une étape !</h3>'
-   +'<div style="font-size:14px;color:#475569;margin-bottom:6px">Pour débloquer votre '+(S.played===0?'partie':'nouvelle partie')+', réalisez l\'action suivante :</div>'
-   +'<div style="font-weight:900;font-size:16px;color:'+escH(b.color)+';margin-bottom:16px">'+escH(a.label||'')+'</div>'
+  const isReview=/avis|google|review|étoile|etoile|note/i.test((a.label||'')+' '+(a.url||''));
+  const stars='<div style="margin:2px 0 12px">'+[0,1,2,3,4].map(function(i){return '<span class="pvstar" style="animation-delay:'+(i*0.12)+'s">★</span>';}).join('')+'</div>';
+  let head;
+  if(isReview){
+    head=stars
+     +'<h3 style="margin:0 0 10px;color:'+escH(b.color)+';font-size:19px;letter-spacing:.3px;line-height:1.25">LAISSEZ-NOUS VOTRE AVIS 5 ÉTOILES</h3>'
+     +'<div style="font-size:14.5px;color:#334155;margin-bottom:16px;line-height:1.55">Notez <b>'+escH(b.title||'notre restaurant')+'</b> sur Google puis revenez sur cette page pour participer à notre jeu.</div>';
+  }else{
+    head='<div style="width:64px;height:64px;border-radius:50%;background:'+pvHexA(b.color,0.14)+';display:grid;place-items:center;margin:0 auto 12px"><span style="font-size:30px;color:'+escH(b.color)+'">★</span></div>'
+     +'<h3 style="margin:0 0 8px;color:'+escH(b.color)+';font-size:19px;line-height:1.25">'+escH((a.label||'').toUpperCase())+'</h3>'
+     +'<div style="font-size:14.5px;color:#334155;margin-bottom:16px;line-height:1.55">Réalisez cette action puis revenez sur cette page pour participer à notre jeu.</div>';
+  }
+  pvModal(head
    +'<button class="pv-btn" id="pv_act_btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url||'')+'\')">J\'y vais</button>'
    +'<div id="pv_act_hint" class="tsub" style="font-size:11.5px;margin-top:10px">Vous serez redirigé, puis vous reviendrez sur cette page.</div>'
    +'<div style="margin-top:10px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Annuler</a></div>');
@@ -2055,13 +2066,12 @@ function pvVerify(id){const S=PV_STATE;if(S.usedActions[id]||S.verifying)return;
   btn.disabled=true;btn.style.background='#cbd5e1';btn.style.color='#475569';btn.style.opacity='1';btn.onclick=null;
   var hint=document.getElementById('pv_act_hint');if(hint)hint.textContent='Nous confirmons votre action, merci de patienter.';
   var left=30;
-  function paint(el){el.innerHTML='<span class="pvspin" style="width:14px;height:14px;border-width:2px;border-color:#94a3b8;border-top-color:#475569;display:inline-block;vertical-align:-2px;margin:0 8px 0 0"></span>Vérification en cours… '+left+' s';}
-  paint(btn);
+  btn.innerHTML='<span class="pvspin" style="width:14px;height:14px;border-width:2px;border-color:#94a3b8;border-top-color:#475569;display:inline-block;vertical-align:-2px;margin:0 8px 0 0"></span>Vérification en cours…';
   var iv=setInterval(function(){
     left--;
     var b2=document.getElementById('pv_act_btn');
     if(!b2){clearInterval(iv);S.verifying=false;pvGrantCredit(id);return;}
-    if(left>0){paint(b2);return;}
+    if(left>0)return;
     clearInterval(iv);S.verifying=false;pvGrantCredit(id);
     b2.disabled=false;b2.style.background=S.brand.color;b2.style.color=pvContrast(S.brand.color);b2.textContent='Cliquez pour accéder au jeu';
     b2.onclick=function(){pvModalClose();try{var c=document.getElementById('pv_controls');if(c)c.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}};
