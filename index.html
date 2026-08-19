@@ -784,16 +784,16 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +list.map(p=>'<div class="imgchoice" style="cursor:default"><img src="'+p.url+'"><span>'+p.label+'</span><button class="btn ghost sm" style="margin-top:6px" onclick="adminPhotoDel(\''+p.id+'\')">🗑</button></div>').join('')
     +'</div></div></div>';
   } else if(adminView==='catalog'){
-    const kinds=[['equip','Équipements',EQUIP_CATALOG],['friteuse','Friteuses',FRITEUSE_CATALOG],['product','Produits (DLC)',PRODUCT_CATALOG]];
-    let body='';
-    kinds.forEach(function(kk){const k=kk[0],label=kk[1],arr=kk[2]||[];
-      const groups={};arr.forEach(it=>{const g=it.sub||'—';(groups[g]=groups[g]||[]).push(it);});
-      body+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>'+label+' ('+arr.length+')</h3><div class="actions"><button class="btn ghost sm" onclick="catNew(\''+k+'\')">＋ Ajouter</button></div></div><div class="pb">';
-      if(!arr.length){body+='<div class="empty">Aucun élément. Cliquez « Ajouter ».</div>';}
-      else{body+=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'📦')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(k==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+(it.min)+'→'+(it.max)+'°C</div>':'<div class="tsub">'+escH(it.sub||'')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')">✏️</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')">🗑</button></div></div>').join('')+'</div></div>').join('');}
-      body+='</div></div>';
-    });
-    m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Base d\'équipements, friteuses et produits — sert au déploiement chez les clients</div></div><div class="actions"><button class="btn" onclick="catNew(\'equip\')">＋ Nouvel élément</button></div></div><div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="cat_search" placeholder="Rechercher dans le catalogue…" oninput="catFilter()"></div></div>'+body;
+    const tabs=[['equip','🌡️ Équipements',EQUIP_CATALOG],['friteuse','🍟 Friteuses',FRITEUSE_CATALOG],['product','🏷️ Produits DLC',PRODUCT_CATALOG]];
+    const cur=tabs.find(t=>t[0]===catTab)||tabs[0];const arr=cur[2]||[];
+    const groupOf=cur[0]==='equip'?(it=>catLabel(it.cat)||'Autres'):(cur[0]==='product'?(it=>it.sub||'Sans sous-catégorie'):(it=>'Toutes'));
+    const groups={};arr.forEach(it=>{const g=groupOf(it);(groups[g]=groups[g]||[]).push(it);});
+    let cards='';
+    if(!arr.length){cards='<div class="empty" style="padding:40px 20px">Aucun élément ici. Cliquez « ＋ Ajouter » pour en créer un.</div>';}
+    else{cards=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+' <span style="color:#94a3b8;font-weight:600">('+groups[g].length+')</span></div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'📦')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(cur[0]==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+it.min+'→'+it.max+'°C</div>':'<div class="tsub">'+escH(it.sub||'—')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')" title="Modifier">✏️</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')" title="Supprimer">🗑</button></div></div>').join('')+'</div></div>').join('');}
+    m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Votre base d\'équipements, friteuses et produits — sert à déployer chez les clients sans ressaisie</div></div><div class="actions"><button class="btn" onclick="catNew(\''+cur[0]+'\')">＋ Ajouter dans '+escH(cur[1].replace(/^\S+\s/,''))+'</button></div></div>'
+    +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
+    +'<div class="panel"><div class="pb"><input class="dp-search" id="cat_search" placeholder="Rechercher…" oninput="catFilter()" style="margin-bottom:16px">'+cards+'</div></div>';
   } else if(adminView==='clientDetail'){
     const c=state.clients.find(x=>x.est_code===adminSelEst);
     if(!c){adminNav('clients',null);return;}
@@ -815,17 +815,19 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="field"><label>N° TVA</label><input id="cd_tva" value="'+escH(c.tva||'')+'"></div>'
     +'<div class="field"><label>Formule</label><select id="cd_plan">'+planOpts+'</select></div>'
     +'<div class="field"><label>Prix mensuel (€)</label><input id="cd_price" type="number" value="'+escH(c.price!=null&&c.price!==''?c.price:'')+'"></div>'
+    +'<div class="field"><label>Réseau / franchise</label><input id="cd_network" list="dl_networks" value="'+escH(c.network||'')+'" placeholder="Ex. G La Dalle"></div>'
     +'</div><div style="margin-top:14px"><button class="btn" onclick="adminSaveEst(\''+c.est_code+'\')">💾 Enregistrer les infos</button> <span id="cd_savemsg" style="font-size:12px;margin-left:8px"></span></div></div></div>'
     +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Modules activés</h3></div><div class="pb"><div class="cm-mods" id="cd_modules">'
     +ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(mods.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')
     +'</div><div style="margin-top:12px"><button class="btn sm" onclick="adminSaveModules(\''+c.est_code+'\')">Enregistrer les modules</button></div></div></div>'
     +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Accès au compte (multi-sites)</h3></div><div class="pb"><div id="cd_access"><div class="empty">Chargement…</div></div>'
     +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="cd_addemail" type="email" placeholder="email à rattacher à cet établissement" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px"><button class="btn sm" onclick="adminAddAccess(\''+c.est_code+'\')">＋ Rattacher</button></div><div id="cd_addmsg" style="font-size:12px;margin-top:8px;line-height:1.5"></div></div></div>';
-    adminLoadAccess(c.est_code);
+    adminLoadAccess(c.est_code);cmFillNetworkList();
   } else if(adminView==='deploy'){
     m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Ajouter du matériel, des produits ou des modules à un ou plusieurs clients — même un réseau entier d\'un coup</div></div></div>'
     +'<div class="panel"><div class="pb">'
     +'<div class="cm-sec">1. Clients ciblés</div>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span class="tsub">Sélection rapide par réseau :</span><select id="dp_network" onchange="dpSelectNetwork()" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:9px"><option value="">— Choisir un réseau —</option></select></div>'
     +'<input class="dp-search" id="dp_csearch" placeholder="Rechercher un client…" oninput="dpFilterClients()">'
     +'<label class="cm-mod" style="margin:8px 0;max-width:220px"><input type="checkbox" id="dp_all" onchange="dpToggleAll()"> Tout sélectionner</label>'
     +'<div id="dp_clients" class="dp-list"></div><div id="dp_count" class="tsub" style="margin-top:6px">0 client sélectionné</div>'
@@ -836,7 +838,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div style="margin-top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="adminRunDeployMulti()">🚀 Déployer</button><span id="dp_msg" style="font-size:12px"></span></div>'
     +'<p class="tsub" style="margin-top:8px;font-size:12px">Les éléments cochés sont <b>ajoutés</b> à l\'existant (rien n\'est supprimé) et remontent en temps réel chez les clients.</p>'
     +'</div></div>';
-    dpRenderClients();dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';});catBoxes('dp_frit',FRITEUSE_CATALOG);dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';});
+    dpRenderClients();dpFillNetworkSelect();dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';});catBoxes('dp_frit',FRITEUSE_CATALOG);dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';});
   }
 }
 let adminSelEst=null;
@@ -847,6 +849,8 @@ function dpRenderClients(){const c=document.getElementById('dp_clients');if(!c)r
 function dpFilterClients(){const q=((document.getElementById('dp_csearch')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#dp_clients label').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});}
 function dpToggleAll(){const on=document.getElementById('dp_all').checked;document.querySelectorAll('#dp_clients label').forEach(l=>{if(l.style.display!=='none'){const cb=l.querySelector('input');if(cb)cb.checked=on;}});dpUpdateCount();}
 function dpUpdateCount(){const n=document.querySelectorAll('#dp_clients input:checked').length;const el=document.getElementById('dp_count');if(el)el.textContent=n+' client'+(n>1?'s':'')+' sélectionné'+(n>1?'s':'');}
+function dpFillNetworkSelect(){const s=document.getElementById('dp_network');if(!s)return;const nets=cmNetworks();s.innerHTML='<option value="">— Choisir un réseau —</option>'+nets.map(n=>'<option value="'+escH(n)+'">'+escH(n)+'</option>').join('');}
+function dpSelectNetwork(){const net=(document.getElementById('dp_network')||{}).value||'';document.querySelectorAll('#dp_clients input').forEach(cb=>{const c=(state.clients||[]).find(x=>x.est_code===cb.value);cb.checked=!!net&&c&&c.network===net;});const all=document.getElementById('dp_all');if(all)all.checked=false;dpUpdateCount();}
 function dpToggleModsPanel(){const p=document.getElementById('dp_modules');if(p)p.style.display=document.getElementById('dp_applymods').checked?'':'none';}
 function dpBuildPicker(containerId,catalog,groupOf){const groups={};(catalog||[]).forEach(it=>{const g=groupOf(it)||'Autres';(groups[g]=groups[g]||[]).push(it);});const c=document.getElementById(containerId);if(!c)return;
   c.innerHTML=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cm-mods">'+groups[g].map(it=>'<label class="cm-mod" data-name="'+escH((it.name||'').toLowerCase())+'"><input type="checkbox" value="'+it.key+'"> '+(it.photo?'<img src="'+it.photo+'" style="width:20px;height:20px;border-radius:5px;object-fit:cover">':(it.icon?it.icon+' ':''))+escH(it.name)+'</label>').join('')+'</div></div>').join('');}
@@ -875,7 +879,7 @@ async function dpDeployOne(code,eq,fr,pr,modules){
 }
 function adminClientDetail(code){adminSelEst=code;adminView='clientDetail';document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));renderAdmin('clientDetail');}
 async function adminSaveEst(code){const g=id=>document.getElementById(id);const ms=g('cd_savemsg');
-  const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,price:g('cd_price').value===''?null:Number(g('cd_price').value)};
+  const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,network:g('cd_network').value.trim()||null,price:g('cd_price').value===''?null:Number(g('cd_price').value)};
   ms.style.color='#334155';ms.textContent='Enregistrement…';
   try{const {error}=await SB.from('establishments').update(row).eq('est_code',code);if(error)throw error;await loadAdminData();ms.style.color='#047857';ms.textContent='✅ Enregistré';toast('Infos client enregistrées');}catch(e){ms.style.color='#b91c1c';ms.textContent='Erreur : '+(e.message||e);}
 }
@@ -896,7 +900,8 @@ async function adminAddAccess(code){const g=id=>document.getElementById(id);cons
   try{const c=state.clients.find(x=>x.est_code===code)||{};const {data:{session}}=await SB.auth.getSession();
     const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'provision',email,est_code:code,est_name:c.name,type:c.type,city:c.city,plan:c.plan,modules:c.modules})});
     const j=await res.json().catch(()=>({error:'Réponse invalide'}));if(!res.ok||j.error)throw new Error(j.error||('Erreur '+res.status));
-    if(j.provisionalPassword){msg.style.color='#047857';msg.innerHTML='✅ Compte créé — mot de passe provisoire : <b>'+escH(j.provisionalPassword)+'</b>';}
+    if(j.invited){msg.style.color='#047857';msg.innerHTML='✅ Compte créé — <b>email d\'invitation envoyé</b> à '+escH(email)+'.';}
+    else if(j.provisionalPassword){msg.style.color='#92400e';msg.innerHTML='✅ Compte créé (email non envoyé) — mot de passe provisoire : <b>'+escH(j.provisionalPassword)+'</b>';}
     else {msg.style.color='#047857';msg.textContent='✅ Email rattaché (compte existant).';}
     g('cd_addemail').value='';adminLoadAccess(code);
   }catch(e){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}
@@ -927,7 +932,9 @@ function cmApplyPreset(){const t=(document.getElementById('cm_type')||{}).value;
   document.querySelectorAll('#cm_frit input').forEach(c=>c.checked=(p.frit||[]).indexOf(c.value)>=0);
   document.querySelectorAll('#cm_prod input').forEach(c=>c.checked=(p.prod||[]).indexOf(c.value)>=0);}
 function cmSel(containerId){return Array.from(document.querySelectorAll('#'+containerId+' input:checked')).map(x=>x.value);}
-function cmResetForm(){['cm_name','cm_code','cm_address','cm_cp','cm_city','cm_legal','cm_siret','cm_tva','cm_contact','cm_phone','cm_email','cm_price'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el._touched=false;}});const s=document.getElementById('cm_start');if(s)s.value=new Date().toISOString().slice(0,10);document.querySelectorAll('#cm_modules input').forEach(c=>c.checked=true);const msg=document.getElementById('cm_msg');if(msg)msg.style.display='none';cmApplyPreset();}
+function cmNetworks(){const s=new Set();(state.clients||[]).forEach(c=>{if(c.network)s.add(c.network);});return Array.from(s).sort();}
+function cmFillNetworkList(){const dl=document.getElementById('dl_networks');if(dl)dl.innerHTML=cmNetworks().map(n=>'<option value="'+escH(n)+'">').join('');}
+function cmResetForm(){['cm_name','cm_code','cm_address','cm_cp','cm_city','cm_legal','cm_siret','cm_tva','cm_contact','cm_phone','cm_email','cm_price','cm_network'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el._touched=false;}});const s=document.getElementById('cm_start');if(s)s.value=new Date().toISOString().slice(0,10);document.querySelectorAll('#cm_modules input').forEach(c=>c.checked=true);const msg=document.getElementById('cm_msg');if(msg)msg.style.display='none';cmFillNetworkList();}
 function cmSuggestCode(){const c=document.getElementById('cm_code');if(c&&!c._touched){c.value=slugCode(document.getElementById('cm_name').value);}}
 function slugCode(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||('etab-'+Math.floor(Math.random()*1e4));}
 function cmMods(){return Array.from(document.querySelectorAll('#cm_modules input:checked')).map(x=>x.value);}
@@ -951,8 +958,12 @@ async function submitCreate(){const g=id=>document.getElementById(id);
     const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify(payload)});
     const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
     if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
-    if(j.provisionalPassword){
-      show('#ecfdf5','#047857','✅ Compte clé en main créé.<br>Email : <b>'+escH(email)+'</b><br>Mot de passe provisoire : <b style="font-size:15px">'+escH(j.provisionalPassword)+'</b><br><small>Transmettez ces accès au restaurateur — il choisira son mot de passe à la 1re connexion.</small>');
+    const network=g('cm_network').value.trim();
+    if(network){try{await SB.from('establishments').update({network}).eq('est_code',est_code);}catch(e){}}
+    if(j.invited){
+      show('#ecfdf5','#047857','✅ Compte créé.<br>Un <b>email d\'invitation</b> a été envoyé à <b>'+escH(email)+'</b> pour qu\'il définisse son mot de passe et accède à son espace. Vous n\'avez rien d\'autre à faire.');
+    } else if(j.provisionalPassword){
+      show('#fffbeb','#92400e','✅ Compte créé, mais l\'email automatique n\'a pas pu être envoyé'+(j.emailError?' ('+escH(j.emailError)+')':'')+'.<br>Transmettez manuellement ces accès :<br>Email : <b>'+escH(email)+'</b> · Mot de passe provisoire : <b>'+escH(j.provisionalPassword)+'</b>');
     } else {
       show('#ecfdf5','#047857','✅ Établissement <b>'+escH(est_name)+'</b> rattaché à <b>'+escH(email)+'</b> (compte existant).<br><small>Le nouvel établissement apparaîtra dans son sélecteur.</small>');
     }
@@ -1578,12 +1589,13 @@ document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mas
 +'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
 +'<div class="cm-sec">Informations légales</div><div class="cm-grid"><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>SIRET</label><input id="cm_siret" placeholder="123 456 789 00012"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
 +'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
-+'<div class="cm-sec">Abonnement</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div></div>'
++'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise (optionnel)</label><input id="cm_network" list="dl_networks" placeholder="Ex. G La Dalle"><datalist id="dl_networks"></datalist></div></div>'
 +'<div class="cm-sec">Modules activés</div><div id="cm_modules" class="cm-mods"><label class="cm-mod"><input type="checkbox" value="haccp" checked> 🛡️ HACCP & hygiène</label><label class="cm-mod"><input type="checkbox" value="rh" checked> 👥 RH & Planning</label><label class="cm-mod"><input type="checkbox" value="food" checked> 💰 Food Cost</label><label class="cm-mod"><input type="checkbox" value="fid" checked> 🎮 Fidélisation</label></div>'
 +'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
 
 /* ===== Catalogue (base éditable) ===== */
-let catEditId=null, catEditKind='equip', catPhoto=null;
+let catEditId=null, catEditKind='equip', catPhoto=null, catTab='equip';
+function setCatTab(t){catTab=t;renderAdmin('catalog');}
 function catFilter(){const q=((document.getElementById('cat_search')||{}).value||'').toLowerCase().trim();
   document.querySelectorAll('#admin_main .cat-card').forEach(c=>{const n=c.getAttribute('data-name')||'';c.style.display=(!q||n.indexOf(q)>=0)?'':'none';});
   document.querySelectorAll('#admin_main .dp-grp').forEach(g=>{const any=Array.from(g.querySelectorAll('.cat-card')).some(c=>c.style.display!=='none');g.style.display=any?'':'none';});}
@@ -1592,7 +1604,7 @@ function catEdit(key){let it=null,kind=null;[['equip',EQUIP_CATALOG],['friteuse'
 function catOpen(title){document.getElementById('cat_title').textContent=title;document.getElementById('cat_mask').classList.add('on');}
 function catClose(){document.getElementById('cat_mask').classList.remove('on');const l=document.getElementById('cat_lib');if(l)l.style.display='none';}
 function catFillForm(o){const g=id=>document.getElementById(id);g('cat_name').value=o.name||'';g('cat_kind').value=o.kind||'equip';g('cat_sub').value=o.sub||'';g('cat_cat').value=o.cat||'froidpos';g('cat_min').value=(o.min!=null?o.min:'');g('cat_max').value=(o.max!=null?o.max:'');g('cat_icon').value=o.icon||'';catPhotoPrev();catKindChange();const msg=g('cat_msg');if(msg)msg.style.display='none';}
-function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');}
+function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');document.querySelectorAll('#cat_mask .cat-sub-field').forEach(e=>e.style.display=(k==='product')?'':'none');}
 function catPhotoPrev(){const im=document.getElementById('cat_photo_prev');if(!im)return;if(catPhoto){im.src=catPhoto;im.style.display='';}else{im.style.display='none';}}
 function catPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{catPhoto=rd.result;catPhotoPrev();};rd.readAsDataURL(f);}
 function catPhotoClear(){catPhoto=null;catPhotoPrev();}
@@ -1603,12 +1615,12 @@ async function catSave(){const g=id=>document.getElementById(id);const name=g('c
   const show=(bg,fg,tx)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.textContent=tx;};
   if(!name){show('#fef2f2','#b91c1c','Le nom est obligatoire.');return;}
   const id=catEditId||(slugCode(name)+'-'+Math.floor(Math.random()*10000));
-  const row={id:id,kind:kind,name:name,sub:g('cat_sub').value.trim()||null,cat:kind==='equip'?g('cat_cat').value:null,tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true};
+  const row={id:id,kind:kind,name:name,sub:kind==='equip'?null:(g('cat_sub').value.trim()||null),cat:kind==='equip'?g('cat_cat').value:null,tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true};
   show('#f1f5f9','#334155','Enregistrement…');
   try{const {error}=await SB.from('catalog').upsert(row);if(error)throw error;await loadCatalog();catClose();renderAdmin('catalog');toast('Catalogue mis à jour');}catch(e){show('#fef2f2','#b91c1c','Erreur : '+(e.message||e));}
 }
 function catDelete(key){openConfirm('Supprimer l\'élément','Retirer cet élément du catalogue ? (les clients déjà déployés ne sont pas affectés)',async()=>{try{const {error}=await SB.from('catalog').delete().eq('id',key);if(error)throw error;await loadCatalog();renderAdmin('catalog');toast('Élément supprimé du catalogue');}catch(e){toast('Erreur : '+(e.message||e));}});}
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option></select></div><div class="field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Froid positif, Viandes…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder="❄️"></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#f1f5f9;display:none"><label class="btn ghost sm" style="cursor:pointer">⬆︎ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()">🖼️ Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option></select></div><div class="field cat-sub-field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Viandes, Poissons…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder="❄️"></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#f1f5f9;display:none"><label class="btn ghost sm" style="cursor:pointer">⬆︎ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()">🖼️ Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
 
 /* rapport imprimable */
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
@@ -1634,7 +1646,7 @@ function _rerenderAll(){try{buildClientSide();
   if(document.getElementById('app_terrain').classList.contains('active'))tbRender(tbCurrent);
 }catch(e){console.warn('rerender',e);}}
 /* ============ AUTHENTIFICATION + SYNCHRO PAR ÉTABLISSEMENT ============ */
-let SB=null, ME=null, SITES=[], CUR=null, RECOVERY=false, SYNCTIMER=null, CH=null;
+let SB=null, ME=null, SITES=[], CUR=null, RECOVERY=false, SYNCTIMER=null, CH=null, LOGIN_IN_PROGRESS=false;
 const CFG=window.VIGIE_SYNC||{};
 function escH(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function setSync(txt,color){const el=document.getElementById('ab_sync');if(el){el.textContent=txt;el.style.color=color||'#64748b';}}
@@ -1647,8 +1659,9 @@ function showPane(p){document.querySelectorAll('#authgate .auth-pane').forEach(x
 async function authInit(){
   if(!CFG.url||!CFG.key||!window.supabase){ go('vitrine'); return; } // mode démo local (hors-ligne)
   SB=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-  SB.auth.onAuthStateChange((event)=>{
+  SB.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){RECOVERY=true;openLogin();showPane('change');document.getElementById('ch_h').textContent='Réinitialisation — choisissez un nouveau mot de passe.';}
+    else if(event==='SIGNED_IN' && session && !LOGIN_IN_PROGRESS && !document.body.classList.contains('authed')){afterLogin(session);}
   });
   const {data:{session}}=await SB.auth.getSession();
   if(session && !RECOVERY){ await afterLogin(session); } else if(!RECOVERY){ go('vitrine'); }
@@ -1658,9 +1671,10 @@ async function doLogin(){
   const email=document.getElementById('lg_email').value.trim(), pwd=document.getElementById('lg_pwd').value, msg=document.getElementById('lg_msg');
   if(!email||!pwd){msg.className='msg err';msg.textContent='Renseignez votre email et votre mot de passe.';return;}
   msg.className='msg';msg.style.display='block';msg.textContent='Connexion…';
+  LOGIN_IN_PROGRESS=true;
   const {data,error}=await SB.auth.signInWithPassword({email,password:pwd});
-  if(error){msg.className='msg err';msg.textContent='Email ou mot de passe incorrect.';return;}
-  await afterLogin(data.session);
+  if(error){LOGIN_IN_PROGRESS=false;msg.className='msg err';msg.textContent='Email ou mot de passe incorrect.';return;}
+  await afterLogin(data.session);LOGIN_IN_PROGRESS=false;
 }
 
 async function afterLogin(session){
@@ -1710,7 +1724,7 @@ async function enterAdmin(){
 const _ADMIN_COLLS=['equip','releves','postes','friteuses','fournisseurs','dlc','dlcCats','dlcProducts','reception','tracabilite','pertes','huileTests','documents','docFolders','zones','employees','jobs','conges','shifts','recipes','games'];
 async function loadAdminData(){
   const {data:ests}=await SB.from('establishments').select('*').order('created_at',{ascending:false});
-  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
+  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',network:e.network||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
   _ADMIN_COLLS.forEach(c=>state[c]=[]);
   const {data:rows}=await SB.from('app_state').select('est_code,data');
   (rows||[]).forEach(r=>{if(r.est_code==='__admin__')return;const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
