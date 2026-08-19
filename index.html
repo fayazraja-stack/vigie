@@ -564,7 +564,7 @@
 <style>
 #play.active{display:flex}
 .playwrap{min-height:100vh;width:100%;align-items:flex-start;justify-content:center;background:linear-gradient(160deg,#0e7c58,#0b1220);padding:26px 16px 60px;overflow:auto}
-.playcard{background:#fff;border-radius:22px;max-width:440px;width:100%;padding:26px 22px 28px;box-shadow:0 30px 80px rgba(0,0,0,.35);text-align:center;margin-top:12px}
+.playcard{background:#fff;border-radius:22px;max-width:440px;width:100%;padding:26px 22px 28px;box-shadow:0 18px 50px rgba(15,23,42,.14);text-align:center;margin-top:64px}
 .playcard .pv-est{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0e7c58;font-weight:800}
 .playcard h2{font-size:23px;margin:6px 0 2px}
 .playcard .pv-sub{color:#64748b;font-size:14px;margin-bottom:16px}
@@ -1800,9 +1800,17 @@ function fidRenderBody(){
   }
   body.innerHTML=html;
 }
-function fidBrandDefault(){return {title:'',subtitle:'Tentez votre chance et repartez avec un lot !',color:'#0e7c58',bg:'#0b1220'};}
+function fidBrandDefault(){return {title:'',subtitle:'Tournez la roue pour découvrir votre récompense !',color:'#0e7c58',bg:'#0b1220',segA:'#111827',segB:'#ffffff',logo:'',logoPath:''};}
 function fidNewGame(){FID_EDIT={id:null,name:'',active:true,gameType:'wheel',brand:fidBrandDefault(),segments:[{label:'Café offert',type:'lot',weight:2},{label:'-10% sur l\'addition',type:'reduction',weight:3},{label:'Rejouez une prochaine fois',type:'perdu',weight:4},{label:'Dessert offert',type:'lot',weight:1}],actions:[{label:'Laissez un avis Google',url:''},{label:'Abonnez-vous sur Instagram',url:''}]};fidOpenModal('Nouveau jeu');}
-function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};FID_EDIT={id:g.id,name:g.name||'',active:g.active,gameType:c.gameType||'wheel',brand:Object.assign(fidBrandDefault(),{title:c.estName||''},c.brand||{}),segments:(c.segments||[]).map(s=>({label:s.label||'',type:s.type||'lot',weight:s.weight!=null?s.weight:1})),actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''}))};fidOpenModal('Modifier le jeu');}
+function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};FID_EDIT={id:g.id,name:g.name||'',active:g.active,gameType:c.gameType||'wheel',brand:Object.assign(fidBrandDefault(),{title:c.estName||''},c.brand||{}),segments:(c.segments||[]).map(s=>({label:s.label||'',type:s.type||'lot',weight:s.weight!=null?s.weight:1,photo:s.photo||'',photoPath:s.photoPath||''})),actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''}))};fidOpenModal('Modifier le jeu');}
+async function fidUploadImg(file,maxDim){const blob=await foodResizeImage(file,maxDim||400,0.85);const path=CUR+'/fid/'+Date.now()+'.jpg';const {error}=await SB.storage.from('docs').upload(path,blob,{contentType:'image/jpeg'});if(error)throw error;const {data}=SB.storage.from('docs').getPublicUrl(path);return {url:(data&&data.publicUrl)||'',path:path};}
+async function fidLogoPick(ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;const msg=document.getElementById('fidm_logomsg');if(msg)msg.textContent='Envoi…';
+  try{fidCollect();const up=await fidUploadImg(f,256);if(FID_EDIT.brand.logoPath){try{await SB.storage.from('docs').remove([FID_EDIT.brand.logoPath]);}catch(e){}}FID_EDIT.brand.logo=up.url;FID_EDIT.brand.logoPath=up.path;fidRenderModalBody();toast('Logo ajouté');}
+  catch(e){if(msg)msg.textContent='';toast('Erreur logo : '+(e.message||e));}}
+function fidLogoRemove(){fidCollect();const p=FID_EDIT.brand.logoPath;FID_EDIT.brand.logo='';FID_EDIT.brand.logoPath='';if(p&&SB){try{SB.storage.from('docs').remove([p]);}catch(e){}}fidRenderModalBody();}
+async function fidSegPhotoPick(i,ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
+  try{fidCollect();const s=FID_EDIT.segments[i];if(!s)return;const up=await fidUploadImg(f,300);if(s.photoPath){try{await SB.storage.from('docs').remove([s.photoPath]);}catch(e){}}s.photo=up.url;s.photoPath=up.path;fidRenderModalBody();toast('Photo ajoutée');}
+  catch(e){toast('Erreur photo : '+(e.message||e));}}
 function fidOpenModal(title){
   let mask=document.getElementById('fidm_mask');
   if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="fidm_mask"><div class="modal" style="width:660px;max-width:96vw"><div class="mh"><h3 id="fidm_title">Roue</h3><button class="x" onclick="fidCloseModal()">✕</button></div><div class="mb" id="fidm_body" style="max-height:74vh;overflow:auto"></div><div class="mf"><button class="btn ghost" onclick="fidCloseModal()">Annuler</button><button class="btn" id="fidm_save" onclick="fidSaveGame()">Enregistrer la roue</button></div></div></div>');mask=document.getElementById('fidm_mask');}
@@ -1814,7 +1822,10 @@ function fidRenderModalBody(){
   const typeOpts=function(t){return [['lot','Lot / cadeau'],['reduction','Réduction'],['perdu','Perdu / rejouez']].map(function(o){return '<option value="'+o[0]+'"'+(t===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');};
   let seg='<div class="cm-sec">Cases de la roue</div><p class="tsub" style="margin:-2px 0 10px;font-size:12px">Le « poids » règle la probabilité : plus il est élevé, plus la case sort souvent. Ajoutez des cases « Perdu » pour équilibrer les gains.</p>';
   seg+='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:11px;color:#94a3b8;font-weight:700">Intitulé</th><th style="text-align:left;font-size:11px;color:#94a3b8;font-weight:700">Type</th><th style="font-size:11px;color:#94a3b8;font-weight:700;width:64px">Poids</th><th></th></tr></thead><tbody>';
-  seg+=e.segments.map(function(s,i){return '<tr><td style="padding:3px 6px 3px 0"><input class="fid-seg-label" value="'+escH(s.label)+'" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td style="padding:3px 6px"><select class="fid-seg-type" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px">'+typeOpts(s.type)+'</select></td><td style="padding:3px 6px"><input class="fid-seg-weight" type="number" min="0" value="'+(s.weight)+'" style="width:60px;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'seg\','+i+')">✕</button></td></tr>';}).join('');
+  seg+=e.segments.map(function(s,i){return '<tr><td style="padding:3px 4px 3px 0;width:52px">'
+    +(s.photo?'<img src="'+s.photo+'" style="width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--line)">':'<div style="width:38px;height:38px;border-radius:8px;border:1px dashed #cbd5e1"></div>')
+    +'</td><td style="padding:3px 4px;width:64px"><label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" accept="image/*" hidden onchange="fidSegPhotoPick('+i+',event)"></label></td>'
+    +'<td style="padding:3px 6px 3px 0"><input class="fid-seg-label" value="'+escH(s.label)+'" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box"></td><td style="padding:3px 6px"><select class="fid-seg-type" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px">'+typeOpts(s.type)+'</select></td><td style="padding:3px 6px"><input class="fid-seg-weight" type="number" min="0" value="'+(s.weight)+'" style="width:60px;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'seg\','+i+')">✕</button></td></tr>';}).join('');
   seg+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="fidRowAdd(\'seg\')">＋ Ajouter une case</button>';
   let act='<div class="cm-sec" style="margin-top:18px">Actions pour rejouer</div><p class="tsub" style="margin:-2px 0 10px;font-size:12px">Chaque action réalisée offre au client un tour supplémentaire (avis Google, abonnement Instagram, TikTok…). Renseignez le lien de destination. Laissez vide s\'il n\'y en a pas.</p>';
   act+='<table style="width:100%;border-collapse:collapse"><tbody>';
@@ -1823,19 +1834,27 @@ function fidRenderModalBody(){
   const gt=e.gameType||'wheel';
   const gtype='<div class="cm-sec">Type de jeu</div><div class="cm-mods" style="margin-bottom:4px"><label class="cm-mod"><input type="radio" name="fidm_gtype" value="wheel"'+(gt==='wheel'?' checked':'')+'> Roue de la fortune</label><label class="cm-mod"><input type="radio" name="fidm_gtype" value="scratch"'+(gt==='scratch'?' checked':'')+'> Ticket à gratter</label></div>';
   const br=e.brand||fidBrandDefault();
-  let brand='<div class="cm-sec">Personnalisation (aux couleurs de votre restaurant)</div><div class="cm-grid">'
+  let brand='<div class="cm-sec">Personnalisation (aux couleurs de votre restaurant)</div>'
+   +'<div class="field" style="margin-bottom:10px"><label>Logo (affiché en tête du jeu)</label><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+   +(br.logo?'<img src="'+br.logo+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--line)">':'<div style="width:56px;height:56px;border-radius:50%;background:'+escH(br.color||'#0e7c58')+';color:#fff;display:grid;place-items:center;font-weight:900;font-size:14px">'+escH((br.title||e.name||'?').split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase())+'</div>')
+   +'<label class="btn ghost sm" style="cursor:pointer">'+(br.logo?'Changer le logo':'Ajouter un logo')+'<input type="file" accept="image/*" hidden onchange="fidLogoPick(event)"></label>'
+   +(br.logo?'<button class="btn ghost sm" onclick="fidLogoRemove()">Retirer</button>':'')
+   +'<span id="fidm_logomsg" class="tsub"></span></div></div>'
+   +'<div class="cm-grid">'
    +'<div class="field"><label>Nom / titre affiché sur le jeu</label><input id="fidm_btitle" value="'+escH(br.title||'')+'" placeholder="Ex. Pizzeria Bella"></div>'
    +'<div class="field"><label>Accroche</label><input id="fidm_bsub" value="'+escH(br.subtitle||'')+'" placeholder="Tentez votre chance !"></div>'
-   +'<div class="field"><label>Couleur principale</label><input id="fidm_bcolor" type="color" value="'+escH(br.color||'#0e7c58')+'" style="height:42px;padding:4px"></div>'
-   +'<div class="field"><label>Couleur de fond</label><input id="fidm_bbg" type="color" value="'+escH(br.bg||'#0b1220')+'" style="height:42px;padding:4px"></div>'
-   +'</div>';
+   +'<div class="field"><label>Couleur principale (contour, boutons, fond)</label><input id="fidm_bcolor" type="color" value="'+escH(br.color||'#0e7c58')+'" style="height:42px;padding:4px"></div>'
+   +'<div class="field"><label>Couleur des cases 1</label><input id="fidm_sega" type="color" value="'+escH(br.segA||'#111827')+'" style="height:42px;padding:4px"></div>'
+   +'<div class="field"><label>Couleur des cases 2</label><input id="fidm_segb" type="color" value="'+escH(br.segB||'#ffffff')+'" style="height:42px;padding:4px"></div>'
+   +'</div><p class="tsub" style="margin:4px 0 10px;font-size:12px">La roue alterne les couleurs de cases 1 et 2 ; le contour, l\'aiguille, le bouton central et le fond de page reprennent la couleur principale.</p>';
   b.innerHTML='<div class="field" style="margin-bottom:12px"><label>Nom du jeu * <span class="tsub" style="font-weight:400">(usage interne)</span></label><input id="fidm_name" value="'+escH(e.name)+'" placeholder="Ex. Jeu de l\'été"></div>'+gtype+brand+seg+act;
 }
 function fidCollect(){const e=FID_EDIT;const nm=document.getElementById('fidm_name');if(nm)e.name=nm.value;
   const gr=document.querySelector('input[name="fidm_gtype"]:checked');if(gr)e.gameType=gr.value;
-  const bt=document.getElementById('fidm_btitle');if(bt){e.brand=e.brand||fidBrandDefault();e.brand.title=bt.value.trim();e.brand.subtitle=(document.getElementById('fidm_bsub')||{}).value||'';e.brand.color=(document.getElementById('fidm_bcolor')||{}).value||'#0e7c58';e.brand.bg=(document.getElementById('fidm_bbg')||{}).value||'#0b1220';}
+  const bt=document.getElementById('fidm_btitle');if(bt){e.brand=e.brand||fidBrandDefault();e.brand.title=bt.value.trim();e.brand.subtitle=(document.getElementById('fidm_bsub')||{}).value||'';e.brand.color=(document.getElementById('fidm_bcolor')||{}).value||'#0e7c58';e.brand.segA=(document.getElementById('fidm_sega')||{}).value||'#111827';e.brand.segB=(document.getElementById('fidm_segb')||{}).value||'#ffffff';}
+  const prevSegs=(e.segments||[]).slice();
   const labels=document.querySelectorAll('.fid-seg-label'),types=document.querySelectorAll('.fid-seg-type'),weights=document.querySelectorAll('.fid-seg-weight');
-  e.segments=[];for(let i=0;i<labels.length;i++){e.segments.push({label:labels[i].value.trim(),type:types[i].value,weight:Number(weights[i].value)||0});}
+  e.segments=[];for(let i=0;i<labels.length;i++){const prev=prevSegs[i]||{};e.segments.push({label:labels[i].value.trim(),type:types[i].value,weight:Number(weights[i].value)||0,photo:prev.photo||'',photoPath:prev.photoPath||''});}
   const al=document.querySelectorAll('.fid-act-label'),au=document.querySelectorAll('.fid-act-url');
   e.actions=[];for(let i=0;i<al.length;i++){e.actions.push({label:al[i].value.trim(),url:au[i].value.trim()});}
 }
@@ -1847,7 +1866,7 @@ async function fidSaveGame(){fidCollect();const e=FID_EDIT;
   const actions=e.actions.filter(function(a){return a.label&&a.url;});
   const cName=(state.clients.find(function(x){return x.est_code===CUR;})||{}).name||'';
   const brand=Object.assign(fidBrandDefault(),e.brand||{});if(!brand.title)brand.title=cName;
-  const config={estName:brand.title||cName,gameType:e.gameType||'wheel',brand:brand,segments:segs.map(function(s,i){return {id:'s'+i,label:s.label,type:s.type,weight:Math.max(0,s.weight||0),color:FID_PALETTE[i%FID_PALETTE.length]};}),actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
+  const config={estName:brand.title||cName,gameType:e.gameType||'wheel',brand:brand,segments:segs.map(function(s,i){return {id:'s'+i,label:s.label,type:s.type,weight:Math.max(0,s.weight||0),photo:s.photo||'',photoPath:s.photoPath||'',color:FID_PALETTE[i%FID_PALETTE.length]};}),actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
   const btn=document.getElementById('fidm_save');if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
   try{
     if(e.id){const {error}=await SB.from('fid_games').update({name:e.name,config:config}).eq('id',e.id);if(error)throw error;}
@@ -1907,18 +1926,29 @@ async function startPlay(param){
     pvApplyBrand(brand);pvRender();
   }catch(e){card.innerHTML=pvMsg('Erreur','Impossible de charger le jeu. Réessayez plus tard.');}
 }
-function pvApplyBrand(b){var sec=document.getElementById('play');if(sec)sec.style.background='linear-gradient(160deg,'+(b.color||'#0e7c58')+' 0%,'+(b.bg||'#0b1220')+' 92%)';}
+function pvHexA(hex,a){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}catch(e){return 'rgba(0,0,0,'+a+')';}}
+function pvContrast(hex){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);const lum=0.299*((n>>16)&255)+0.587*((n>>8)&255)+0.114*(n&255);return lum>150?'#0b1220':'#ffffff';}catch(e){return '#ffffff';}}
+function pvApplyBrand(b){var sec=document.getElementById('play');if(!sec)return;const t1=pvHexA(b.color||'#0e7c58',0.28),t2=pvHexA(b.color||'#0e7c58',0.16);
+  sec.style.background='#faf8f4';
+  sec.style.backgroundImage='radial-gradient(circle 190px at -50px 6%,'+t1+' 0 97%,transparent 100%),radial-gradient(circle 150px at 104% 10%,'+t2+' 0 97%,transparent 100%),radial-gradient(circle 120px at 10% 84%,'+t2+' 0 97%,transparent 100%),radial-gradient(circle 170px at 96% 88%,'+t1+' 0 97%,transparent 100%),radial-gradient(circle 60px at 62% 46%,'+pvHexA(b.color||'#0e7c58',0.10)+' 0 97%,transparent 100%)';
+  sec.style.backgroundRepeat='no-repeat';}
 function pvMsg(t,s){return '<div class="pv-est">Vigie</div><h2>'+escH(t)+'</h2><div class="pv-sub">'+escH(s)+'</div>';}
 function pvRender(){
   const card=document.getElementById('play_card');const S=PV_STATE;const b=S.brand;const cfg=S.game.config||{};const segs=cfg.segments||[];
   const scratch=(cfg.gameType==='scratch');
-  const legend='<div class="wheelseg-legend">'+segs.map(function(s){return '<span><i style="background:'+((s.type==='perdu')?'#cbd5e1':(s.color||'#0e7c58'))+'"></i>'+escH(s.label)+'</span>';}).join('')+'</div>';
+  const initials=escH((b.title||'?').split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase());
+  const logo=b.logo?'<img src="'+b.logo+'" style="width:88px;height:88px;border-radius:50%;object-fit:cover;box-shadow:0 8px 22px rgba(0,0,0,.18);border:4px solid #fff">':'<div style="width:88px;height:88px;border-radius:50%;background:'+escH(b.color)+';color:'+pvContrast(b.color)+';display:grid;place-items:center;font-weight:900;font-size:28px;box-shadow:0 8px 22px rgba(0,0,0,.18)">'+initials+'</div>';
   const gameArea=scratch
     ?'<div id="pv_scratchzone" style="margin:14px auto 6px;max-width:320px"><div style="height:180px;border-radius:14px;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 12px,#b6c2d1 12px,#b6c2d1 24px);display:grid;place-items:center;color:#475569;font-weight:900;letter-spacing:3px;font-size:18px;box-shadow:0 10px 26px rgba(0,0,0,.18)">TICKET</div></div>'
-    :'<div class="wheelwrap"><div class="wheel-ptr"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub">GO</div></div>';
-  card.innerHTML='<div class="pv-est" style="color:'+escH(b.color)+'">'+escH(b.title||'Jeu concours')+'</div><h2>'+(scratch?'Grattez votre ticket':'Tournez la roue')+'</h2><div class="pv-sub">'+escH(b.subtitle||'')+'</div>'
-  +gameArea+legend
+    :'<div class="wheelwrap"><div class="wheel-ptr" style="border-top-color:'+escH(b.color)+'"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';border-color:#fff;font-size:13px">Lancer</div></div>';
+  const lots=segs.filter(function(s){return s.type!=='perdu';});
+  const lotsHtml=lots.length?('<div style="margin-top:18px"><div style="display:inline-block;background:'+pvHexA(b.color,0.12)+';color:'+escH(b.color)+';font-weight:800;padding:7px 16px;border-radius:999px;font-size:14px">Lots à gagner</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:10px;margin-top:12px">'+lots.map(function(s){return '<div style="background:#fff;border:1px solid #eef2f7;border-radius:14px;padding:10px 6px;box-shadow:0 4px 14px rgba(15,23,42,.06)">'+(s.photo?'<img src="'+s.photo+'" style="width:52px;height:52px;object-fit:cover;border-radius:10px">':'<div style="width:52px;height:52px;margin:0 auto;border-radius:10px;background:'+pvHexA(b.color,0.12)+'"></div>')+'<div style="font-size:11.5px;font-weight:700;margin-top:6px">'+escH(s.label)+'</div></div>';}).join('')+'</div></div>'):'';
+  card.innerHTML='<div style="margin:-56px auto 10px;width:88px">'+logo+'</div>'
+  +'<div style="font-size:17px;color:#334155">Bienvenue sur</div><h2 style="color:'+escH(b.color)+';margin:2px 0 6px">'+escH(b.title||'Jeu concours')+' !</h2><div class="pv-sub">'+escH(b.subtitle||'')+'</div>'
+  +gameArea
   +'<div id="pv_controls"></div><div id="pv_result"></div><div id="pv_actions"></div>'
+  +lotsHtml
   +'<div class="pv-foot">Jeu proposé par '+escH(b.title||'l\'établissement')+'</div>';
   if(!scratch)setTimeout(function(){pvDrawWheel(segs);},30);
   pvRenderControls();pvRenderActions();
@@ -1926,20 +1956,29 @@ function pvRender(){
 function pvShade(hex,amt){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,bl=(n&255)+amt;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));bl=Math.max(0,Math.min(255,bl));return '#'+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);}catch(e){return hex;}}
 function pvDrawWheel(segs){
   const cv=document.getElementById('pv_canvas');if(!cv||!cv.getContext)return;const ctx=cv.getContext('2d');const n=segs.length;if(!n)return;
+  const S=PV_STATE||{};const b=(S.brand)||{color:'#0e7c58',segA:'#111827',segB:'#ffffff'};
   const W=cv.width,cx=W/2,cy=W/2,rim=cx-3,r=rim-15,seg=2*Math.PI/n;
   ctx.clearRect(0,0,W,W);
-  // Outer rim
-  ctx.beginPath();ctx.arc(cx,cy,rim,0,2*Math.PI);ctx.fillStyle='#0b1220';ctx.fill();
-  // Decorative bulbs around the rim
-  const bulbs=n*2;for(let k=0;k<bulbs;k++){const a=(k/bulbs)*2*Math.PI-Math.PI/2;const bx=cx+Math.cos(a)*(rim-7.5),by=cy+Math.sin(a)*(rim-7.5);ctx.beginPath();ctx.arc(bx,by,3.2,0,2*Math.PI);ctx.fillStyle=(k%2===0)?'#fbbf24':'#fff7db';ctx.fill();}
-  // Segments with radial depth
+  // Contour épais à la couleur de la marque
+  ctx.beginPath();ctx.arc(cx,cy,rim,0,2*Math.PI);ctx.fillStyle=b.color||'#0e7c58';ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy,rim,0,2*Math.PI);ctx.strokeStyle=pvShade(b.color||'#0e7c58',-24);ctx.lineWidth=2;ctx.stroke();
+  // Cases : alternance des deux couleurs personnalisées
   for(let i=0;i<n;i++){const a0=-Math.PI/2+i*seg,a1=a0+seg;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
-    const base=(segs[i].type==='perdu')?'#e5e9f0':(segs[i].color||'#0e7c58');
-    const g=ctx.createRadialGradient(cx,cy,r*0.15,cx,cy,r);g.addColorStop(0,pvShade(base,22));g.addColorStop(1,pvShade(base,-10));ctx.fillStyle=g;ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;ctx.stroke();
-    const mid=a0+seg/2;ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=(segs[i].type==='perdu')?'#334155':'#ffffff';ctx.font='700 13px system-ui,-apple-system,sans-serif';ctx.textBaseline='middle';const lab=(segs[i].label||'').slice(0,18);if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='left';ctx.fillText(lab,-(r-14),0);}else{ctx.textAlign='right';ctx.fillText(lab,r-14,0);}ctx.restore();}
-  // Inner ring outline
-  ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle='#0b1220';ctx.lineWidth=3;ctx.stroke();
+    const base=(i%2===0)?(b.segA||'#111827'):(b.segB||'#ffffff');
+    ctx.fillStyle=base;ctx.fill();
+    ctx.strokeStyle=pvHexA(b.color||'#0e7c58',0.55);ctx.lineWidth=1.5;ctx.stroke();
+    const mid=a0+seg/2;const txtCol=pvContrast(base);
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=txtCol;ctx.font='700 12px system-ui,-apple-system,sans-serif';ctx.textBaseline='middle';const lab=(segs[i].label||'').slice(0,16);
+    if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='left';ctx.fillText(lab,-(r-12),0);}else{ctx.textAlign='right';ctx.fillText(lab,r-12,0);}
+    ctx.restore();
+    // Photo du lot au centre de la case
+    if(segs[i].photo){(function(idx,midA){const img=new Image();img.crossOrigin='anonymous';
+      img.onload=function(){try{const d=Math.min(46,r*0.32);const px=cx+Math.cos(midA)*r*0.52,py=cy+Math.sin(midA)*r*0.52;
+        ctx.save();ctx.beginPath();ctx.arc(px,py,d/2,0,2*Math.PI);ctx.clip();ctx.drawImage(img,px-d/2,py-d/2,d,d);ctx.restore();}catch(e){}};
+      img.src=segs[idx].photo;})(i,mid);}
+  }
+  // Liseré intérieur
+  ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle=b.color||'#0e7c58';ctx.lineWidth=3;ctx.stroke();
 }
 function pvRenderControls(){
   const S=PV_STATE;const box=document.getElementById('pv_controls');if(!box)return;const b=S.brand;const cfg=S.game.config||{};const hasActions=(cfg.actions||[]).length>0;
