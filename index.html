@@ -567,10 +567,11 @@
 .playcard .pv-est{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0e7c58;font-weight:800}
 .playcard h2{font-size:23px;margin:6px 0 2px}
 .playcard .pv-sub{color:#64748b;font-size:14px;margin-bottom:16px}
-.wheelwrap{position:relative;width:300px;height:300px;margin:8px auto 6px}
-.wheelwrap canvas{display:block;border-radius:50%;transition:transform 4.6s cubic-bezier(.13,.66,.24,1);box-shadow:0 10px 30px rgba(0,0,0,.18)}
-.wheel-ptr{position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:15px solid transparent;border-right:15px solid transparent;border-top:26px solid #0b1220;z-index:3;filter:drop-shadow(0 2px 2px rgba(0,0,0,.3))}
-.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:54px;height:54px;border-radius:50%;background:#fff;border:5px solid #0b1220;z-index:2;display:grid;place-items:center;font-weight:800;color:#0b1220;font-size:11px}
+.wheelwrap{position:relative;width:326px;height:326px;margin:12px auto 10px}
+.wheelwrap canvas{display:block;border-radius:50%;transition:transform 5s cubic-bezier(.12,.62,.2,1);filter:drop-shadow(0 14px 28px rgba(0,0,0,.28))}
+.wheel-ptr{position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:32px solid #e11d48;z-index:3;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
+.wheel-ptr::after{content:'';position:absolute;top:-40px;left:-8px;width:16px;height:16px;border-radius:50%;background:#e11d48;box-shadow:0 2px 4px rgba(0,0,0,.3)}
+.wheel-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 36% 30%,#ffffff,#e2e8f0);border:5px solid #0b1220;z-index:2;display:grid;place-items:center;font-weight:900;color:#0b1220;font-size:15px;letter-spacing:1px;box-shadow:0 5px 14px rgba(0,0,0,.28)}
 .pv-btn{display:inline-block;border:none;border-radius:12px;background:#0e7c58;color:#fff;font-weight:800;font-size:16px;padding:13px 26px;cursor:pointer;margin-top:10px}
 .pv-btn:disabled{opacity:.5;cursor:default}
 .pv-result{margin-top:16px;padding:16px;border-radius:14px}
@@ -1530,18 +1531,30 @@ function pvRender(){
   const canSpin=(S.spins===0)||(S.extra>0);
   const legend='<div class="wheelseg-legend">'+segs.map(function(s){return '<span><i style="background:'+((s.type==='perdu')?'#cbd5e1':(s.color||'#0e7c58'))+'"></i>'+escH(s.label)+'</span>';}).join('')+'</div>';
   card.innerHTML='<div class="pv-est">'+escH(cfg.estName||'Jeu concours')+'</div><h2>Tournez la roue</h2><div class="pv-sub">Tentez votre chance et repartez peut-être avec un lot !</div>'
-  +'<div class="wheelwrap"><div class="wheel-ptr"></div><canvas id="pv_canvas" width="300" height="300"></canvas><div class="wheel-hub">TOURNER</div></div>'
+  +'<div class="wheelwrap"><div class="wheel-ptr"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub">GO</div></div>'
   +legend
   +'<div><button class="pv-btn" id="pv_spin" onclick="pvSpin()"'+(canSpin?'':' disabled')+'>'+(S.spins===0?'Lancer la roue':'Rejouer')+'</button></div>'
   +'<div id="pv_result"></div><div id="pv_actions"></div>'
   +'<div class="pv-foot">Un lot par personne · tours bonus en réalisant les actions proposées</div>';
   setTimeout(function(){pvDrawWheel(segs);},30);
 }
+function pvShade(hex,amt){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,bl=(n&255)+amt;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));bl=Math.max(0,Math.min(255,bl));return '#'+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);}catch(e){return hex;}}
 function pvDrawWheel(segs){
-  const cv=document.getElementById('pv_canvas');if(!cv||!cv.getContext)return;const ctx=cv.getContext('2d');const n=segs.length;if(!n)return;const cx=150,cy=150,r=148,seg=2*Math.PI/n;
-  ctx.clearRect(0,0,300,300);
-  for(let i=0;i<n;i++){const a0=-Math.PI/2+i*seg,a1=a0+seg;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();ctx.fillStyle=(segs[i].type==='perdu')?'#e2e8f0':(segs[i].color||'#0e7c58');ctx.fill();ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();
-    const mid=a0+seg/2;ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=(segs[i].type==='perdu')?'#475569':'#ffffff';ctx.font='bold 12px system-ui,-apple-system,sans-serif';const lab=(segs[i].label||'').slice(0,16);if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='left';ctx.fillText(lab,-(r-12),4);}else{ctx.textAlign='right';ctx.fillText(lab,r-12,4);}ctx.restore();}
+  const cv=document.getElementById('pv_canvas');if(!cv||!cv.getContext)return;const ctx=cv.getContext('2d');const n=segs.length;if(!n)return;
+  const W=cv.width,cx=W/2,cy=W/2,rim=cx-3,r=rim-15,seg=2*Math.PI/n;
+  ctx.clearRect(0,0,W,W);
+  // Outer rim
+  ctx.beginPath();ctx.arc(cx,cy,rim,0,2*Math.PI);ctx.fillStyle='#0b1220';ctx.fill();
+  // Decorative bulbs around the rim
+  const bulbs=n*2;for(let k=0;k<bulbs;k++){const a=(k/bulbs)*2*Math.PI-Math.PI/2;const bx=cx+Math.cos(a)*(rim-7.5),by=cy+Math.sin(a)*(rim-7.5);ctx.beginPath();ctx.arc(bx,by,3.2,0,2*Math.PI);ctx.fillStyle=(k%2===0)?'#fbbf24':'#fff7db';ctx.fill();}
+  // Segments with radial depth
+  for(let i=0;i<n;i++){const a0=-Math.PI/2+i*seg,a1=a0+seg;ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,a0,a1);ctx.closePath();
+    const base=(segs[i].type==='perdu')?'#e5e9f0':(segs[i].color||'#0e7c58');
+    const g=ctx.createRadialGradient(cx,cy,r*0.15,cx,cy,r);g.addColorStop(0,pvShade(base,22));g.addColorStop(1,pvShade(base,-10));ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.9)';ctx.lineWidth=2;ctx.stroke();
+    const mid=a0+seg/2;ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=(segs[i].type==='perdu')?'#334155':'#ffffff';ctx.font='700 13px system-ui,-apple-system,sans-serif';ctx.textBaseline='middle';const lab=(segs[i].label||'').slice(0,18);if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='left';ctx.fillText(lab,-(r-14),0);}else{ctx.textAlign='right';ctx.fillText(lab,r-14,0);}ctx.restore();}
+  // Inner ring outline
+  ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle='#0b1220';ctx.lineWidth=3;ctx.stroke();
 }
 async function pvSpin(){
   const S=PV_STATE;if(!S||S.spinning)return;if(!(S.spins===0||S.extra>0))return;
