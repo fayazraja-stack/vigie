@@ -1253,8 +1253,10 @@ const CLIENT_NAV=[
   {v:'rh_heures',ic:'',t:'Historique heures',sub:1,mod:'rh'},
   {cat:'Gestion'},
   {v:'food',ic:'',t:'Food Cost',mod:'food'},
-  {v:'fid',ic:'',t:'Fidélisation',mod:'fid'},
-  {v:'crm',ic:'',t:'Base de données client'},
+  {cat:'Fidélisation',mod:'fid'},
+  {v:'fid',ic:'',t:'Jeux',sub:1,mod:'fid'},
+  {v:'fid_stats',ic:'',t:'Statistiques',sub:1,mod:'fid'},
+  {v:'crm',ic:'',t:'Données clients',sub:1},
   {cat:'Configuration'},
   {v:'tablet',ic:'',t:'Tablette'},
   {v:'wiki',ic:'',t:'Wiki & Aide'},
@@ -1360,7 +1362,8 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       m.innerHTML=topbar('Documents','Vos dossiers de documents — cliquez un dossier pour l\'ouvrir','<button class="btn" onclick="formFolder()">＋ Nouveau dossier</button>')
       +(folders.length?('<div class="drive-grid">'+folders.map(f=>{const n=docs.filter(d=>d.folderId===f.id).length;
         return '<div class="drive-folder" onclick="docEnter(\''+f.id+'\')"><div class="df-ic"><span class="df-tab"></span></div><div class="df-name">'+escH(f.name)+'</div><div class="df-count">'+n+' fichier'+(n>1?'s':'')+'</div><div class="df-acts" onclick="event.stopPropagation()"><button class="btn ghost sm" onclick="formFolder(\''+f.id+'\')" title="Renommer">Renommer</button><button class="btn ghost sm" onclick="docDelFolder(\''+f.id+'\')" title="Supprimer">Suppr.</button></div></div>';}).join('')+'</div>')
-      :'<div class="empty" style="padding:50px 20px">Aucun dossier. Créez votre premier dossier avec « ＋ Nouveau dossier » (ex. Contrats, Formations, Analyses…).</div>');
+      :'<div class="empty" style="padding:50px 20px">Aucun dossier. Créez votre premier dossier avec « ＋ Nouveau dossier » (ex. Contrats, Formations, Analyses…).</div>')
+      +helpBox([['Organiser','créez un dossier par thème : contrats, formations, analyses laboratoire, factures…'],['Ajouter des fichiers','ouvrez un dossier puis glissez-déposez vos documents (PDF, images, Word, Excel…).'],['Consulter partout','vos fichiers sont aussi accessibles depuis la tablette en cuisine, en lecture et en ajout.']]);
     } else {
       const fd=docs.filter(d=>d.folderId===open.id);
       m.innerHTML=topbar('<span style="cursor:pointer;color:#0e7c58" onclick="docBack()">Documents</span> <span style="color:#94a3b8">/</span> '+escH(open.name), fd.length+' fichier(s) — PDF, images, Word, Excel et plus','<button class="btn ghost" onclick="docBack()">← Retour</button> <label class="btn" style="cursor:pointer">↑ Importer des fichiers<input type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx" onchange="docUpload(\''+open.id+'\',event)"></label>')
@@ -1413,6 +1416,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'</tbody></table></div></div>';
     } else if(view==='jour'){ ph+=rhDayView(emps,tpls,cid); }
     else { ph+=rhMonthView(emps,tpls,cid); }
+    ph+=helpBox([['Créer vos shifts favoris','définissez vos créneaux types (Matin 9h-15h, Soir 18h-23h…) avec une couleur.'],['Planifier en 2 clics','cliquez un favori puis une case du planning pour poser le créneau ; la croix le retire.'],['Changer de vue','Jour pour voir qui travaille, Semaine pour planifier, Mois pour la vision globale.'],['Suivre les heures','le total de chaque employé se compare à son contrat ; le détail est dans « Historique heures ».']]);
     m.innerHTML=ph;
   } else if(clientView==='rh_heures'){
     const emps=state.employees.filter(e=>e.clientId===cid);const filtered=histEmp?emps.filter(e=>e.id===histEmp):emps;
@@ -1449,6 +1453,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'</div></div>';
     }
     m.innerHTML+='<div class="seg-mini" style="margin-bottom:16px"><button class="'+(tab==='fiches'?'active':'')+'" onclick="setFoodTab(\'fiches\')">Recettes ('+rs.length+')</button><button class="'+(tab==='subs'?'active':'')+'" onclick="setFoodTab(\'subs\')">Sous-recettes ('+subs.length+')</button><button class="'+(tab==='ing'?'active':'')+'" onclick="setFoodTab(\'ing\')">Ingrédients ('+ings.length+')</button></div>';
+    var foodHelp=helpBox([['Créer vos ingrédients','renseignez le prix d\'achat HT du conditionnement et l\'unité d\'achat — le prix unitaire se calcule seul.'],['Préparer vos sous-recettes','une préparation maison (pâte, sauce…) avec sa quantité produite : son coût par unité s\'utilise ensuite dans vos recettes.'],['Composer vos recettes','ajoutez sous-recettes et ingrédients bruts avec quantités et % de perte — coûts, marges et food cost se mettent à jour en direct.'],['Surveiller vos marges','visez un food cost sous 30 % ; la jauge et la liste « à surveiller » vous alertent.']]);
     if(tab==='fiches'){
       state.foodRecCats=state.foodRecCats||[];
       const rgrp=foodRecFilter||'';
@@ -1472,14 +1477,20 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'<div style="margin-bottom:12px"><input class="dp-search" id="food_ing_search" placeholder="Rechercher un ingrédient…" oninput="foodTableFilter(\'food_ing_search\',\'food_ing_tbody\')"></div>'
       +'<div class="panel"><div class="pb" style="padding:0">'+(shown.length?('<table><thead><tr><th>Ingrédient</th><th>Catégorie</th><th>Type</th><th>Prix d\'achat HT</th><th>Prix unitaire</th><th>Fournisseur</th><th>Utilisé dans</th><th></th></tr></thead><tbody id="food_ing_tbody">'+shown.map(function(g){const usedR=rs.filter(function(r){return (r.lines||[]).some(function(l){return (l.kind==='sub'?false:(l.refId||l.ingId)===g.id);});}).length;const usedS=subs.filter(function(sb){return (sb.lines||[]).some(function(l){return (l.refId||l.ingId)===g.id;});}).length;const up=foodIngUnitPrice(g);const achat=(g.priceHT!=null)?((Number(g.priceHT)||0).toFixed(2)+' € / '+(g.purchQty||1)+' '+escH(g.purchUnit||g.unit||''))+(g.tva?' · TVA '+String(g.tva).replace('.',',')+'%':''):'—';return '<tr data-s="'+escH(((g.name||'')+' '+(g.group||'')+' '+(g.fournisseur||'')).toLowerCase())+'"><td class="tname">'+escH(g.name)+'</td><td>'+(g.group?'<span class="chip muted">'+escH(g.group)+'</span>':'—')+'</td><td>'+(g.cat==='nonalim'?'<span class="chip warn">Non alim.</span>':'<span class="chip ok">Alim.</span>')+'</td><td class="tsub">'+achat+'</td><td>'+up.toFixed(3)+' € / '+escH(g.unit||'u')+'</td><td class="tsub">'+escH(g.fournisseur||'—')+'</td><td class="tsub">'+usedR+' rec. · '+usedS+' s-rec.</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="crudDel(\'foodIng\',\''+g.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucun ingrédient'+(grp?' dans cette catégorie':'')+'. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix unitaire se calcule automatiquement.</div>')+'</div></div>';
     }
+    m.innerHTML+=foodHelp;
   } else if(clientView==='fid'){
-    m.innerHTML=topbar('Fidélisation','Roue de la fortune — jeux clients par QR code','<button class="btn" onclick="fidNewGame()">＋ Créer une roue</button>')
+    m.innerHTML=topbar('Mes jeux','Créez et gérez vos jeux de fidélisation (roue, ticket à gratter)','<button class="btn" onclick="fidNewGame()">＋ Créer un jeu</button>')
     +'<div id="fid_body"><div class="empty" style="padding:24px">Chargement des jeux…</div></div>';
     fidLoad();
+  } else if(clientView==='fid_stats'){
+    m.innerHTML=topbar('Statistiques','Performance de vos jeux de fidélisation','')
+    +'<div id="fid_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
+    fidLoad();
   } else if(clientView==='crm'){
-    m.innerHTML=topbar('Base de données client','Coordonnées collectées via vos jeux — exportable','<button class="btn ghost" onclick="crmExport()">↓ Export Excel</button>')
+    m.innerHTML=topbar('Données clients','Coordonnées collectées via vos jeux — exportable','<button class="btn ghost" onclick="crmExport()">↓ Export Excel</button>')
     +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="crm_search" placeholder="Rechercher (nom, email, téléphone…)" oninput="crmFilter()"></div></div>'
-    +'<div id="crm_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
+    +'<div id="crm_body"><div class="empty" style="padding:24px">Chargement…</div></div>'
+    +helpBox([['Collecte automatique','chaque joueur qui gagne un lot renseigne nom, téléphone et email avant de voir son gain.'],['Exploitez la base','exportez en Excel pour vos campagnes SMS ou emailing.'],['Suivi des lots','la colonne statut indique si le lot a déjà été remis en caisse.']]);
     crmLoad();
   } else if(clientView==='tablet'){
     m.innerHTML=topbar('Tablette','Lien & paramètres de la tablette terrain','<button class="btn" onclick="go(\'app_terrain\')"> Ouvrir la tablette</button>')
@@ -1773,31 +1784,31 @@ async function fidLoad(){
     fidRenderBody();
   }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Erreur de chargement : '+escH(e.message||e)+'</div>';}
 }
+function helpBox(items){return '<div class="panel" style="margin-top:16px;background:#f8fafc"><div class="pb"><div style="font-weight:800;margin-bottom:8px;font-size:13.5px">Comment ça marche ?</div>'
+  +items.map(function(it){return '<div style="font-size:12.5px;color:#475569;line-height:1.55;margin-bottom:4px">• <b style="color:#0b1220">'+it[0]+'</b> : '+it[1]+'</div>';}).join('')+'</div></div>';}
 function fidRenderBody(){
   const body=document.getElementById('fid_body');if(!body)return;
   const totalWins=FID_WINS.length, redeemed=FID_WINS.filter(w=>w.status==='redeemed').length, pending=totalWins-redeemed, actifs=FID_GAMES.filter(g=>g.active).length;
-  let html='<div class="kpis">'+kpi('Roues actives',actifs,'sur '+FID_GAMES.length,'up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots récupérés',redeemed,'validés en caisse','up')+kpi('En attente',pending,'à valider',pending?'down':'up')+'</div>';
-  html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Valider un lot</h3><div class="sub">Saisissez le code présenté par le client pour valider la remise</div></div><div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="fid_token" placeholder="Code du lot (ex. 7KQ2M9AB)" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:2px" onkeydown="if(event.key===\'Enter\')fidValidateToken()"><button class="btn" onclick="fidValidateToken()">Vérifier</button></div><div id="fid_valmsg" style="font-size:13px;margin-top:10px;line-height:1.5"></div></div></div>';
-  const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});
-  html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Contacts collectés</h3><div class="sub">'+leads.length+' contact(s) récoltés via les jeux</div><div class="actions"><button class="btn ghost sm" onclick="fidExportLeads()"'+(leads.length?'':' disabled')+'>↓ Export Excel</button></div></div><div class="pb" style="padding:0">'+(leads.length?('<table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot</th><th>Statut</th></tr></thead><tbody>'+leads.slice(0,50).map(function(w){return '<tr><td class="tname">'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td><td>'+escH(w.prize||'')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">remis</span>':'<span class="chip warn">à remettre</span>')+'</td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:20px">Aucun contact pour le moment. Ils apparaîtront quand des clients gagneront un lot et renseigneront leurs coordonnées.</div>')+'</div></div>';
-  if(!FID_GAMES.length){
-    html+='<div class="empty" style="padding:40px 20px">Aucune roue pour le moment. Cliquez « Créer une roue » pour lancer votre premier jeu.</div>';
-  } else {
-    html+='<div class="cardgrid">'+FID_GAMES.map(g=>{
-      const cfg=g.config||{};const segs=(cfg.segments||[]);const wins=fidWinsFor(g.id).length;
-      const link=fidBase()+'?jeu='+encodeURIComponent(g.est_code)+'~'+g.id;
-      return '<div class="minicard"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><div class="mt">'+escH(g.name)+'</div>'+(g.active?'<span class="chip ok">active</span>':'<span class="chip muted">inactive</span>')+'</div>'
-      +'<div class="ms" style="margin-top:6px"><span class="chip muted">'+((cfg.gameType||'wheel')==='scratch'?'Ticket à gratter':'Roue de la fortune')+'</span> · '+segs.length+' lots · '+((cfg.actions||[]).length)+' action(s)</div>'
-      +'<div style="font-size:26px;font-weight:800;margin-top:8px">'+wins+'</div><div class="ms">lot(s) gagné(s)</div>'
-      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px">'
-      +'<button class="btn ghost sm" onclick="fidShowQR(\''+g.id+'\')">QR / lien</button>'
-      +'<button class="btn ghost sm" onclick="window.open(\''+link+'\',\'_blank\')">Tester</button>'
-      +'<button class="btn ghost sm" onclick="fidEditGame(\''+g.id+'\')">Modifier</button>'
-      +'<button class="btn ghost sm" onclick="fidToggleGame(\''+g.id+'\')">'+(g.active?'Désactiver':'Activer')+'</button>'
-      +'<button class="btn ghost sm" onclick="fidDeleteGame(\''+g.id+'\')">Suppr.</button>'
-      +'</div></div>';
-    }).join('')+'</div>';
+  let html='';
+  if(clientView==='fid_stats'){
+    const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});
+    html='<div class="kpis">'+kpi('Jeux actifs',actifs,'sur '+FID_GAMES.length,'up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots remis',redeemed,'validés en caisse','up')+kpi('Contacts collectés',leads.length,'dans la base clients','up')+'</div>';
+    html+='<div class="panel"><div class="ph"><h3>Détail par jeu</h3></div><div class="pb" style="padding:0">'+(FID_GAMES.length?('<table><thead><tr><th>Jeu</th><th>Type</th><th>Lots gagnés</th><th>Remis</th><th>En attente</th><th>Taux de remise</th></tr></thead><tbody>'
+      +FID_GAMES.map(function(g){const ws=fidWinsFor(g.id);const rd=ws.filter(function(w){return w.status==='redeemed';}).length;const pd=ws.length-rd;const tx=ws.length?Math.round(rd/ws.length*100):0;const cfg=g.config||{};
+        return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+((cfg.gameType||'wheel')==='scratch'?'Ticket à gratter':'Roue de la fortune')+'</span></td><td>'+ws.length+'</td><td>'+rd+'</td><td>'+(pd?'<span class="chip warn">'+pd+'</span>':'0')+'</td><td><span class="chip '+(tx>=50?'ok':'muted')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:30px">Aucun jeu pour le moment.</div>')+'</div></div>';
+    html+=helpBox([['Lots gagnés','nombre de gains générés par vos jeux (chaque gain crée un code unique).'],['Lots remis','gains validés en caisse — le code devient définitivement invalide.'],['En attente','gains non encore récupérés : pensez à les valider quand le client se présente.']]);
+    body.innerHTML=html;return;
   }
+  html='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Tous les jeux ('+FID_GAMES.length+')</h3></div><div class="pb" style="padding:0;overflow:auto">'
+   +(FID_GAMES.length?('<table><thead><tr><th>Nom du jeu</th><th>Type</th><th>Lots</th><th>Statut</th><th>Créé le</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
+    +FID_GAMES.map(function(g){const cfg=g.config||{};const segs=(cfg.segments||[]);const link=fidBase()+'?jeu='+encodeURIComponent(g.est_code)+'~'+g.id;
+      return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+((cfg.gameType||'wheel')==='scratch'?'Ticket à gratter':'Roue de la fortune')+'</span></td><td>'+segs.length+' lots</td>'
+      +'<td><span class="switch '+(g.active?'on':'')+'" onclick="fidToggleGame(\''+g.id+'\')" title="Activer / désactiver"><span class="tk"></span></span> '+(g.active?'<span class="chip ok">actif</span>':'<span class="chip muted">inactif</span>')+'</td>'
+      +'<td class="tsub">'+veFmtDate(g.created_at)+'</td>'
+      +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="fidShowQR(\''+g.id+'\')">Lien / QR code</button> <button class="btn ghost sm" onclick="window.open(\''+link+'\',\'_blank\')">Aperçu</button> <button class="btn ghost sm" onclick="fidEditGame(\''+g.id+'\')">Configurer</button> <button class="btn ghost sm" onclick="fidDeleteGame(\''+g.id+'\')">Supprimer</button></td></tr>';}).join('')+'</tbody></table>')
+   :'<div class="empty" style="padding:40px 20px">Aucun jeu pour le moment. Cliquez « ＋ Créer un jeu » pour lancer votre premier jeu.</div>')+'</div></div>';
+  html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Valider un lot</h3><div class="sub">Saisissez le code présenté par le client pour valider la remise ('+pending+' en attente)</div></div><div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="fid_token" placeholder="Code du lot (ex. 7KQ2M9AB)" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:2px" onkeydown="if(event.key===\'Enter\')fidValidateToken()"><button class="btn" onclick="fidValidateToken()">Vérifier</button></div><div id="fid_valmsg" style="font-size:13px;margin-top:10px;line-height:1.5"></div></div></div>';
+  html+=helpBox([['Créer un jeu','choisissez le type (roue ou ticket à gratter), vos couleurs, votre logo et vos lots avec leurs probabilités.'],['Diffuser le QR code','imprimez-le sur vos flyers et supports : vos clients le scannent pour jouer.'],['Récolter les coordonnées','avant de découvrir son gain, le joueur laisse nom, téléphone et email — retrouvez-les dans « Données clients ».'],['Remettre le lot','le gagnant présente son code unique en caisse ; validez-le ici et il devient inutilisable.']]);
   body.innerHTML=html;
 }
 function fidBrandDefault(){return {title:'',subtitle:'Tournez la roue pour découvrir votre récompense !',color:'#0e7c58',bg:'#0b1220',segA:'#111827',segB:'#ffffff',logo:'',logoPath:''};}
