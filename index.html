@@ -1797,14 +1797,14 @@ function fidRenderBody(){
     html='<div class="kpis">'+kpi('Jeux actifs',actifs,'sur '+FID_GAMES.length,'up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots remis',redeemed,'validés en caisse','up')+kpi('Contacts collectés',leads.length,'dans la base clients','up')+'</div>';
     html+='<div class="panel"><div class="ph"><h3>Détail par jeu</h3></div><div class="pb" style="padding:0">'+(FID_GAMES.length?('<table><thead><tr><th>Jeu</th><th>Type</th><th>Lots gagnés</th><th>Remis</th><th>En attente</th><th>Taux de remise</th></tr></thead><tbody>'
       +FID_GAMES.map(function(g){const ws=fidWinsFor(g.id);const rd=ws.filter(function(w){return w.status==='redeemed';}).length;const pd=ws.length-rd;const tx=ws.length?Math.round(rd/ws.length*100):0;const cfg=g.config||{};
-        return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+((cfg.gameType||'wheel')==='scratch'?'Ticket à gratter':'Roue de la fortune')+'</span></td><td>'+ws.length+'</td><td>'+rd+'</td><td>'+(pd?'<span class="chip warn">'+pd+'</span>':'0')+'</td><td><span class="chip '+(tx>=50?'ok':'muted')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:30px">Aucun jeu pour le moment.</div>')+'</div></div>';
+        return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+fidTypeName(cfg.gameType)+'</span></td><td>'+ws.length+'</td><td>'+rd+'</td><td>'+(pd?'<span class="chip warn">'+pd+'</span>':'0')+'</td><td><span class="chip '+(tx>=50?'ok':'muted')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:30px">Aucun jeu pour le moment.</div>')+'</div></div>';
     html+=helpBox([['Lots gagnés','nombre de gains générés par vos jeux (chaque gain crée un code unique).'],['Lots remis','gains validés en caisse — le code devient définitivement invalide.'],['En attente','gains non encore récupérés : pensez à les valider quand le client se présente.']]);
     body.innerHTML=html;return;
   }
   html='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Tous les jeux ('+FID_GAMES.length+')</h3></div><div class="pb" style="padding:0;overflow:auto">'
    +(FID_GAMES.length?('<table><thead><tr><th>Nom du jeu</th><th>Type</th><th>Lots</th><th>Statut</th><th>Créé le</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
     +FID_GAMES.map(function(g){const cfg=g.config||{};const segs=(cfg.segments||[]);const link=fidBase()+'?jeu='+encodeURIComponent(g.est_code)+'~'+g.id;
-      return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+((cfg.gameType||'wheel')==='scratch'?'Ticket à gratter':'Roue de la fortune')+'</span></td><td>'+segs.length+' lots</td>'
+      return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+fidTypeName(cfg.gameType)+'</span></td><td>'+((cfg.lots&&cfg.lots.length)||segs.length)+' lots</td>'
       +'<td><span class="switch '+(g.active?'on':'')+'" onclick="fidToggleGame(\''+g.id+'\')" title="Activer / désactiver"><span class="tk"></span></span> '+(g.active?'<span class="chip ok">actif</span>':'<span class="chip muted">inactif</span>')+'</td>'
       +'<td class="tsub">'+veFmtDate(g.created_at)+'</td>'
       +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="fidShowQR(\''+g.id+'\')">Lien / QR code</button> <button class="btn ghost sm" onclick="window.open(\''+link+'\',\'_blank\')">Aperçu</button> <button class="btn ghost sm" onclick="fidEditGame(\''+g.id+'\')">Configurer</button> <button class="btn ghost sm" onclick="fidDeleteGame(\''+g.id+'\')">Supprimer</button></td></tr>';}).join('')+'</tbody></table>')
@@ -1813,87 +1813,214 @@ function fidRenderBody(){
   html+=helpBox([['Créer un jeu','choisissez le type (roue ou ticket à gratter), vos couleurs, votre logo et vos lots avec leurs probabilités.'],['Diffuser le QR code','imprimez-le sur vos flyers et supports : vos clients le scannent pour jouer.'],['Récolter les coordonnées','avant de découvrir son gain, le joueur laisse nom, téléphone et email — retrouvez-les dans « Données clients ».'],['Remettre le lot','le gagnant présente son code unique en caisse ; validez-le ici et il devient inutilisable.']]);
   body.innerHTML=html;
 }
-function fidBrandDefault(){return {title:'',subtitle:'Tournez la roue pour découvrir votre récompense !',color:'#0e7c58',bg:'#0b1220',segA:'#111827',segB:'#ffffff',logo:'',logoPath:''};}
-function fidNewGame(){FID_EDIT={id:null,name:'',active:true,gameType:'wheel',minOrder:'',delayHours:0,brand:fidBrandDefault(),segments:[{label:'Café offert',type:'lot',weight:2},{label:'-10% sur l\'addition',type:'reduction',weight:3},{label:'Rejouez une prochaine fois',type:'perdu',weight:4},{label:'Dessert offert',type:'lot',weight:1}],actions:[{label:'Laissez un avis Google',url:''},{label:'Abonnez-vous sur Instagram',url:''}]};fidOpenModal('Nouveau jeu');}
-function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};const cond=c.conditions||{};FID_EDIT={id:g.id,name:g.name||'',active:g.active,gameType:c.gameType||'wheel',minOrder:(cond.minOrder!=null?cond.minOrder:''),delayHours:cond.delayHours||0,brand:Object.assign(fidBrandDefault(),{title:c.estName||''},c.brand||{}),segments:(c.segments||[]).map(s=>({label:s.label||'',type:s.type||'lot',weight:s.weight!=null?s.weight:1,photo:s.photo||'',photoPath:s.photoPath||''})),actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''}))};fidOpenModal('Modifier le jeu');}
+function fidTypeName(t){return t==='scratch'?'Ticket à gratter':t==='slots'?'Machine à sous':t==='boxes'?'Boîtes cadeaux':'Roue de la fortune';}
+function fidBrandDefault(){return {title:'',subtitle:'Tournez la roue pour découvrir votre récompense !',color:'#0e7c58',color2:'#0a5c41',bg:'#0b1220',segA:'#111827',segB:'#ffffff',logo:'',logoPath:'',bgImage:'',bgImagePath:''};}
+let FID_TAB='general';
+function fidNewGame(){FID_TAB='general';FID_EDIT={id:null,name:'',active:true,gameType:'wheel',brand:fidBrandDefault(),
+  lots:[{label:'Café offert',type:'lot',percent:20,cases:2,photo:'',photoPath:''},{label:'-10% sur l\'addition',type:'reduction',percent:20,cases:2,photo:'',photoPath:''},{label:'Dessert offert',type:'lot',percent:10,cases:1,photo:'',photoPath:''}],
+  hundredWin:false,perduCases:3,
+  actions:[],minOrderOn:false,minOrder:'',delayOn:false,delayHours:''};fidOpenModal();}
+function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};const cond=c.conditions||{};FID_TAB='general';
+  let lots,hundredWin,perduCases;
+  if(c.lots&&c.lots.length){lots=c.lots.map(function(l){return {label:l.label||'',type:l.type||'lot',percent:Number(l.percent)||0,cases:Math.max(1,Number(l.cases)||1),photo:l.photo||'',photoPath:l.photoPath||''};});hundredWin=!!c.hundredWin;perduCases=Math.max(1,Number(c.perduCases)||3);}
+  else{const segs=c.segments||[];const totW=segs.reduce(function(s,x){return s+(Number(x.weight)||0);},0)||1;
+    const perduSegs=segs.filter(function(s){return s.type==='perdu';});
+    const groups={};segs.filter(function(s){return s.type!=='perdu';}).forEach(function(s){const k=s.label||'';if(!groups[k])groups[k]={label:s.label||'',type:s.type||'lot',w:0,cases:0,photo:s.photo||'',photoPath:s.photoPath||''};groups[k].w+=(Number(s.weight)||0);groups[k].cases++;});
+    lots=Object.keys(groups).map(function(k){const gr=groups[k];return {label:gr.label,type:gr.type,percent:+(gr.w/totW*100).toFixed(2),cases:gr.cases,photo:gr.photo,photoPath:gr.photoPath};});
+    hundredWin=perduSegs.length===0;perduCases=perduSegs.length||3;}
+  FID_EDIT={id:g.id,name:g.name||'',active:g.active,gameType:c.gameType||'wheel',
+    brand:Object.assign(fidBrandDefault(),{title:c.estName||''},c.brand||{}),
+    lots:lots,hundredWin:hundredWin,perduCases:perduCases,
+    actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''})),
+    minOrderOn:(cond.minOrder!=null&&cond.minOrder>0),minOrder:(cond.minOrder!=null?cond.minOrder:''),
+    delayOn:(cond.delayHours!=null&&cond.delayHours>0),delayHours:(cond.delayHours||'')};
+  fidOpenModal();}
+function fidSumLots(e){return (e.lots||[]).reduce(function(s,l){return s+(Number(l.percent)||0);},0);}
+function fidPerduPct(e){return e.hundredWin?0:Math.max(0,+(100-fidSumLots(e)).toFixed(2));}
+function fidTotalSegs(e){return (e.lots||[]).reduce(function(s,l){return s+Math.max(1,Math.round(Number(l.cases)||1));},0)+(e.hundredWin?0:Math.max(1,Math.round(Number(e.perduCases)||1)));}
+function fidValidCfg(e){const sum=+fidSumLots(e).toFixed(2);const tot=fidTotalSegs(e);
+  const okP=e.hundredWin?(sum===100):(sum>0&&sum<100);
+  const okS=tot>=4&&tot<=12;
+  const okL=(e.lots||[]).length>0&&(e.lots||[]).every(function(l){return (l.label||'').trim()&&Number(l.percent)>0;});
+  return {sum:sum,tot:tot,okP:okP,okS:okS,ok:okP&&okS&&okL};}
+function fidBuildSegments(e){
+  const cases=[];
+  (e.lots||[]).forEach(function(l){const n=Math.max(1,Math.round(Number(l.cases)||1));const per=(Number(l.percent)||0)/n;
+    for(let k=0;k<n;k++)cases.push({label:l.label,type:l.type||'lot',weight:per,photo:l.photo||'',photoPath:l.photoPath||''});});
+  let out=cases;
+  if(!e.hundredWin){const pn=Math.max(1,Math.round(Number(e.perduCases)||1));const pp=fidPerduPct(e)/pn;
+    out=[];const step=Math.max(1,Math.floor(cases.length/pn));let pi=0;
+    for(let i=0;i<cases.length;i++){out.push(cases[i]);if((i+1)%step===0&&pi<pn){out.push({label:'Perdu',type:'perdu',weight:pp,photo:'',photoPath:''});pi++;}}
+    while(pi<pn){out.push({label:'Perdu',type:'perdu',weight:pp,photo:'',photoPath:''});pi++;}}
+  return out.map(function(s,i){return Object.assign({id:'s'+i},s,{color:FID_PALETTE[i%FID_PALETTE.length]});});}
 async function fidUploadImg(file,maxDim){const blob=await foodResizeImage(file,maxDim||400,0.85);const path=CUR+'/fid/'+Date.now()+'.jpg';const {error}=await SB.storage.from('docs').upload(path,blob,{contentType:'image/jpeg'});if(error)throw error;const {data}=SB.storage.from('docs').getPublicUrl(path);return {url:(data&&data.publicUrl)||'',path:path};}
 async function fidLogoPick(ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;const msg=document.getElementById('fidm_logomsg');if(msg)msg.textContent='Envoi…';
   try{fidCollect();const up=await fidUploadImg(f,256);if(FID_EDIT.brand.logoPath){try{await SB.storage.from('docs').remove([FID_EDIT.brand.logoPath]);}catch(e){}}FID_EDIT.brand.logo=up.url;FID_EDIT.brand.logoPath=up.path;fidRenderModalBody();toast('Logo ajouté');}
   catch(e){if(msg)msg.textContent='';toast('Erreur logo : '+(e.message||e));}}
 function fidLogoRemove(){fidCollect();const p=FID_EDIT.brand.logoPath;FID_EDIT.brand.logo='';FID_EDIT.brand.logoPath='';if(p&&SB){try{SB.storage.from('docs').remove([p]);}catch(e){}}fidRenderModalBody();}
-async function fidSegPhotoPick(i,ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
-  try{fidCollect();const s=FID_EDIT.segments[i];if(!s)return;const up=await fidUploadImg(f,300);if(s.photoPath){try{await SB.storage.from('docs').remove([s.photoPath]);}catch(e){}}s.photo=up.url;s.photoPath=up.path;fidRenderModalBody();toast('Photo ajoutée');}
+async function fidLotPhotoPick(i,ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
+  try{fidCollect();const s=FID_EDIT.lots[i];if(!s)return;const up=await fidUploadImg(f,300);if(s.photoPath){try{await SB.storage.from('docs').remove([s.photoPath]);}catch(e){}}s.photo=up.url;s.photoPath=up.path;fidRenderModalBody();toast('Photo ajoutée');}
   catch(e){toast('Erreur photo : '+(e.message||e));}}
-function fidOpenModal(title){
+async function fidBgPick(ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
+  try{fidCollect();const up=await fidUploadImg(f,1400);if(FID_EDIT.brand.bgImagePath){try{await SB.storage.from('docs').remove([FID_EDIT.brand.bgImagePath]);}catch(e){}}FID_EDIT.brand.bgImage=up.url;FID_EDIT.brand.bgImagePath=up.path;fidRenderModalBody();toast('Background ajouté');}
+  catch(e){toast('Erreur background : '+(e.message||e));}}
+function fidBgRemove(){fidCollect();const p=FID_EDIT.brand.bgImagePath;FID_EDIT.brand.bgImage='';FID_EDIT.brand.bgImagePath='';if(p&&SB){try{SB.storage.from('docs').remove([p]);}catch(e){}}fidRenderModalBody();}
+function fidOpenModal(){
   let mask=document.getElementById('fidm_mask');
-  if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="fidm_mask"><div class="modal" style="width:660px;max-width:96vw"><div class="mh"><h3 id="fidm_title">Roue</h3><button class="x" onclick="fidCloseModal()">✕</button></div><div class="mb" id="fidm_body" style="max-height:74vh;overflow:auto"></div><div class="mf"><button class="btn ghost" onclick="fidCloseModal()">Annuler</button><button class="btn" id="fidm_save" onclick="fidSaveGame()">Enregistrer la roue</button></div></div></div>');mask=document.getElementById('fidm_mask');}
-  document.getElementById('fidm_title').textContent=title;fidRenderModalBody();mask.classList.add('on');
+  if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="fidm_mask"><div class="modal" style="width:740px;max-width:96vw"><div class="mh" style="align-items:flex-start"><div><h3 id="fidm_title" style="margin:0">Configuration</h3><div class="tsub" style="font-size:12.5px;margin-top:2px">Personnalisez votre jeu et configurez les lots</div></div><button class="x" onclick="fidCloseModal()">✕</button></div><div id="fidm_tabs" style="display:flex;gap:4px;background:#f1f5f9;border-radius:999px;padding:4px;margin:0 18px 4px"></div><div class="mb" id="fidm_body" style="max-height:64vh;overflow:auto"></div></div></div>');mask=document.getElementById('fidm_mask');}
+  fidRenderModalBody();mask.classList.add('on');
 }
-function fidCloseModal(){const m=document.getElementById('fidm_mask');if(m)m.classList.remove('on');}
+function fidCloseModal(){const m=document.getElementById('fidm_mask');if(m)m.classList.remove('on');fidLoad();}
+function fidSetTab(t){fidCollect();FID_TAB=t;fidRenderModalBody();}
+function fidSaveBtn(label){return '<button class="btn" id="fidm_save" style="width:100%;margin-top:18px;border-radius:999px;padding:13px;background:#0b1220;border-color:#0b1220;font-size:15px" onclick="fidSaveGame()">'+label+'</button>';}
+function fidTrashSVG(){return '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6M10 11v6M14 11v6"/></svg>';}
+const FID_GAME_TYPES=[['wheel','Roue de la fortune','Le joueur fait tourner la roue'],['scratch','Ticket à gratter','Le joueur gratte pour révéler son gain'],['slots','Machine à sous','3 rouleaux : alignez les symboles'],['boxes','Boîtes cadeaux','Une boîte mystère s\'ouvre au hasard']];
+const FID_ACTION_TYPES=['Avis Google','Abonnement Instagram','Abonnement TikTok','Abonnement Facebook','Abonnement Snapchat','Autre'];
 function fidRenderModalBody(){
   const b=document.getElementById('fidm_body');if(!b)return;const e=FID_EDIT;
-  const typeOpts=function(t){return [['lot','Lot / cadeau'],['reduction','Réduction'],['perdu','Perdu / rejouez']].map(function(o){return '<option value="'+o[0]+'"'+(t===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('');};
-  let seg='<div class="cm-sec">Cases de la roue</div><p class="tsub" style="margin:-2px 0 10px;font-size:12px">Le « poids » règle la probabilité : plus il est élevé, plus la case sort souvent. Ajoutez des cases « Perdu » pour équilibrer les gains.</p>';
-  seg+='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:11px;color:#94a3b8;font-weight:700">Intitulé</th><th style="text-align:left;font-size:11px;color:#94a3b8;font-weight:700">Type</th><th style="font-size:11px;color:#94a3b8;font-weight:700;width:64px">Poids</th><th></th></tr></thead><tbody>';
-  seg+=e.segments.map(function(s,i){return '<tr><td style="padding:3px 4px 3px 0;width:52px">'
-    +(s.photo?'<img src="'+s.photo+'" style="width:38px;height:38px;border-radius:8px;object-fit:cover;border:1px solid var(--line)">':'<div style="width:38px;height:38px;border-radius:8px;border:1px dashed #cbd5e1"></div>')
-    +'</td><td style="padding:3px 4px;width:64px"><label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" accept="image/*" hidden onchange="fidSegPhotoPick('+i+',event)"></label></td>'
-    +'<td style="padding:3px 6px 3px 0"><input class="fid-seg-label" value="'+escH(s.label)+'" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px;box-sizing:border-box"></td><td style="padding:3px 6px"><select class="fid-seg-type" style="padding:8px;border:1px solid #cbd5e1;border-radius:8px">'+typeOpts(s.type)+'</select></td><td style="padding:3px 6px"><input class="fid-seg-weight" type="number" min="0" value="'+(s.weight)+'" style="width:60px;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'seg\','+i+')">✕</button></td></tr>';}).join('');
-  seg+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="fidRowAdd(\'seg\')">＋ Ajouter une case</button>';
-  let act='<div class="cm-sec" style="margin-top:18px">Actions pour rejouer</div><p class="tsub" style="margin:-2px 0 10px;font-size:12px">Chaque action réalisée offre au client un tour supplémentaire (avis Google, abonnement Instagram, TikTok…). Renseignez le lien de destination. Laissez vide s\'il n\'y en a pas.</p>';
-  act+='<table style="width:100%;border-collapse:collapse"><tbody>';
-  act+=e.actions.map(function(a,i){return '<tr><td style="padding:3px 6px 3px 0;width:42%"><input class="fid-act-label" value="'+escH(a.label)+'" placeholder="Ex. Laissez un avis Google" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td style="padding:3px 6px"><input class="fid-act-url" value="'+escH(a.url)+'" placeholder="https://…" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'act\','+i+')">✕</button></td></tr>';}).join('');
-  act+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="fidRowAdd(\'act\')">＋ Ajouter une action</button>';
-  const gt=e.gameType||'wheel';
-  const gtype='<div class="cm-sec">Type de jeu</div><div class="cm-mods" style="margin-bottom:4px"><label class="cm-mod"><input type="radio" name="fidm_gtype" value="wheel"'+(gt==='wheel'?' checked':'')+'> Roue de la fortune</label><label class="cm-mod"><input type="radio" name="fidm_gtype" value="scratch"'+(gt==='scratch'?' checked':'')+'> Ticket à gratter</label></div>';
-  const br=e.brand||fidBrandDefault();
-  let brand='<div class="cm-sec">Personnalisation (aux couleurs de votre restaurant)</div>'
-   +'<div class="field" style="margin-bottom:10px"><label>Logo (affiché en tête du jeu)</label><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
-   +(br.logo?'<img src="'+br.logo+'" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:1px solid var(--line)">':'<div style="width:56px;height:56px;border-radius:50%;background:'+escH(br.color||'#0e7c58')+';color:#fff;display:grid;place-items:center;font-weight:900;font-size:14px">'+escH((br.title||e.name||'?').split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase())+'</div>')
-   +'<label class="btn ghost sm" style="cursor:pointer">'+(br.logo?'Changer le logo':'Ajouter un logo')+'<input type="file" accept="image/*" hidden onchange="fidLogoPick(event)"></label>'
-   +(br.logo?'<button class="btn ghost sm" onclick="fidLogoRemove()">Retirer</button>':'')
-   +'<span id="fidm_logomsg" class="tsub"></span></div></div>'
-   +'<div class="cm-grid">'
-   +'<div class="field"><label>Nom / titre affiché sur le jeu</label><input id="fidm_btitle" value="'+escH(br.title||'')+'" placeholder="Ex. Pizzeria Bella"></div>'
-   +'<div class="field"><label>Accroche</label><input id="fidm_bsub" value="'+escH(br.subtitle||'')+'" placeholder="Tentez votre chance !"></div>'
-   +'<div class="field"><label>Couleur principale (contour, boutons, fond)</label><input id="fidm_bcolor" type="color" value="'+escH(br.color||'#0e7c58')+'" style="height:42px;padding:4px"></div>'
-   +'<div class="field"><label>Couleur des cases 1</label><input id="fidm_sega" type="color" value="'+escH(br.segA||'#111827')+'" style="height:42px;padding:4px"></div>'
-   +'<div class="field"><label>Couleur des cases 2</label><input id="fidm_segb" type="color" value="'+escH(br.segB||'#ffffff')+'" style="height:42px;padding:4px"></div>'
-   +'</div><p class="tsub" style="margin:4px 0 10px;font-size:12px">La roue alterne les couleurs de cases 1 et 2 ; le contour, l\'aiguille, le bouton central et le fond de page reprennent la couleur principale.</p>'
-   +'<div class="cm-sec">Conditions de récupération des lots</div><div class="cm-grid">'
-   +'<div class="field"><label>Montant minimum de commande (€) — vide si aucun</label><input id="fidm_minorder" type="number" min="0" step="0.5" value="'+escH(e.minOrder!=null&&e.minOrder!==''?e.minOrder:'')+'" placeholder="Ex. 12"></div>'
-   +'<div class="field"><label>Délai avant récupération (heures) — 0 = immédiat</label><input id="fidm_delay" type="number" min="0" step="1" value="'+escH(e.delayHours!=null?e.delayHours:0)+'"></div>'
-   +'</div><p class="tsub" style="margin:2px 0 10px;font-size:12px">Ces conditions s\'affichent au gagnant sous son QR code, et le délai est contrôlé au moment de la validation en caisse.</p>';
-  b.innerHTML='<div class="field" style="margin-bottom:12px"><label>Nom du jeu * <span class="tsub" style="font-weight:400">(usage interne)</span></label><input id="fidm_name" value="'+escH(e.name)+'" placeholder="Ex. Jeu de l\'été"></div>'+gtype+brand+seg+act;
+  const tt=document.getElementById('fidm_title');if(tt)tt.textContent='Configuration – '+(e.name||'Nouveau jeu');
+  const tabs=[['general','Général'],['design','Design'],['lots','Lots ('+(e.lots||[]).length+')'],['conditions','Conditions']];
+  const tb=document.getElementById('fidm_tabs');
+  if(tb)tb.innerHTML=tabs.map(function(t){const on=FID_TAB===t[0];return '<button onclick="fidSetTab(\''+t[0]+'\')" style="flex:1;border:none;cursor:pointer;padding:10px 8px;border-radius:999px;font-weight:700;font-size:13.5px;background:'+(on?'#0b1220':'transparent')+';color:'+(on?'#fff':'#334155')+'">'+t[1]+'</button>';}).join('');
+  const card='background:#fff;border:1px solid #eef2f7;border-radius:16px;padding:16px 18px;margin-bottom:14px;box-shadow:0 2px 8px rgba(15,23,42,.04)';
+  const inp='width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px';
+  const lab='display:block;font-weight:800;font-size:14.5px;margin:0 0 6px;color:#0b1220';
+  const hint='font-size:12px;color:#94a3b8;margin-top:5px';
+  let h='';
+  if(FID_TAB==='general'){
+    h+='<label style="'+lab+'">Nom du jeu</label><input id="fidm_name" value="'+escH(e.name)+'" placeholder="Ex. Jeu de l\'été" style="'+inp+';margin-bottom:16px">';
+    h+='<label style="'+lab+'">Type de jeu</label><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px">'+FID_GAME_TYPES.map(function(t){const on=(e.gameType||'wheel')===t[0];
+      return '<label style="border:1.5px solid '+(on?'#0b1220':'#e2e8f0')+';border-radius:12px;padding:10px 12px;cursor:pointer;background:'+(on?'#f8fafc':'#fff')+'"><input type="radio" name="fidm_gtype" value="'+t[0]+'"'+(on?' checked':'')+' onchange="fidCollect();fidRenderModalBody()" style="margin-right:6px">'
+      +'<b style="font-size:13.5px">'+t[1]+'</b><div style="font-size:11.5px;color:#94a3b8;margin-left:20px">'+t[2]+'</div></label>';}).join('')+'</div>';
+    h+='<label style="'+lab+';margin-bottom:2px">Actions marketing</label><div style="font-size:12.5px;color:#64748b;margin-bottom:10px">Choisissez une ou plusieurs actions que les joueurs devront effectuer</div>';
+    h+='<div style="'+card+'"><div style="font-weight:900;font-size:17px">Actions configurées ('+(e.actions||[]).length+')</div><div style="font-size:12.5px;color:#64748b;margin-bottom:12px">Les joueurs devront compléter ces actions avant d\'accéder au jeu</div>';
+    h+=(e.actions||[]).length?(e.actions.map(function(a,i){return '<div style="display:flex;align-items:center;gap:12px;border:1px solid #eef2f7;border-radius:12px;padding:11px 13px;margin-bottom:8px"><span style="background:#f1f5f9;border-radius:999px;padding:5px 10px;font-weight:800;font-size:12px">#'+(i+1)+'</span><div style="flex:1;min-width:0"><div style="font-weight:800;font-size:14px">'+escH(a.label)+'</div><div style="font-size:12px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><a href="'+escH(a.url)+'" target="_blank" style="color:#64748b">'+escH((a.url||'').slice(0,55))+((a.url||'').length>55?'…':'')+' ↗</a></div></div><span style="background:#f1f5f9;border-radius:999px;padding:5px 10px;font-weight:700;font-size:10.5px;letter-spacing:.5px">OBLIGATOIRE</span><button onclick="fidActDel('+i+')" style="border:none;background:none;cursor:pointer" title="Supprimer">'+fidTrashSVG()+'</button></div>';}).join('')):'<div class="tsub" style="font-size:12.5px">Aucune action — le jeu sera accessible directement.</div>';
+    h+='</div>';
+    h+='<div style="'+card+'"><div style="font-weight:900;font-size:17px">Ajouter une action marketing</div><div style="font-size:12.5px;color:#64748b;margin-bottom:12px">Configurez une nouvelle action que les joueurs devront réaliser</div>'
+     +'<label style="'+lab+'">Type d\'action</label><select id="fidm_acttype" style="'+inp+';margin-bottom:12px" onchange="var x=document.getElementById(\'fidm_actcustom_w\');if(x)x.style.display=this.value===\'Autre\'?\'block\':\'none\'">'+FID_ACTION_TYPES.map(function(t){return '<option>'+t+'</option>';}).join('')+'</select>'
+     +'<div id="fidm_actcustom_w" style="display:none"><label style="'+lab+'">Nom de l\'action</label><input id="fidm_actcustom" placeholder="Ex. Inscrivez-vous à la newsletter" style="'+inp+';margin-bottom:12px"></div>'
+     +'<label style="'+lab+'">URL de l\'action *</label><input id="fidm_acturl" placeholder="https://g.page/r/… ou https://instagram.com/…" style="'+inp+'"><div style="'+hint+'">URL où le joueur sera redirigé pour compléter l\'action</div>'
+     +'<button class="btn" style="width:100%;margin-top:14px;border-radius:999px;padding:12px;background:#0b1220;border-color:#0b1220" onclick="fidActAdd()">＋ Ajouter l\'action</button></div>';
+    h+=fidSaveBtn('Enregistrer');
+  }
+  else if(FID_TAB==='design'){
+    const br=e.brand||fidBrandDefault();
+    h+='<label style="'+lab+'">Logo du restaurant</label><div style="font-size:12.5px;color:#64748b;margin-bottom:8px">Téléchargez votre logo. Il sera affiché en haut de la page de jeu</div>'
+     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+     +(br.logo?'<img src="'+br.logo+'" style="width:54px;height:54px;border-radius:50%;object-fit:cover;border:1px solid #e2e8f0">':'')
+     +'<label class="btn ghost" style="flex:1;cursor:pointer;text-align:center;border-radius:14px;padding:14px;border:1.5px solid #e2e8f0">⤒ &nbsp;'+(br.logo?'Changer le logo':'Choisir un logo')+'<input type="file" accept="image/*" hidden onchange="fidLogoPick(event)"></label>'
+     +(br.logo?'<button class="btn ghost sm" onclick="fidLogoRemove()">Retirer</button>':'')+'<span id="fidm_logomsg" class="tsub"></span></div>';
+    h+='<label style="'+lab+'">Background personnalisé (optionnel)</label><div style="font-size:12.5px;color:#64748b;margin-bottom:8px">Ajoutez une image qui sera superposée en transparence sur le design du jeu</div>'
+     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
+     +(br.bgImage?'<img src="'+br.bgImage+'" style="width:74px;height:44px;border-radius:8px;object-fit:cover;border:1px solid #e2e8f0">':'')
+     +'<label class="btn ghost" style="flex:1;cursor:pointer;text-align:center;border-radius:14px;padding:14px;border:1.5px solid #e2e8f0">⤒ &nbsp;'+(br.bgImage?'Changer le background':'Choisir un background')+'<input type="file" accept="image/*" hidden onchange="fidBgPick(event)"></label>'
+     +(br.bgImage?'<button class="btn ghost sm" onclick="fidBgRemove()">Retirer</button>':'')+'</div>';
+    function colorRow(id,val){return '<div style="display:flex;gap:10px;margin-bottom:6px"><input type="color" id="'+id+'" value="'+escH(val)+'" style="width:74px;height:46px;padding:3px;border:1.5px solid #e2e8f0;border-radius:12px" oninput="document.getElementById(\''+id+'_t\').value=this.value.toUpperCase()"><input id="'+id+'_t" value="'+escH((val||'').toUpperCase())+'" style="'+inp+'" oninput="if(/^#[0-9a-fA-F]{6}$/.test(this.value))document.getElementById(\''+id+'\').value=this.value"></div>';}
+    h+='<label style="'+lab+'">Couleur primaire</label>'+colorRow('fidm_bcolor',br.color||'#0e7c58')+'<div style="'+hint+';margin-bottom:14px">Couleur principale pour le fond animé et les effets</div>';
+    h+='<label style="'+lab+'">Couleur secondaire</label>'+colorRow('fidm_bcolor2',br.color2||br.color||'#0a5c41')+'<div style="'+hint+';margin-bottom:14px">Couleur secondaire pour les dégradés et animations</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><label style="'+lab+'">Couleur des cases 1</label>'+colorRow('fidm_sega',br.segA||'#111827')+'</div><div><label style="'+lab+'">Couleur des cases 2</label>'+colorRow('fidm_segb',br.segB||'#ffffff')+'</div></div><div style="'+hint+'">La roue et les jeux alternent ces deux couleurs de cases</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px"><div><label style="'+lab+'">Titre affiché sur le jeu</label><input id="fidm_btitle" value="'+escH(br.title||'')+'" placeholder="Ex. Crust Clichy" style="'+inp+'"></div><div><label style="'+lab+'">Accroche</label><input id="fidm_bsub" value="'+escH(br.subtitle||'')+'" placeholder="Tentez votre chance !" style="'+inp+'"></div></div>';
+    h+=fidSaveBtn('Enregistrer');
+  }
+  else if(FID_TAB==='lots'){
+    const v=fidValidCfg(e);const perduPct=fidPerduPct(e);
+    h+='<div style="'+card+';background:#f8fafc"><div style="font-weight:800;font-size:15px;margin-bottom:8px">Mode de configuration des lots</div>'
+     +'<select style="'+inp+'" disabled><option>Mode Probabilité - Configuration par pourcentage de chances</option></select>'
+     +'<div style="'+hint+'">Les lots sont distribués selon des probabilités en pourcentage (ex: 10% de chance de gagner)</div></div>';
+    const totalPct=+(fidSumLots(e)+perduPct).toFixed(2);
+    h+='<div style="'+card+';border:1.5px solid '+(v.ok?'#86efac':'#fca5a5')+';background:'+(v.ok?'#f0fdf4':'#fef2f2')+'">'
+     +'<div style="font-weight:900;font-size:17px;margin-bottom:10px">'+(v.ok?'Configuration valide':'⚠️ Configuration invalide')+'</div>'
+     +'<div style="display:flex;justify-content:space-between;font-size:14.5px;margin-bottom:6px"><span>Total des probabilités :</span><b style="color:'+(v.okP?'#16a34a':'#dc2626')+'">'+(e.hundredWin?v.sum.toFixed(2):totalPct.toFixed(2))+'% / 100%</b></div>'
+     +'<div style="display:flex;justify-content:space-between;font-size:14.5px"><span>Total des segments :</span><b style="color:'+(v.okS?'#16a34a':'#dc2626')+'">'+v.tot+' / 12 max (min 4)</b></div>'
+     +(!v.okP&&e.hundredWin?'<div style="background:#fee2e2;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#b91c1c;margin-top:10px">⚠️ ATTENTION : Vous ne pourrez pas activer ce jeu tant que le total des probabilités n\'est pas exactement à 100%. Il reste '+(100-v.sum).toFixed(2)+'% à attribuer.</div>':'')
+     +(!v.okP&&!e.hundredWin?'<div style="background:#fee2e2;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#b91c1c;margin-top:10px">⚠️ ATTENTION : Le total des lots doit rester inférieur à 100% (le reste va au lot Perdu). Activez « 100% gagnant » si vous voulez que tous les joueurs gagnent.</div>':'')
+     +(!v.okS?'<div style="background:#fee2e2;border-radius:10px;padding:10px 12px;font-size:12.5px;color:#b91c1c;margin-top:10px">⚠️ Le nombre total de cases doit être entre 4 et 12.</div>':'')
+     +'</div>';
+    h+='<div style="'+card+';background:#fef2f2;border:1px solid #fecaca"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font-weight:900;font-size:16px;color:#dc2626">Lot "Perdu" (obligatoire)</span>'
+     +'<span class="switch '+(e.hundredWin?'on':'')+'" onclick="fidHundredToggle()" title="100% gagnant"><span class="tk"></span></span><span style="font-weight:700;font-size:14px">🎉 100% gagnant</span>'
+     +'<span style="margin-left:auto;background:#dc2626;color:#fff;border-radius:999px;padding:4px 12px;font-weight:800;font-size:12.5px">'+perduPct.toFixed(0)+'%</span></div>'
+     +(e.hundredWin?'<div style="font-size:13px;color:#64748b;margin-top:8px">🎉 100% gagnant activé — le lot Perdu est désactivé, tous les joueurs gagnent un lot !</div>'
+       :'<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><label style="font-size:13px;font-weight:700">Nombre de cases « Perdu »</label><input id="fidm_perducases" type="number" min="1" max="8" value="'+escH(e.perduCases||3)+'" style="width:80px;padding:9px;border:1.5px solid #e2e8f0;border-radius:10px"><span style="font-size:12px;color:#94a3b8">Le lot Perdu récupère automatiquement les '+perduPct.toFixed(0)+'% restants.</span></div>')
+     +'</div>';
+    h+='<div style="display:flex;align-items:center;gap:10px;margin:4px 0 12px"><span style="font-weight:900;font-size:19px">Lots à gagner</span><span style="flex:1"></span><button class="btn ghost sm" style="border-radius:999px;padding:9px 16px" onclick="fidTestProba()">Test probabilités</button><button class="btn sm" style="border-radius:999px;padding:9px 16px;background:#0b1220;border-color:#0b1220" onclick="fidLotAdd()">＋ Ajouter un lot</button></div>';
+    h+=(e.lots||[]).map(function(l,i){return '<div style="'+card+'"><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">'
+      +(l.photo?'<img src="'+l.photo+'" style="width:46px;height:46px;border-radius:10px;object-fit:cover;border:1px solid #e2e8f0">':'<div style="width:46px;height:46px;border-radius:10px;border:1.5px dashed #cbd5e1"></div>')
+      +'<label class="btn ghost sm" style="cursor:pointer">Photo<input type="file" accept="image/*" hidden onchange="fidLotPhotoPick('+i+',event)"></label>'
+      +'<div style="flex:2;min-width:150px"><label style="font-size:11px;color:#94a3b8;font-weight:700">NOM DU LOT</label><input class="fid-lot-label" value="'+escH(l.label)+'" placeholder="Ex. Dessert offert" style="'+inp+'"></div>'
+      +'<div style="width:110px"><label style="font-size:11px;color:#94a3b8;font-weight:700">PROBABILITÉ</label><div style="display:flex;align-items:center;gap:4px"><input class="fid-lot-pct" type="number" min="0" max="100" step="0.5" value="'+escH(l.percent)+'" style="'+inp+'"><b>%</b></div></div>'
+      +'<div style="width:100px"><label style="font-size:11px;color:#94a3b8;font-weight:700">CASES</label><input class="fid-lot-cases" type="number" min="1" max="8" value="'+escH(l.cases||1)+'" style="'+inp+'"></div>'
+      +'<button onclick="fidLotDel('+i+')" style="border:none;background:none;cursor:pointer;margin-top:14px" title="Supprimer">'+fidTrashSVG()+'</button>'
+      +'</div></div>';}).join('');
+    h+=fidSaveBtn('Enregistrer');
+  }
+  else{ // conditions
+    const title=(e.brand&&e.brand.title)||e.name||'votre établissement';
+    h+='<div style="'+card+';background:#f8fafc"><div style="font-weight:800;font-size:15px">ⓘ Conditions de récupération des lots</div><div style="font-size:12.5px;color:#64748b;margin-top:4px;line-height:1.55">Définissez les conditions que les gagnants devront respecter pour récupérer leurs lots. Ces conditions s\'appliqueront à tous les lots de ce jeu et seront affichées lors de la validation du lot.</div></div>';
+    h+='<div style="'+card+'"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:19px;font-weight:800">€</div><div style="flex:1"><div style="font-weight:900;font-size:16px">Montant minimum de commande</div><div style="font-size:12.5px;color:#64748b">Le lot sera récupérable uniquement sur présentation d\'une commande</div></div><span class="switch '+(e.minOrderOn?'on':'')+'" onclick="fidCondToggle(\'min\')"><span class="tk"></span></span></div>'
+     +(e.minOrderOn?'<div style="margin-top:14px"><label style="'+lab+'">Montant minimum (€)</label><div style="display:flex;align-items:center;gap:8px"><input id="fidm_minorder" type="number" min="0" step="0.5" value="'+escH(e.minOrder)+'" style="'+inp+';max-width:220px"><b>€</b></div><div style="'+hint+'">Le gagnant devra présenter une commande d\'au moins ce montant pour récupérer son lot</div></div>':'')+'</div>';
+    h+='<div style="'+card+'"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:19px">🕐</div><div style="flex:1"><div style="font-weight:900;font-size:16px">Délai avant récupération</div><div style="font-size:12.5px;color:#64748b">Le lot ne sera récupérable qu\'après un certain temps</div></div><span class="switch '+(e.delayOn?'on':'')+'" onclick="fidCondToggle(\'delay\')"><span class="tk"></span></span></div>'
+     +(e.delayOn?'<div style="margin-top:14px"><label style="'+lab+'">Délai (en heures)</label><div style="display:flex;align-items:center;gap:8px"><input id="fidm_delay" type="number" min="0" step="1" value="'+escH(e.delayHours)+'" style="'+inp+';max-width:220px"><b>heures</b></div><div style="'+hint+'">24 heures = 1 jour, 48 heures = 2 jours, etc.</div></div>':'')+'</div>';
+    const parts=[];if(e.minOrderOn&&Number(e.minOrder)>0)parts.push('sur présentation d\'une commande d\'un montant minimum de '+Number(e.minOrder)+'€');
+    if(e.delayOn&&Number(e.delayHours)>0)parts.push('à partir de '+Number(e.delayHours)+' heures après le gain');
+    const preview=parts.length?('"Ce lot est récupérable '+parts.join(' et ')+' chez "'+title+'"."'):'"Ce lot est récupérable immédiatement chez "'+title+'", sans condition particulière."';
+    h+='<div style="border:2px dashed #cbd5e1;border-radius:16px;padding:16px 18px;background:#f8fafc"><div style="font-weight:800;font-size:15px;margin-bottom:10px">Aperçu du message affiché au gagnant</div><div style="background:#fff;border-radius:12px;padding:14px 16px;font-style:italic;color:#64748b;font-size:14px;line-height:1.6">'+escH(preview)+'</div></div>';
+    h+=fidSaveBtn('Enregistrer les conditions');
+  }
+  b.innerHTML=h;
 }
-function fidCollect(){const e=FID_EDIT;const nm=document.getElementById('fidm_name');if(nm)e.name=nm.value;
+function fidCondToggle(k){fidCollect();if(k==='min')FID_EDIT.minOrderOn=!FID_EDIT.minOrderOn;else FID_EDIT.delayOn=!FID_EDIT.delayOn;fidRenderModalBody();}
+function fidHundredToggle(){fidCollect();FID_EDIT.hundredWin=!FID_EDIT.hundredWin;fidRenderModalBody();}
+function fidActAdd(){fidCollect();const t=(document.getElementById('fidm_acttype')||{}).value||'Autre';const cu=(document.getElementById('fidm_actcustom')||{}).value||'';const url=((document.getElementById('fidm_acturl')||{}).value||'').trim();
+  if(!url){toast('Renseignez l\'URL de l\'action');return;}
+  const label=(t==='Autre')?(cu.trim()||'Action'):t;
+  FID_EDIT.actions.push({label:label,url:url});fidRenderModalBody();}
+function fidActDel(i){fidCollect();FID_EDIT.actions.splice(i,1);fidRenderModalBody();}
+function fidLotAdd(){fidCollect();FID_EDIT.lots.push({label:'',type:'lot',percent:10,cases:1,photo:'',photoPath:''});fidRenderModalBody();}
+function fidLotDel(i){fidCollect();FID_EDIT.lots.splice(i,1);fidRenderModalBody();}
+function fidTestProba(){fidCollect();const e=FID_EDIT;const segs=fidBuildSegments(e);if(!segs.length){toast('Ajoutez des lots');return;}
+  const total=segs.reduce(function(s,x){return s+(x.weight||0);},0)||1;const counts={};const N=5000;
+  for(let k=0;k<N;k++){let r=Math.random()*total;let pick=segs[segs.length-1];for(let i=0;i<segs.length;i++){r-=segs[i].weight||0;if(r<=0){pick=segs[i];break;}}counts[pick.label]=(counts[pick.label]||0)+1;}
+  const byLabel={};segs.forEach(function(s){byLabel[s.label]=(byLabel[s.label]||0)+(s.weight||0);});
+  const rows=Object.keys(byLabel).map(function(l){const cfg=byLabel[l]/total*100;const obs=(counts[l]||0)/N*100;return '<tr><td class="tname">'+escH(l)+'</td><td>'+cfg.toFixed(2)+'%</td><td>'+obs.toFixed(2)+'%</td></tr>';}).join('');
+  openInfoHTML('Test probabilités — '+N+' tirages simulés','<table style="width:100%"><thead><tr><th style="text-align:left">Lot</th><th style="text-align:left">Configuré</th><th style="text-align:left">Observé</th></tr></thead><tbody>'+rows+'</tbody></table><div class="tsub" style="font-size:12px;margin-top:10px">Simulation locale : les tirages réels utilisent les mêmes probabilités, calculées côté serveur.</div>');}
+function fidCollect(){const e=FID_EDIT;if(!e)return;
+  const nm=document.getElementById('fidm_name');if(nm)e.name=nm.value;
   const gr=document.querySelector('input[name="fidm_gtype"]:checked');if(gr)e.gameType=gr.value;
-  const bt=document.getElementById('fidm_btitle');if(bt){e.brand=e.brand||fidBrandDefault();e.brand.title=bt.value.trim();e.brand.subtitle=(document.getElementById('fidm_bsub')||{}).value||'';e.brand.color=(document.getElementById('fidm_bcolor')||{}).value||'#0e7c58';e.brand.segA=(document.getElementById('fidm_sega')||{}).value||'#111827';e.brand.segB=(document.getElementById('fidm_segb')||{}).value||'#ffffff';}
+  const bt=document.getElementById('fidm_btitle');if(bt){e.brand=e.brand||fidBrandDefault();e.brand.title=bt.value.trim();e.brand.subtitle=(document.getElementById('fidm_bsub')||{}).value||'';}
+  const bc=document.getElementById('fidm_bcolor');if(bc){e.brand=e.brand||fidBrandDefault();e.brand.color=bc.value||'#0e7c58';e.brand.color2=(document.getElementById('fidm_bcolor2')||{}).value||e.brand.color;e.brand.segA=(document.getElementById('fidm_sega')||{}).value||'#111827';e.brand.segB=(document.getElementById('fidm_segb')||{}).value||'#ffffff';}
   const mo=document.getElementById('fidm_minorder');if(mo)e.minOrder=mo.value;
-  const dl=document.getElementById('fidm_delay');if(dl)e.delayHours=Number(dl.value)||0;
-  const prevSegs=(e.segments||[]).slice();
-  const labels=document.querySelectorAll('.fid-seg-label'),types=document.querySelectorAll('.fid-seg-type'),weights=document.querySelectorAll('.fid-seg-weight');
-  e.segments=[];for(let i=0;i<labels.length;i++){const prev=prevSegs[i]||{};e.segments.push({label:labels[i].value.trim(),type:types[i].value,weight:Number(weights[i].value)||0,photo:prev.photo||'',photoPath:prev.photoPath||''});}
-  const al=document.querySelectorAll('.fid-act-label'),au=document.querySelectorAll('.fid-act-url');
-  e.actions=[];for(let i=0;i<al.length;i++){e.actions.push({label:al[i].value.trim(),url:au[i].value.trim()});}
+  const dl=document.getElementById('fidm_delay');if(dl)e.delayHours=dl.value;
+  const pc=document.getElementById('fidm_perducases');if(pc)e.perduCases=Math.max(1,Number(pc.value)||1);
+  const labels=document.querySelectorAll('.fid-lot-label');
+  if(labels.length){const pcts=document.querySelectorAll('.fid-lot-pct'),cases=document.querySelectorAll('.fid-lot-cases');const prev=(e.lots||[]).slice();
+    e.lots=[];for(let i=0;i<labels.length;i++){const pv=prev[i]||{};e.lots.push({label:labels[i].value.trim(),type:pv.type||'lot',percent:Number(pcts[i].value)||0,cases:Math.max(1,Math.round(Number(cases[i].value)||1)),photo:pv.photo||'',photoPath:pv.photoPath||''});}}
 }
-function fidRowAdd(k){fidCollect();if(k==='seg')FID_EDIT.segments.push({label:'',type:'lot',weight:1});else FID_EDIT.actions.push({label:'',url:''});fidRenderModalBody();}
-function fidRowDel(k,i){fidCollect();if(k==='seg')FID_EDIT.segments.splice(i,1);else FID_EDIT.actions.splice(i,1);fidRenderModalBody();}
 async function fidSaveGame(){fidCollect();const e=FID_EDIT;
-  if(!e.name){toast('Donnez un nom à la roue');return;}
-  const segs=e.segments.filter(function(s){return s.label;});if(segs.length<2){toast('Ajoutez au moins 2 cases avec un intitulé');return;}
-  const actions=e.actions.filter(function(a){return a.label&&a.url;});
+  if(!(e.name||'').trim()){toast('Donnez un nom au jeu');FID_TAB='general';fidRenderModalBody();return;}
+  const lots=(e.lots||[]).filter(function(l){return l.label;});
+  if(!lots.length){toast('Ajoutez au moins un lot');return;}
+  const actions=(e.actions||[]).filter(function(a){return a.label&&a.url;});
   const cName=(state.clients.find(function(x){return x.est_code===CUR;})||{}).name||'';
   const brand=Object.assign(fidBrandDefault(),e.brand||{});if(!brand.title)brand.title=cName;
-  const config={estName:brand.title||cName,gameType:e.gameType||'wheel',brand:brand,conditions:{minOrder:(e.minOrder!==''&&e.minOrder!=null)?Number(e.minOrder):null,delayHours:Number(e.delayHours)||0},segments:segs.map(function(s,i){return {id:'s'+i,label:s.label,type:s.type,weight:Math.max(0,s.weight||0),photo:s.photo||'',photoPath:s.photoPath||'',color:FID_PALETTE[i%FID_PALETTE.length]};}),actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
-  const btn=document.getElementById('fidm_save');if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
+  const conditions={minOrder:(e.minOrderOn&&Number(e.minOrder)>0)?Number(e.minOrder):null,delayHours:(e.delayOn&&Number(e.delayHours)>0)?Number(e.delayHours):0};
+  const config={estName:brand.title||cName,gameType:e.gameType||'wheel',brand:brand,conditions:conditions,
+    lots:lots,hundredWin:!!e.hundredWin,perduCases:Math.max(1,Number(e.perduCases)||3),
+    segments:fidBuildSegments(Object.assign({},e,{lots:lots})),
+    actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
+  const btn=document.getElementById('fidm_save');const old=btn?btn.textContent:'';if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
   try{
     if(e.id){const {error}=await SB.from('fid_games').update({name:e.name,config:config}).eq('id',e.id);if(error)throw error;}
-    else{const {error}=await SB.from('fid_games').insert({est_code:CUR,name:e.name,config:config,active:true});if(error)throw error;}
-    fidCloseModal();await fidLoad();toast('Roue enregistrée');
-  }catch(err){toast('Erreur : '+(err.message||err));if(btn){btn.disabled=false;btn.textContent='Enregistrer la roue';}}
+    else{const {data,error}=await SB.from('fid_games').insert({est_code:CUR,name:e.name,config:config,active:false}).select().single();if(error)throw error;if(data)e.id=data.id;}
+    if(btn){btn.disabled=false;btn.textContent='✓ Enregistré';btn.style.background='#fff';btn.style.color='#0b1220';btn.style.borderColor='#e2e8f0';
+      setTimeout(function(){const b2=document.getElementById('fidm_save');if(b2){b2.textContent=old;b2.style.background='#0b1220';b2.style.color='#fff';b2.style.borderColor='#0b1220';}},1800);}
+    fidLoad();
+  }catch(err){toast('Erreur : '+(err.message||err));if(btn){btn.disabled=false;btn.textContent=old;}}
 }
-async function fidToggleGame(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;try{const {error}=await SB.from('fid_games').update({active:!g.active}).eq('id',id);if(error)throw error;await fidLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
+async function fidToggleGame(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;
+  if(!g.active){const c=g.config||{};
+    if(c.lots&&c.lots.length){const v=fidValidCfg({lots:c.lots,hundredWin:!!c.hundredWin,perduCases:c.perduCases||3});
+      if(!v.ok){toast('Activation impossible : configuration des lots invalide ('+ (c.hundredWin?v.sum.toFixed(2)+'% / 100%':v.tot+' segments') +'). Ouvrez « Configurer » > Lots.');return;}}}
+  try{const {error}=await SB.from('fid_games').update({active:!g.active}).eq('id',id);if(error)throw error;await fidLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
 function fidDeleteGame(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;openConfirm('Supprimer la roue','Supprimer « '+g.name+' » ? Les lots déjà gagnés resteront valides.',async function(){try{const {error}=await SB.from('fid_games').delete().eq('id',id);if(error)throw error;await fidLoad();toast('Roue supprimée');}catch(e){toast('Erreur : '+(e.message||e));}});}
 function fidShowQR(id){const g=FID_GAMES.find(function(x){return x.id===id;});if(!g)return;const link=fidBase()+'?jeu='+encodeURIComponent(g.est_code)+'~'+g.id;
   openInfoHTML('QR de la roue — '+g.name,'<div style="text-align:center">'+qrImg(link,200)+'<div class="tsub" style="margin-top:10px">À imprimer sur vos flyers. Les clients scannent ce code pour jouer.</div><div style="margin-top:10px;word-break:break-all;font-size:12px"><a href="'+link+'" target="_blank">'+escH(link)+'</a></div></div>');
@@ -1951,9 +2078,14 @@ async function startPlay(param){
 }
 function pvHexA(hex,a){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';}catch(e){return 'rgba(0,0,0,'+a+')';}}
 function pvContrast(hex){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);const lum=0.299*((n>>16)&255)+0.587*((n>>8)&255)+0.114*(n&255);return lum>150?'#0b1220':'#ffffff';}catch(e){return '#ffffff';}}
-function pvApplyBrand(b){var sec=document.getElementById('play');if(!sec)return;const t1=pvHexA(b.color||'#0e7c58',0.28),t2=pvHexA(b.color||'#0e7c58',0.16);
+function pvApplyBrand(b){var sec=document.getElementById('play');if(!sec)return;const c2=b.color2||b.color||'#0e7c58';
+  const t1=pvHexA(b.color||'#0e7c58',0.28),t2=pvHexA(c2,0.16),t3=pvHexA(c2,0.22);
   sec.style.background='#faf8f4';
-  sec.style.backgroundImage='radial-gradient(circle 190px at -50px 6%,'+t1+' 0 97%,transparent 100%),radial-gradient(circle 150px at 104% 10%,'+t2+' 0 97%,transparent 100%),radial-gradient(circle 120px at 10% 84%,'+t2+' 0 97%,transparent 100%),radial-gradient(circle 170px at 96% 88%,'+t1+' 0 97%,transparent 100%),radial-gradient(circle 60px at 62% 46%,'+pvHexA(b.color||'#0e7c58',0.10)+' 0 97%,transparent 100%)';
+  let layers='radial-gradient(circle 190px at -50px 6%,'+t1+' 0 97%,transparent 100%),radial-gradient(circle 150px at 104% 10%,'+t2+' 0 97%,transparent 100%),radial-gradient(circle 120px at 10% 84%,'+t2+' 0 97%,transparent 100%),radial-gradient(circle 170px at 96% 88%,'+t3+' 0 97%,transparent 100%),radial-gradient(circle 60px at 62% 46%,'+pvHexA(b.color||'#0e7c58',0.10)+' 0 97%,transparent 100%)';
+  if(b.bgImage){layers+=',linear-gradient(rgba(250,248,244,.88),rgba(250,248,244,.88)),url("'+b.bgImage+'")';
+    sec.style.backgroundSize='auto,auto,auto,auto,auto,auto,cover';sec.style.backgroundPosition='0 0,0 0,0 0,0 0,0 0,0 0,center';}
+  else{sec.style.backgroundSize='auto';sec.style.backgroundPosition='0 0';}
+  sec.style.backgroundImage=layers;
   sec.style.backgroundRepeat='no-repeat';}
 function pvMsg(t,s){return '<div class="pv-est">Vigie</div><h2>'+escH(t)+'</h2><div class="pv-sub">'+escH(s)+'</div>';}
 function pvRender(){
@@ -1961,9 +2093,16 @@ function pvRender(){
   const scratch=(cfg.gameType==='scratch');
   const initials=escH((b.title||'?').split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase());
   const logo=b.logo?'<img src="'+b.logo+'" style="width:88px;height:88px;border-radius:50%;object-fit:cover;box-shadow:0 8px 22px rgba(0,0,0,.18);border:4px solid #fff">':'<div style="width:88px;height:88px;border-radius:50%;background:'+escH(b.color)+';color:'+pvContrast(b.color)+';display:grid;place-items:center;font-weight:900;font-size:28px;box-shadow:0 8px 22px rgba(0,0,0,.18)">'+initials+'</div>';
-  const gameArea=scratch
-    ?'<div id="pv_scratchzone" style="margin:14px auto 6px;max-width:320px"><div style="height:180px;border-radius:14px;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 12px,#b6c2d1 12px,#b6c2d1 24px);display:grid;place-items:center;color:#475569;font-weight:900;letter-spacing:3px;font-size:18px;box-shadow:0 10px 26px rgba(0,0,0,.18)">TICKET</div></div>'
-    :'<div class="wheelwrap"><div class="wheel-ptr" style="border-top-color:'+escH(b.color)+'"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';border-color:#fff;font-size:13px">Lancer</div></div>';
+  const gt=cfg.gameType||'wheel';
+  let gameArea;
+  if(gt==='scratch')gameArea='<div id="pv_scratchzone" style="margin:14px auto 6px;max-width:320px"><div style="height:180px;border-radius:14px;background:repeating-linear-gradient(45deg,#cbd5e1,#cbd5e1 12px,#b6c2d1 12px,#b6c2d1 24px);display:grid;place-items:center;color:#475569;font-weight:900;letter-spacing:3px;font-size:18px;box-shadow:0 10px 26px rgba(0,0,0,.18)">TICKET</div></div>';
+  else if(gt==='slots')gameArea='<div id="pv_slotszone" style="margin:16px auto 6px;max-width:320px"><div style="background:'+escH(b.segA||'#111827')+';border:4px solid '+escH(b.color)+';border-radius:18px;padding:16px;display:flex;gap:10px;justify-content:center;box-shadow:0 10px 26px rgba(0,0,0,.2)">'
+    +[0,1,2].map(function(i){return '<div class="pv-reel" id="pv_reel'+i+'" style="width:78px;height:78px;border-radius:12px;background:#fff;display:grid;place-items:center;font-size:34px;font-weight:900;color:'+escH(b.color)+';overflow:hidden">★</div>';}).join('')
+    +'</div></div>';
+  else if(gt==='boxes')gameArea='<div id="pv_boxzone" style="margin:16px auto 6px;max-width:340px;display:flex;gap:12px;justify-content:center">'
+    +[0,1,2].map(function(i){return '<div class="pv-box" id="pv_box'+i+'" style="width:92px;height:92px;border-radius:16px;background:#fff;border:3px solid '+pvHexA(b.color,0.35)+';display:grid;place-items:center;font-size:40px;box-shadow:0 8px 20px rgba(15,23,42,.12);transition:transform .3s,border-color .3s">🎁</div>';}).join('')
+    +'</div>';
+  else gameArea='<div class="wheelwrap"><div class="wheel-ptr" style="border-top-color:'+escH(b.color)+'"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';border-color:#fff;font-size:13px">Lancer</div></div>';
   const lotsAll=segs.filter(function(s){return s.type!=='perdu';});
   const seenLots={};const lots=lotsAll.filter(function(s){const k=(s.label||'').toLowerCase();if(seenLots[k])return false;seenLots[k]=1;return true;});
   const lotsHtml=lots.length?('<div style="margin-top:18px"><div style="display:inline-block;background:'+pvHexA(b.color,0.12)+';color:'+escH(b.color)+';font-weight:800;padding:7px 16px;border-radius:999px;font-size:14px">Lots à gagner</div>'
@@ -1974,7 +2113,7 @@ function pvRender(){
   +'<div id="pv_controls"></div><div id="pv_result"></div><div id="pv_actions"></div>'
   +lotsHtml
   +'<div class="pv-foot">Jeu proposé par '+escH(b.title||'l\'établissement')+'</div>';
-  if(!scratch)setTimeout(function(){pvDrawWheel(segs);},30);
+  if(gt==='wheel')setTimeout(function(){pvDrawWheel(segs);},30);
   pvRenderControls();pvRenderActions();
 }
 function pvShade(hex,amt){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,bl=(n&255)+amt;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));bl=Math.max(0,Math.min(255,bl));return '#'+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);}catch(e){return hex;}}
@@ -2007,10 +2146,11 @@ function pvDrawWheel(segs){
 function pvRenderControls(){
   const S=PV_STATE;const box=document.getElementById('pv_controls');if(!box)return;const b=S.brand;const cfg=S.game.config||{};const acts=cfg.actions||[];
   const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
-  const scratch=(cfg.gameType==='scratch');
+  const gt=cfg.gameType||'wheel';
+  const firstLabel=(gt==='scratch')?'Obtenir mon ticket':(gt==='slots')?'Lancer la machine':(gt==='boxes')?'Ouvrir une boîte':'Lancer la roue';
   let label,dis=false;
-  if(S.credits>0){label=(S.played===0?(scratch?'Obtenir mon ticket':'Lancer la roue'):'Rejouer'+(S.credits>1?' ('+S.credits+')':''));}
-  else if(remaining.length){label=(S.played===0?(scratch?'Obtenir mon ticket':'Lancer la roue'):'Rejouer');}
+  if(S.credits>0){label=(S.played===0?firstLabel:'Rejouer'+(S.credits>1?' ('+S.credits+')':''));}
+  else if(remaining.length){label=(S.played===0?firstLabel:'Rejouer');}
   else{dis=true;label=S.played>0?'Vous avez utilisé tous vos tours':'Indisponible';}
   box.innerHTML='<button class="pv-btn" id="pv_spin" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+'"'+(dis?' disabled':'')+' onclick="pvMainBtn()">'+label+'</button>';
 }
@@ -2083,7 +2223,10 @@ async function pvSpin(){
     const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:'spin',est_code:S.est,game_id:S.gid})});
     const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Erreur');
     S.played++;
-    if((S.game.config||{}).gameType==='scratch'){pvScratchSetup(j);}
+    const gt=(S.game.config||{}).gameType||'wheel';
+    if(gt==='scratch'){pvScratchSetup(j);}
+    else if(gt==='slots'){pvSlotsRun(j);}
+    else if(gt==='boxes'){pvBoxesRun(j);}
     else{
       const segs=(S.game.config||{}).segments||[];const n=segs.length;const seg=360/n;const idx=j.index;
       const align=(360-(idx*seg+seg/2))%360;let prev=S._rot||0;let target=prev-(prev%360)+360*6+align;if(target<=prev)target+=360;S._rot=target;
@@ -2112,6 +2255,40 @@ function pvScratchSetup(j){
   cv.addEventListener('pointerdown',function(ev){down=true;try{cv.setPointerCapture(ev.pointerId);}catch(e){}const p=pos(ev);erase(p[0],p[1]);});
   cv.addEventListener('pointermove',function(ev){if(!down||done)return;const p=pos(ev);erase(p[0],p[1]);if(++moves%12===0&&ratio()>0.45)finish();});
   cv.addEventListener('pointerup',function(){down=false;if(!done&&ratio()>0.45)finish();});
+}
+function pvSlotsRun(j){
+  const S=PV_STATE;const segs=(S.game.config||{}).segments||[];const sg=segs[j.index]||{};
+  const syms=['★','7','◆','●','■'];
+  const reels=[0,1,2].map(function(i){return document.getElementById('pv_reel'+i);});
+  if(reels.some(function(r){return !r;})){pvAfterSpin(j);return;}
+  reels.forEach(function(r){r.removeAttribute('data-stop');r.style.boxShadow='none';r.textContent='★';});
+  const win=!!j.win;
+  const finalContent=function(){return sg.photo?'<img src="'+sg.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:10px">':'<span style="font-size:34px">★</span>';};
+  const loseSet=['★','✕','●'];
+  let tick=0;
+  const iv=setInterval(function(){tick++;
+    reels.forEach(function(r,i){if(r.getAttribute('data-stop'))return;r.textContent=syms[(tick+i*2)%syms.length];});
+  },80);
+  [900,1600,2300].forEach(function(t,i){setTimeout(function(){const r=reels[i];if(!r)return;r.setAttribute('data-stop','1');
+    if(win)r.innerHTML=finalContent();else r.innerHTML='<span style="font-size:34px">'+loseSet[i]+'</span>';
+    r.style.boxShadow='inset 0 0 0 3px '+(win?'#16a34a':'#e2e8f0');
+  },t);});
+  setTimeout(function(){clearInterval(iv);pvAfterSpin(j);},2800);
+}
+function pvBoxesRun(j){
+  const S=PV_STATE;const segs=(S.game.config||{}).segments||[];const sg=segs[j.index]||{};
+  const boxes=[0,1,2].map(function(i){return document.getElementById('pv_box'+i);});
+  if(boxes.some(function(b){return !b;})){pvAfterSpin(j);return;}
+  boxes.forEach(function(b){b.innerHTML='🎁';b.style.opacity='1';b.style.transform='scale(1)';});
+  const chosen=Math.floor(Math.random()*3);const bc=S.brand.color;
+  let k=0;
+  const iv=setInterval(function(){boxes.forEach(function(b,i){b.style.borderColor=(i===k%3)?bc:pvHexA(bc,0.25);b.style.transform=(i===k%3)?'scale(1.08)':'scale(1)';});k++;},170);
+  setTimeout(function(){clearInterval(iv);
+    boxes.forEach(function(b,i){b.style.transform='scale(1)';b.style.borderColor=pvHexA(bc,0.2);b.style.opacity=(i===chosen)?'1':'0.35';});
+    const b=boxes[chosen];b.style.borderColor=j.win?'#16a34a':'#94a3b8';b.style.transform='scale(1.12)';
+    b.innerHTML=j.win?(sg.photo?'<img src="'+sg.photo+'" style="width:64px;height:64px;object-fit:cover;border-radius:12px">':'<span style="font-size:24px;font-weight:900;color:#16a34a">GAGNÉ</span>'):'<span style="font-size:15px;font-weight:900;color:#64748b">PERDU</span>';
+    setTimeout(function(){pvAfterSpin(j);},700);
+  },2100);
 }
 function pvAfterSpin(j){
   const S=PV_STATE;S.spinning=false;
