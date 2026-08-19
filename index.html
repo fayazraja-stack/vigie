@@ -586,6 +586,8 @@
 .pv-act a{color:#0e7c58;font-weight:700;text-decoration:none;font-size:14px}
 .pv-act .pv-go{background:#0e7c58;color:#fff;border:none;border-radius:9px;padding:8px 12px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
 .pv-foot{margin-top:18px;font-size:11px;color:#94a3b8}
+.pvspin{width:42px;height:42px;border-radius:50%;border:5px solid #e2e8f0;border-top-color:#0e7c58;margin:0 auto;animation:pvspin 0.8s linear infinite}
+@keyframes pvspin{to{transform:rotate(360deg)}}
 .wheelseg-legend{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;margin-top:6px;font-size:12px;color:#475569}
 .wheelseg-legend span{display:inline-flex;align-items:center;gap:5px}
 .wheelseg-legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
@@ -1397,6 +1399,11 @@ function fidBase(){return location.origin+location.pathname;}
 function qrImg(text,size){size=size||180;try{if(window.qrcode){const qr=qrcode(0,'M');qr.addData(text);qr.make();return '<img src="'+qr.createDataURL(6,2)+'" width="'+size+'" height="'+size+'" alt="QR">';}}catch(e){}return '<div style="font-family:monospace;font-size:11px;word-break:break-all;padding:8px">'+escH(text)+'</div>';}
 function openInfoHTML(title,html){let mask=document.getElementById('info_mask');if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="info_mask"><div class="modal" style="width:440px;max-width:96vw"><div class="mh"><h3 id="info_title"></h3><button class="x" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">✕</button></div><div class="mb" id="info_body"></div></div></div>');mask=document.getElementById('info_mask');}document.getElementById('info_title').textContent=title;document.getElementById('info_body').innerHTML=html;mask.classList.add('on');}
 function fidWinsFor(gid){return FID_WINS.filter(w=>w.game_id===gid);}
+function fidExportLeads(){const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});if(!leads.length){toast('Aucun contact à exporter');return;}
+  const rows=[['Nom','Email','Telephone','Lot','Statut','Date']];
+  leads.forEach(function(w){rows.push([w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
+  const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='contacts-jeux.csv';a.click();}
 async function fidLoad(){
   const body=document.getElementById('fid_body');if(!body)return;
   if(!SB||!CUR){body.innerHTML='<div class="empty" style="padding:24px">Connexion indisponible.</div>';return;}
@@ -1413,6 +1420,8 @@ function fidRenderBody(){
   const totalWins=FID_WINS.length, redeemed=FID_WINS.filter(w=>w.status==='redeemed').length, pending=totalWins-redeemed, actifs=FID_GAMES.filter(g=>g.active).length;
   let html='<div class="kpis">'+kpi('Roues actives',actifs,'sur '+FID_GAMES.length,'up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots récupérés',redeemed,'validés en caisse','up')+kpi('En attente',pending,'à valider',pending?'down':'up')+'</div>';
   html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Valider un lot</h3><div class="sub">Saisissez le code présenté par le client pour valider la remise</div></div><div class="pb"><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="fid_token" placeholder="Code du lot (ex. 7KQ2M9AB)" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:2px" onkeydown="if(event.key===\'Enter\')fidValidateToken()"><button class="btn" onclick="fidValidateToken()">Vérifier</button></div><div id="fid_valmsg" style="font-size:13px;margin-top:10px;line-height:1.5"></div></div></div>';
+  const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});
+  html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Contacts collectés</h3><div class="sub">'+leads.length+' contact(s) récoltés via les jeux</div><div class="actions"><button class="btn ghost sm" onclick="fidExportLeads()"'+(leads.length?'':' disabled')+'>↓ Export Excel</button></div></div><div class="pb" style="padding:0">'+(leads.length?('<table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot</th><th>Statut</th></tr></thead><tbody>'+leads.slice(0,50).map(function(w){return '<tr><td class="tname">'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td><td>'+escH(w.prize||'')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">remis</span>':'<span class="chip warn">à remettre</span>')+'</td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:20px">Aucun contact pour le moment. Ils apparaîtront quand des clients gagneront un lot et renseigneront leurs coordonnées.</div>')+'</div></div>';
   if(!FID_GAMES.length){
     html+='<div class="empty" style="padding:40px 20px">Aucune roue pour le moment. Cliquez « Créer une roue » pour lancer votre premier jeu.</div>';
   } else {
@@ -1433,8 +1442,9 @@ function fidRenderBody(){
   }
   body.innerHTML=html;
 }
-function fidNewGame(){FID_EDIT={id:null,name:'',active:true,segments:[{label:'Café offert',type:'lot',weight:2},{label:'-10% sur l\'addition',type:'reduction',weight:3},{label:'Rejouez une prochaine fois',type:'perdu',weight:4},{label:'Dessert offert',type:'lot',weight:1}],actions:[{label:'Laissez un avis Google',url:''},{label:'Abonnez-vous sur Instagram',url:''}]};fidOpenModal('Nouvelle roue');}
-function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};FID_EDIT={id:g.id,name:g.name||'',active:g.active,segments:(c.segments||[]).map(s=>({label:s.label||'',type:s.type||'lot',weight:s.weight!=null?s.weight:1})),actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''}))};fidOpenModal('Modifier la roue');}
+function fidBrandDefault(){return {title:'',subtitle:'Tentez votre chance et repartez avec un lot !',color:'#0e7c58',bg:'#0b1220'};}
+function fidNewGame(){FID_EDIT={id:null,name:'',active:true,brand:fidBrandDefault(),segments:[{label:'Café offert',type:'lot',weight:2},{label:'-10% sur l\'addition',type:'reduction',weight:3},{label:'Rejouez une prochaine fois',type:'perdu',weight:4},{label:'Dessert offert',type:'lot',weight:1}],actions:[{label:'Laissez un avis Google',url:''},{label:'Abonnez-vous sur Instagram',url:''}]};fidOpenModal('Nouvelle roue');}
+function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};FID_EDIT={id:g.id,name:g.name||'',active:g.active,brand:Object.assign(fidBrandDefault(),{title:c.estName||''},c.brand||{}),segments:(c.segments||[]).map(s=>({label:s.label||'',type:s.type||'lot',weight:s.weight!=null?s.weight:1})),actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''}))};fidOpenModal('Modifier la roue');}
 function fidOpenModal(title){
   let mask=document.getElementById('fidm_mask');
   if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="fidm_mask"><div class="modal" style="width:660px;max-width:96vw"><div class="mh"><h3 id="fidm_title">Roue</h3><button class="x" onclick="fidCloseModal()">✕</button></div><div class="mb" id="fidm_body" style="max-height:74vh;overflow:auto"></div><div class="mf"><button class="btn ghost" onclick="fidCloseModal()">Annuler</button><button class="btn" id="fidm_save" onclick="fidSaveGame()">Enregistrer la roue</button></div></div></div>');mask=document.getElementById('fidm_mask');}
@@ -1452,9 +1462,17 @@ function fidRenderModalBody(){
   act+='<table style="width:100%;border-collapse:collapse"><tbody>';
   act+=e.actions.map(function(a,i){return '<tr><td style="padding:3px 6px 3px 0;width:42%"><input class="fid-act-label" value="'+escH(a.label)+'" placeholder="Ex. Laissez un avis Google" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td style="padding:3px 6px"><input class="fid-act-url" value="'+escH(a.url)+'" placeholder="https://…" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:8px"></td><td><button class="btn ghost sm" onclick="fidRowDel(\'act\','+i+')">✕</button></td></tr>';}).join('');
   act+='</tbody></table><button class="btn ghost sm" style="margin-top:8px" onclick="fidRowAdd(\'act\')">＋ Ajouter une action</button>';
-  b.innerHTML='<div class="field" style="margin-bottom:12px"><label>Nom de la roue *</label><input id="fidm_name" value="'+escH(e.name)+'" placeholder="Ex. Roue de l\'été"></div>'+seg+act;
+  const br=e.brand||fidBrandDefault();
+  let brand='<div class="cm-sec">Personnalisation (aux couleurs de votre restaurant)</div><div class="cm-grid">'
+   +'<div class="field"><label>Nom / titre affiché sur le jeu</label><input id="fidm_btitle" value="'+escH(br.title||'')+'" placeholder="Ex. Pizzeria Bella"></div>'
+   +'<div class="field"><label>Accroche</label><input id="fidm_bsub" value="'+escH(br.subtitle||'')+'" placeholder="Tentez votre chance !"></div>'
+   +'<div class="field"><label>Couleur principale</label><input id="fidm_bcolor" type="color" value="'+escH(br.color||'#0e7c58')+'" style="height:42px;padding:4px"></div>'
+   +'<div class="field"><label>Couleur de fond</label><input id="fidm_bbg" type="color" value="'+escH(br.bg||'#0b1220')+'" style="height:42px;padding:4px"></div>'
+   +'</div>';
+  b.innerHTML='<div class="field" style="margin-bottom:12px"><label>Nom de la roue * <span class="tsub" style="font-weight:400">(usage interne)</span></label><input id="fidm_name" value="'+escH(e.name)+'" placeholder="Ex. Roue de l\'été"></div>'+brand+seg+act;
 }
 function fidCollect(){const e=FID_EDIT;const nm=document.getElementById('fidm_name');if(nm)e.name=nm.value;
+  const bt=document.getElementById('fidm_btitle');if(bt){e.brand=e.brand||fidBrandDefault();e.brand.title=bt.value.trim();e.brand.subtitle=(document.getElementById('fidm_bsub')||{}).value||'';e.brand.color=(document.getElementById('fidm_bcolor')||{}).value||'#0e7c58';e.brand.bg=(document.getElementById('fidm_bbg')||{}).value||'#0b1220';}
   const labels=document.querySelectorAll('.fid-seg-label'),types=document.querySelectorAll('.fid-seg-type'),weights=document.querySelectorAll('.fid-seg-weight');
   e.segments=[];for(let i=0;i<labels.length;i++){e.segments.push({label:labels[i].value.trim(),type:types[i].value,weight:Number(weights[i].value)||0});}
   const al=document.querySelectorAll('.fid-act-label'),au=document.querySelectorAll('.fid-act-url');
@@ -1467,7 +1485,8 @@ async function fidSaveGame(){fidCollect();const e=FID_EDIT;
   const segs=e.segments.filter(function(s){return s.label;});if(segs.length<2){toast('Ajoutez au moins 2 cases avec un intitulé');return;}
   const actions=e.actions.filter(function(a){return a.label&&a.url;});
   const cName=(state.clients.find(function(x){return x.est_code===CUR;})||{}).name||'';
-  const config={estName:cName,segments:segs.map(function(s,i){return {id:'s'+i,label:s.label,type:s.type,weight:Math.max(0,s.weight||0),color:FID_PALETTE[i%FID_PALETTE.length]};}),actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
+  const brand=Object.assign(fidBrandDefault(),e.brand||{});if(!brand.title)brand.title=cName;
+  const config={estName:brand.title||cName,brand:brand,segments:segs.map(function(s,i){return {id:'s'+i,label:s.label,type:s.type,weight:Math.max(0,s.weight||0),color:FID_PALETTE[i%FID_PALETTE.length]};}),actions:actions.map(function(a,i){return {id:'a'+i,label:a.label,url:a.url};}),firstFree:true};
   const btn=document.getElementById('fidm_save');if(btn){btn.disabled=true;btn.textContent='Enregistrement…';}
   try{
     if(e.id){const {error}=await SB.from('fid_games').update({name:e.name,config:config}).eq('id',e.id);if(error)throw error;}
@@ -1521,22 +1540,24 @@ async function startPlay(param){
     const {data:g}=await SB.from('fid_games').select('*').eq('id',gid).eq('est_code',est).maybeSingle();
     if(!g){card.innerHTML=pvMsg('Jeu introuvable','Ce jeu n\'existe pas ou a été supprimé.');return;}
     if(!g.active){card.innerHTML=pvMsg('Jeu indisponible','Ce jeu est actuellement désactivé. Revenez bientôt !');return;}
-    PV_STATE={est:est,gid:gid,game:g,spins:0,extra:0,usedActions:{},_rot:0,spinning:false};
-    pvRender();
+    const cfg=g.config||{};const brand=Object.assign({title:cfg.estName||'Jeu concours',subtitle:'Tentez votre chance !',color:'#0e7c58',bg:'#0b1220'},cfg.brand||{});
+    const hasActions=(cfg.actions||[]).length>0;
+    PV_STATE={est:est,gid:gid,game:g,brand:brand,credits:hasActions?0:1,usedActions:{},pending:null,lead:null,lastWin:null,_rot:0,spinning:false,played:0};
+    pvApplyBrand(brand);pvRender();
   }catch(e){card.innerHTML=pvMsg('Erreur','Impossible de charger le jeu. Réessayez plus tard.');}
 }
+function pvApplyBrand(b){var sec=document.getElementById('play');if(sec)sec.style.background='linear-gradient(160deg,'+(b.color||'#0e7c58')+' 0%,'+(b.bg||'#0b1220')+' 92%)';}
 function pvMsg(t,s){return '<div class="pv-est">Vigie</div><h2>'+escH(t)+'</h2><div class="pv-sub">'+escH(s)+'</div>';}
 function pvRender(){
-  const card=document.getElementById('play_card');const S=PV_STATE;const cfg=S.game.config||{};const segs=cfg.segments||[];
-  const canSpin=(S.spins===0)||(S.extra>0);
+  const card=document.getElementById('play_card');const S=PV_STATE;const b=S.brand;const cfg=S.game.config||{};const segs=cfg.segments||[];
   const legend='<div class="wheelseg-legend">'+segs.map(function(s){return '<span><i style="background:'+((s.type==='perdu')?'#cbd5e1':(s.color||'#0e7c58'))+'"></i>'+escH(s.label)+'</span>';}).join('')+'</div>';
-  card.innerHTML='<div class="pv-est">'+escH(cfg.estName||'Jeu concours')+'</div><h2>Tournez la roue</h2><div class="pv-sub">Tentez votre chance et repartez peut-être avec un lot !</div>'
+  card.innerHTML='<div class="pv-est" style="color:'+escH(b.color)+'">'+escH(b.title||'Jeu concours')+'</div><h2>Tournez la roue</h2><div class="pv-sub">'+escH(b.subtitle||'')+'</div>'
   +'<div class="wheelwrap"><div class="wheel-ptr"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub">GO</div></div>'
   +legend
-  +'<div><button class="pv-btn" id="pv_spin" onclick="pvSpin()"'+(canSpin?'':' disabled')+'>'+(S.spins===0?'Lancer la roue':'Rejouer')+'</button></div>'
-  +'<div id="pv_result"></div><div id="pv_actions"></div>'
-  +'<div class="pv-foot">Un lot par personne · tours bonus en réalisant les actions proposées</div>';
+  +'<div id="pv_controls"></div><div id="pv_result"></div><div id="pv_actions"></div>'
+  +'<div class="pv-foot">Jeu proposé par '+escH(b.title||'l\'établissement')+'</div>';
   setTimeout(function(){pvDrawWheel(segs);},30);
+  pvRenderControls();pvRenderActions();
 }
 function pvShade(hex,amt){try{let c=(hex||'').replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');const n=parseInt(c,16);let r=(n>>16)+amt,g=((n>>8)&255)+amt,bl=(n&255)+amt;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));bl=Math.max(0,Math.min(255,bl));return '#'+((1<<24)+(r<<16)+(g<<8)+bl).toString(16).slice(1);}catch(e){return hex;}}
 function pvDrawWheel(segs){
@@ -1556,37 +1577,84 @@ function pvDrawWheel(segs){
   // Inner ring outline
   ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle='#0b1220';ctx.lineWidth=3;ctx.stroke();
 }
+function pvRenderControls(){
+  const S=PV_STATE;const box=document.getElementById('pv_controls');if(!box)return;const b=S.brand;const cfg=S.game.config||{};const hasActions=(cfg.actions||[]).length>0;
+  let label,dis;
+  if(S.credits>0){dis=false;label=(S.played===0?'Lancer la roue':'Rejouer'+(S.credits>1?' ('+S.credits+')':''));}
+  else{dis=true;label=hasActions?'Réalisez une action pour jouer':'Indisponible';}
+  box.innerHTML='<button class="pv-btn" id="pv_spin" style="background:'+escH(b.color)+'"'+(dis?' disabled':'')+' onclick="pvSpin()">'+label+'</button>';
+}
+function pvRenderActions(){
+  const S=PV_STATE;const cfg=S.game.config||{};const acts=cfg.actions||[];const box=document.getElementById('pv_actions');if(!box)return;
+  const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
+  if(!remaining.length){box.innerHTML='';return;}
+  const heading=(S.credits<=0&&S.played===0)?'Pour jouer, réalisez une action :':'Gagnez un tour de plus :';
+  box.innerHTML='<div class="pv-actions"><div style="font-weight:800;margin:8px 0 8px;text-align:center">'+heading+'</div>'+remaining.map(function(a){
+    const pend=S.pending===a.id;
+    const btn=pend?'<button class="pv-go" style="background:'+escH(S.brand.color)+'" onclick="pvVerify(\''+a.id+'\')">J\'ai terminé</button>':'<button class="pv-go" style="background:'+escH(S.brand.color)+'" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url)+'\')">J\'y vais</button>';
+    return '<div class="pv-act"><span style="font-size:14px">'+escH(a.label)+'</span>'+btn+'</div>';
+  }).join('')+'</div>';
+}
+function pvDoAction(id,url){const S=PV_STATE;if(S.usedActions[id])return;S.pending=id;try{if(url)window.open(decodeURIComponent(url),'_blank');}catch(e){}
+  pvRenderActions();
+  var handler=function(){if(document.visibilityState==='visible'&&S.pending===id){document.removeEventListener('visibilitychange',handler);setTimeout(function(){pvVerify(id);},400);}};
+  document.addEventListener('visibilitychange',handler);
+}
+function pvVerify(id){const S=PV_STATE;if(S.usedActions[id])return;S.pending=null;pvShowVerify(true);
+  setTimeout(function(){S.usedActions[id]=1;S.credits=(S.credits||0)+1;pvShowVerify(false);pvRenderControls();pvRenderActions();if(window.toast)toast('Action validée — tour débloqué');},3000);
+}
+function pvShowVerify(on){var ov=document.getElementById('pv_verify');
+  if(on){if(!ov){document.body.insertAdjacentHTML('beforeend','<div id="pv_verify" style="position:fixed;inset:0;background:rgba(11,18,32,.72);z-index:9999;display:flex;align-items:center;justify-content:center"><div style="background:#fff;border-radius:16px;padding:26px 28px;text-align:center;max-width:300px"><div class="pvspin"></div><div style="font-weight:800;margin-top:14px">Vérification en cours…</div><div class="tsub" style="font-size:12px;margin-top:4px">Nous confirmons votre action, un instant.</div></div></div>');}else ov.style.display='flex';}
+  else if(ov)ov.style.display='none';}
 async function pvSpin(){
-  const S=PV_STATE;if(!S||S.spinning)return;if(!(S.spins===0||S.extra>0))return;
+  const S=PV_STATE;if(!S||S.spinning||S.credits<=0)return;
   const btn=document.getElementById('pv_spin');const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='';
-  S.spinning=true;if(btn){btn.disabled=true;btn.textContent='…';}
+  S.spinning=true;S.credits--;if(btn){btn.disabled=true;btn.textContent='…';}
   try{
     const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:'spin',est_code:S.est,game_id:S.gid})});
     const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Erreur');
     const segs=(S.game.config||{}).segments||[];const n=segs.length;const seg=360/n;const idx=j.index;
     const align=(360-(idx*seg+seg/2))%360;let prev=S._rot||0;let target=prev-(prev%360)+360*6+align;if(target<=prev)target+=360;S._rot=target;
     const cv=document.getElementById('pv_canvas');if(cv)cv.style.transform='rotate('+target+'deg)';
-    if(S.spins===0)S.spins++;else{S.extra--;S.spins++;}
-    setTimeout(function(){pvShowResult(j);},4700);
-  }catch(e){S.spinning=false;if(btn){btn.disabled=false;btn.textContent='Réessayer';}const rz2=document.getElementById('pv_result');if(rz2)rz2.innerHTML='<div class="pv-result lose">Une erreur est survenue. Réessayez.</div>';}
+    S.played++;
+    setTimeout(function(){pvAfterSpin(j);},4700);
+  }catch(e){S.spinning=false;S.credits++;pvRenderControls();const rz2=document.getElementById('pv_result');if(rz2)rz2.innerHTML='<div class="pv-result lose">Une erreur est survenue. Réessayez.</div>';}
 }
-function pvShowResult(j){
-  const S=PV_STATE;S.spinning=false;const rz=document.getElementById('pv_result');const btn=document.getElementById('pv_spin');const cfg=S.game.config||{};
-  if(j.win){const redeemLink=fidBase()+'?lot='+j.token;
-    rz.innerHTML='<div class="pv-result win"><h3>Gagné !</h3><div>Vous remportez : <b>'+escH(j.prize||'')+'</b></div><div class="pv-qr">'+qrImg(redeemLink,180)+'</div><div class="pv-token">'+escH(j.token)+'</div><div class="tsub" style="margin-top:8px;font-size:12px">Présentez ce code au restaurant pour récupérer votre lot. Valable une seule fois.</div></div>';
-  }else{rz.innerHTML='<div class="pv-result lose"><h3>Pas de chance…</h3><div>Vous n\'avez rien gagné cette fois-ci.</div></div>';}
-  pvRenderActions();
-  if(btn){if(S.extra>0){btn.disabled=false;btn.textContent='Rejouer ('+S.extra+' tour'+(S.extra>1?'s':'')+')';}else{btn.disabled=true;btn.textContent=(cfg.actions&&cfg.actions.length)?'Réalisez une action pour rejouer':'Merci d\'avoir joué';}}
+function pvAfterSpin(j){
+  const S=PV_STATE;S.spinning=false;
+  if(j.win){S.lastWin={id:j.id,prize:j.prize||j.label};if(S.lead){pvClaim();}else{pvShowLeadForm();}}
+  else{const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='<div class="pv-result lose"><h3>Pas de chance…</h3><div>Vous n\'avez rien gagné cette fois-ci.</div></div>';pvRenderControls();pvRenderActions();}
 }
-function pvRenderActions(){
-  const S=PV_STATE;const cfg=S.game.config||{};const acts=cfg.actions||[];const box=document.getElementById('pv_actions');if(!box)return;
-  const remaining=acts.filter(function(a){return !S.usedActions[a.id];});
-  if(!remaining.length){box.innerHTML=acts.length?'<div class="pv-foot">Vous avez utilisé toutes les actions bonus. Merci d\'avoir joué !</div>':'';return;}
-  box.innerHTML='<div class="pv-actions"><div style="font-weight:800;margin:6px 0 8px;text-align:center">Gagnez un tour de plus</div>'+remaining.map(function(a){return '<div class="pv-act"><span style="font-size:14px">'+escH(a.label)+'</span><button class="pv-go" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url)+'\')">J\'y vais</button></div>';}).join('')+'</div>';
+function pvShowLeadForm(){
+  const S=PV_STATE;const rz=document.getElementById('pv_result');const b=S.brand;if(!rz)return;
+  rz.innerHTML='<div class="pv-result win"><h3>Vous avez gagné !</h3><div style="margin-bottom:10px">Renseignez vos coordonnées pour découvrir et récupérer votre lot.</div>'
+   +'<div style="text-align:left"><input id="pv_prenom" placeholder="Prénom *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"><input id="pv_nom" placeholder="Nom *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"><input id="pv_tel" placeholder="Téléphone *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"><input id="pv_email" type="email" placeholder="Email *" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px"></div>'
+   +'<button class="pv-btn" style="background:'+escH(b.color)+';width:100%" onclick="pvSubmitLead()">Découvrir mon lot</button>'
+   +'<div id="pv_lead_msg" style="font-size:12px;color:#b91c1c;margin-top:8px"></div>'
+   +'<div class="tsub" style="font-size:11px;margin-top:8px">Vos informations sont transmises au restaurant pour la remise du lot.</div></div>';
 }
-function pvDoAction(id,url){const S=PV_STATE;if(S.usedActions[id])return;S.usedActions[id]=1;S.extra=(S.extra||0)+1;try{if(url)window.open(decodeURIComponent(url),'_blank');}catch(e){}
-  const btn=document.getElementById('pv_spin');if(btn){btn.disabled=false;btn.textContent='Rejouer ('+S.extra+' tour'+(S.extra>1?'s':'')+')';}
-  pvRenderActions();if(window.toast)toast('Tour bonus débloqué');
+async function pvSubmitLead(){
+  const S=PV_STATE;const gv=function(id){return (document.getElementById(id)||{}).value||'';};
+  const prenom=gv('pv_prenom').trim(),nom=gv('pv_nom').trim(),tel=gv('pv_tel').trim(),email=gv('pv_email').trim();
+  const msg=document.getElementById('pv_lead_msg');
+  if(!prenom||!nom||!tel||!email){if(msg)msg.textContent='Merci de remplir tous les champs.';return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(msg)msg.textContent='Adresse email invalide.';return;}
+  S.lead={name:(prenom+' '+nom).trim(),phone:tel,email:email};
+  pvClaim();
+}
+async function pvClaim(){
+  const S=PV_STATE;if(!S.lastWin)return;const rz=document.getElementById('pv_result');
+  if(rz)rz.innerHTML='<div class="pv-result win"><h3>Un instant…</h3><div>Nous préparons votre lot.</div></div>';
+  try{
+    const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify(Object.assign({action:'claim',id:S.lastWin.id},S.lead||{}))});
+    const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Erreur');
+    pvShowPrize(j.token,j.prize||S.lastWin.prize);
+  }catch(e){if(rz)rz.innerHTML='<div class="pv-result lose">Erreur lors de la validation. Réessayez.</div>';}
+}
+function pvShowPrize(token,prize){
+  const S=PV_STATE;const rz=document.getElementById('pv_result');if(!rz)return;const redeemLink=fidBase()+'?lot='+token;
+  rz.innerHTML='<div class="pv-result win"><h3>Bravo, c\'est gagné !</h3><div>Votre lot : <b>'+escH(prize||'')+'</b></div><div class="pv-qr">'+qrImg(redeemLink,180)+'</div><div class="pv-token">'+escH(token)+'</div><div class="tsub" style="margin-top:8px;font-size:12px">Présentez ce code au restaurant. Usage unique : il sera détruit après validation.</div></div>';
+  S.lastWin=null;pvRenderControls();pvRenderActions();
 }
 function tempChart(cid){const days=[];const t=new Date();t.setHours(0,0,0,0);for(let i=4;i>=0;i--){const d=new Date(t);d.setDate(d.getDate()-i);days.push(d);}
   const rs=cRel(cid).filter(r=>r.equipId==='e1'||r.equipId==='e3');
