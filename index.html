@@ -229,12 +229,36 @@
   .seg-mini button{border:0;background:transparent;padding:7px 13px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted)}
   .seg-mini button.active{background:#fff;color:var(--ink);box-shadow:var(--shadow)}
 
+  /* Formulaire de déploiement (fiche client) */
+  .cm-sec{font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#0f766e;margin:16px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:5px}
+  .cm-lab{font-size:12px;font-weight:700;color:#334155;margin:10px 0 4px}
+  .cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .cm-grid .field{margin:0}
+  .cm-mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .cm-mod{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:9px 11px;cursor:pointer}
+  .cm-mod input{width:auto;margin:0}
   @media(max-width:920px){
     .hero .wrap{grid-template-columns:1fr}.phone-mock{display:none}
     .feat-grid,.pricing,.grid3{grid-template-columns:1fr}
-    .app{grid-template-columns:1fr}.side{display:none}
+    /* Back-office : la barre latérale devient une barre de navigation horizontale */
+    .app{grid-template-columns:1fr}
+    .side{flex-direction:row;align-items:center;gap:6px;overflow-x:auto;padding:8px 10px;position:sticky;top:52px;z-index:6;-webkit-overflow-scrolling:touch}
+    .side .brand,.side .who,.side .cat{display:none}
+    .side .nav-i,.side .sub-i{flex:0 0 auto;white-space:nowrap;padding:8px 12px;margin:0}
+    .main{padding:16px 14px}
     .kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
     .band .wrap{grid-template-columns:repeat(2,1fr)}.modgrid,.haccp6,.split2{grid-template-columns:1fr}
+    .topbar{gap:10px}
+    table{font-size:13px}
+    .panel .pb{overflow-x:auto}
+  }
+  @media(max-width:600px){
+    .nav .wrap .link{display:none}
+    #appbar{gap:10px;padding:0 10px}#appbar .ab-user{display:none}#appbar .ab-sync{display:none}
+    .cm-grid,.cm-mods{grid-template-columns:1fr}
+    .kpis{grid-template-columns:1fr}
+    .modal{width:96vw!important}
+    h1{font-size:22px}
   }
 
   /* rapport PDF imprimable */
@@ -731,7 +755,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'</tbody></table></div></div><div class="panel"><div class="ph"><h3>Alertes récentes réseau</h3></div><div class="pb">'+netAlerts()+'</div></div></div>';
   } else if(adminView==='clients'){
     m.innerHTML='<div class="topbar"><div><h1>Clients</h1><div class="sub">'+state.clients.length+' établissements</div></div><div class="actions"><button class="btn" onclick="openCreate()">＋ Nouveau client</button></div></div><div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Contact</th><th>Ville</th><th>Plan</th><th>Depuis</th><th>Statut</th><th></th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.contact+'</td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+new Date(c.since).toLocaleDateString('fr-FR')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td><td><button class="btn ghost sm" onclick="adminOpenEst(\''+c.est_code+'\')">Ouvrir →</button></td></tr>').join('')+'</tbody></table></div></div>';
+    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.contact+'</td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+new Date(c.since).toLocaleDateString('fr-FR')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td><td><button class="btn ghost sm" onclick="adminClientDetail(\''+c.est_code+'\')">Gérer →</button></td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='plans'){
     m.innerHTML='<div class="topbar"><div><h1>Abonnements</h1><div class="sub">Répartition & revenu récurrent</div></div></div><div class="kpis">'+['Starter','Business','Réseau'].map(p=>kpi(p,state.clients.filter(c=>c.plan===p).length+' clients',({Starter:'49 €',Business:'99 €','Réseau':'290 €'})[p]+'/mois','up')).join('')+kpi('MRR total',mrr+' €','récurrent','up')+'</div><div class="panel"><div class="ph"><h3>Détail</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Client</th><th>Plan</th><th>Mensualité</th><th>Statut</th></tr></thead><tbody>'
     +state.clients.map(c=>'<tr><td class="tname">'+c.name+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td></tr>').join('')+'</tbody></table></div></div>';
@@ -744,38 +768,117 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="panel"><div class="pb"><div class="imggrid" style="grid-template-columns:repeat(6,1fr)">'
     +list.map(p=>'<div class="imgchoice" style="cursor:default"><img src="'+p.url+'"><span>'+p.label+'</span><button class="btn ghost sm" style="margin-top:6px" onclick="adminPhotoDel(\''+p.id+'\')">🗑</button></div>').join('')
     +'</div></div></div>';
+  } else if(adminView==='clientDetail'){
+    const c=state.clients.find(x=>x.est_code===adminSelEst);
+    if(!c){adminNav('clients',null);return;}
+    const opt=(v,cur)=>'<option'+(v===cur?' selected':'')+'>'+v+'</option>';
+    const typeOpts=['Pizzeria','Restaurant','Fast-food','Boulangerie','Restaurant japonais','Bar / Brasserie'].map(x=>opt(x,c.type)).join('');
+    const planOpts=['Starter','Business','Réseau'].map(x=>opt(x,c.plan)).join('');
+    const mods=Array.isArray(c.modules)?c.modules:ALL_MODULES;
+    m.innerHTML='<div class="topbar"><div><button class="btn ghost sm" onclick="adminNav(\'clients\',null)">← Clients</button><h1 style="margin-top:8px">'+escH(c.name)+' '+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status)+'</span>')+'</h1><div class="sub">'+escH(c.est_code)+' · '+escH(c.owner_email||'')+'</div></div><div class="actions"><button class="btn" onclick="adminOpenEst(\''+c.est_code+'\')">⚙️ Configurer l\'espace (HACCP…)</button>'+(c.status==='actif'?'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'suspendu\')">Suspendre</button>':'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'actif\')">Réactiver</button>')+'</div></div>'
+    +'<div class="panel"><div class="ph"><h3>Informations</h3></div><div class="pb"><div class="cm-grid">'
+    +'<div class="field"><label>Nom de l\'établissement</label><input id="cd_name" value="'+escH(c.name)+'"></div>'
+    +'<div class="field"><label>Type</label><select id="cd_type">'+typeOpts+'</select></div>'
+    +'<div class="field"><label>Adresse</label><input id="cd_address" value="'+escH(c.address||'')+'"></div>'
+    +'<div class="field"><label>Code postal</label><input id="cd_cp" value="'+escH(c.postal_code||'')+'"></div>'
+    +'<div class="field"><label>Ville</label><input id="cd_city" value="'+escH(c.city||'')+'"></div>'
+    +'<div class="field"><label>Téléphone</label><input id="cd_phone" value="'+escH(c.phone||'')+'"></div>'
+    +'<div class="field"><label>Responsable</label><input id="cd_contact" value="'+escH(c.contact||'')+'"></div>'
+    +'<div class="field"><label>Raison sociale</label><input id="cd_legal" value="'+escH(c.legal_name||'')+'"></div>'
+    +'<div class="field"><label>SIRET</label><input id="cd_siret" value="'+escH(c.siret||'')+'"></div>'
+    +'<div class="field"><label>N° TVA</label><input id="cd_tva" value="'+escH(c.tva||'')+'"></div>'
+    +'<div class="field"><label>Formule</label><select id="cd_plan">'+planOpts+'</select></div>'
+    +'<div class="field"><label>Prix mensuel (€)</label><input id="cd_price" type="number" value="'+escH(c.price!=null&&c.price!==''?c.price:'')+'"></div>'
+    +'</div><div style="margin-top:14px"><button class="btn" onclick="adminSaveEst(\''+c.est_code+'\')">💾 Enregistrer les infos</button> <span id="cd_savemsg" style="font-size:12px;margin-left:8px"></span></div></div></div>'
+    +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Modules activés</h3></div><div class="pb"><div class="cm-mods" id="cd_modules">'
+    +ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(mods.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')
+    +'</div><div style="margin-top:12px"><button class="btn sm" onclick="adminSaveModules(\''+c.est_code+'\')">Enregistrer les modules</button></div></div></div>'
+    +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Accès au compte (multi-sites)</h3></div><div class="pb"><div id="cd_access"><div class="empty">Chargement…</div></div>'
+    +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="cd_addemail" type="email" placeholder="email à rattacher à cet établissement" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px"><button class="btn sm" onclick="adminAddAccess(\''+c.est_code+'\')">＋ Rattacher</button></div><div id="cd_addmsg" style="font-size:12px;margin-top:8px;line-height:1.5"></div></div></div>';
+    adminLoadAccess(c.est_code);
   }
 }
+let adminSelEst=null;
+function adminClientDetail(code){adminSelEst=code;adminView='clientDetail';document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));renderAdmin('clientDetail');}
+async function adminSaveEst(code){const g=id=>document.getElementById(id);const ms=g('cd_savemsg');
+  const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,price:g('cd_price').value===''?null:Number(g('cd_price').value)};
+  ms.style.color='#334155';ms.textContent='Enregistrement…';
+  try{const {error}=await SB.from('establishments').update(row).eq('est_code',code);if(error)throw error;await loadAdminData();ms.style.color='#047857';ms.textContent='✅ Enregistré';toast('Infos client enregistrées');}catch(e){ms.style.color='#b91c1c';ms.textContent='Erreur : '+(e.message||e);}
+}
+async function adminSaveModules(code){const modules=Array.from(document.querySelectorAll('#cd_modules input:checked')).map(x=>x.value);
+  try{const {error}=await SB.from('establishments').update({modules}).eq('est_code',code);if(error)throw error;await loadAdminData();toast('Modules mis à jour');}catch(e){toast('Erreur : '+(e.message||e));}
+}
+async function adminSetStatus(code,status){try{const {error}=await SB.from('establishments').update({status}).eq('est_code',code);if(error)throw error;await loadAdminData();renderAdmin('clientDetail');toast('Statut : '+status);}catch(e){toast('Erreur : '+(e.message||e));}}
+async function adminLoadAccess(code){const box=document.getElementById('cd_access');if(!box)return;
+  try{const {data:mem}=await SB.from('memberships').select('user_id,site_role').eq('est_code',code);const ids=(mem||[]).map(x=>x.user_id);let profs=[];
+    if(ids.length){const {data:p}=await SB.from('profiles').select('id,email,full_name,must_change_password').in('id',ids);profs=p||[];}
+    if(!profs.length){box.innerHTML='<div class="empty">Aucun accès rattaché pour l\'instant.</div>';return;}
+    box.innerHTML='<table><tbody>'+profs.map(p=>'<tr><td><div class="tname">'+escH(p.email)+'</div><div class="tsub">'+escH(p.full_name||'')+(p.must_change_password?' · doit changer son mot de passe':'')+'</div></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="adminResetUser(\''+escH(p.email)+'\')">🔑 Réinit.</button> <button class="btn ghost sm" onclick="adminRevoke(\''+escH(p.email)+'\',\''+code+'\')">Retirer</button></td></tr>').join('')+'</tbody></table>';
+  }catch(e){box.innerHTML='<div class="empty">Erreur de chargement des accès.</div>';}
+}
+async function adminAddAccess(code){const g=id=>document.getElementById(id);const email=g('cd_addemail').value.trim();const msg=g('cd_addmsg');
+  if(!email){msg.style.color='#b91c1c';msg.textContent='Renseignez un email.';return;}
+  msg.style.color='#334155';msg.textContent='Rattachement…';
+  try{const c=state.clients.find(x=>x.est_code===code)||{};const {data:{session}}=await SB.auth.getSession();
+    const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'provision',email,est_code:code,est_name:c.name,type:c.type,city:c.city,plan:c.plan,modules:c.modules})});
+    const j=await res.json().catch(()=>({error:'Réponse invalide'}));if(!res.ok||j.error)throw new Error(j.error||('Erreur '+res.status));
+    if(j.provisionalPassword){msg.style.color='#047857';msg.innerHTML='✅ Compte créé — mot de passe provisoire : <b>'+escH(j.provisionalPassword)+'</b>';}
+    else {msg.style.color='#047857';msg.textContent='✅ Email rattaché (compte existant).';}
+    g('cd_addemail').value='';adminLoadAccess(code);
+  }catch(e){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}
+}
+function adminResetUser(email){openConfirm('Réinitialiser le mot de passe','Générer un nouveau mot de passe provisoire pour '+email+' ?',async()=>{
+  try{const {data:{session}}=await SB.auth.getSession();const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'reset_user',email})});
+    const j=await res.json().catch(()=>({error:'Réponse invalide'}));if(!res.ok||j.error)throw new Error(j.error||('Erreur '+res.status));
+    openConfirm('Nouveau mot de passe','Mot de passe provisoire pour '+email+' :\n\n'+j.provisionalPassword+'\n\nTransmettez-le au restaurateur.',function(){});
+  }catch(e){toast('Erreur : '+(e.message||e));}
+});}
+function adminRevoke(email,code){openConfirm('Retirer l\'accès','Retirer l\'accès de '+email+' à cet établissement ?',async()=>{
+  try{const {data:{session}}=await SB.auth.getSession();const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'revoke',email,est_code:code})});
+    const j=await res.json().catch(()=>({error:'Réponse invalide'}));if(!res.ok||j.error)throw new Error(j.error||('Erreur '+res.status));adminLoadAccess(code);toast('Accès retiré');}catch(e){toast('Erreur : '+(e.message||e));}
+});}
 let adminPhotoTab='equipPhotos';
 function setAdminPhotoTab(t){adminPhotoTab=t;renderAdmin('photos');}
-function adminPhotoDel(id){const i=state[adminPhotoTab].findIndex(x=>x.id===id);if(i>=0)state[adminPhotoTab].splice(i,1);renderAdmin('photos');toast('Photo supprimée de la bibliothèque');}
+function adminPhotoDel(id){const p=state[adminPhotoTab].find(x=>x.id===id);openConfirm('Supprimer la photo','Voulez-vous vraiment supprimer '+((p&&p.label)||'cette photo')+' de la bibliothèque ? Cette action est définitive.',()=>{const i=state[adminPhotoTab].findIndex(x=>x.id===id);if(i>=0)state[adminPhotoTab].splice(i,1);renderAdmin('photos');toast('Photo supprimée de la bibliothèque');});}
 function adminPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state[adminPhotoTab].push({id:'lib'+Date.now(),label:f.name.replace(/\.[^.]+$/,'').slice(0,18),url:rd.result});renderAdmin('photos');toast('Photo ajoutée à la bibliothèque — dispo pour les clients');};rd.readAsDataURL(f);}
 function netAlerts(all){let items=[];state.clients.forEach(c=>openAlerts(c.id).forEach(r=>items.push({c,r})));items.sort((a,b)=>b.r.at-a.r.at);if(!all)items=items.slice(0,6);
   if(!items.length)return '<div class="empty">✅ Aucune alerte ouverte sur le réseau.</div>';
   return items.map(o=>{const e=eqById(o.r.equipId);return '<div class="alert-i"><div class="ai bad">🌡️</div><div><div class="at">'+o.c.name+' — '+e.name+'</div><div class="as">'+o.r.value+' °C (cible '+seuilTxt(e)+') · '+(o.r.action||'action en attente')+'</div></div><div class="aw">'+ago(o.r.at)+'</div></div>';}).join('');}
-function openCreate(){document.getElementById('cm_mask').classList.add('on');}
+function openCreate(){cmPopulateCatalogs();cmResetForm();document.getElementById('cm_mask').classList.add('on');}
 function closeCreate(){document.getElementById('cm_mask').classList.remove('on');}
+function catBoxes(containerId,catalog){const c=document.getElementById(containerId);if(!c)return;c.innerHTML=catalog.map(it=>'<label class="cm-mod"><input type="checkbox" value="'+it.key+'"> '+(it.icon?it.icon+' ':'')+escH(it.name)+'</label>').join('');}
+function cmPopulateCatalogs(){catBoxes('cm_equip',EQUIP_CATALOG);catBoxes('cm_frit',FRITEUSE_CATALOG);catBoxes('cm_prod',PRODUCT_CATALOG);}
+function cmApplyPreset(){const t=(document.getElementById('cm_type')||{}).value;const p=TYPE_PRESETS[t]||{equip:[],prod:[],frit:[]};
+  document.querySelectorAll('#cm_equip input').forEach(c=>c.checked=(p.equip||[]).indexOf(c.value)>=0);
+  document.querySelectorAll('#cm_frit input').forEach(c=>c.checked=(p.frit||[]).indexOf(c.value)>=0);
+  document.querySelectorAll('#cm_prod input').forEach(c=>c.checked=(p.prod||[]).indexOf(c.value)>=0);}
+function cmSel(containerId){return Array.from(document.querySelectorAll('#'+containerId+' input:checked')).map(x=>x.value);}
+function cmResetForm(){['cm_name','cm_code','cm_address','cm_cp','cm_city','cm_legal','cm_siret','cm_tva','cm_contact','cm_phone','cm_email','cm_price'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el._touched=false;}});const s=document.getElementById('cm_start');if(s)s.value=new Date().toISOString().slice(0,10);document.querySelectorAll('#cm_modules input').forEach(c=>c.checked=true);const msg=document.getElementById('cm_msg');if(msg)msg.style.display='none';cmApplyPreset();}
 function cmSuggestCode(){const c=document.getElementById('cm_code');if(c&&!c._touched){c.value=slugCode(document.getElementById('cm_name').value);}}
 function slugCode(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||('etab-'+Math.floor(Math.random()*1e4));}
+function cmMods(){return Array.from(document.querySelectorAll('#cm_modules input:checked')).map(x=>x.value);}
 async function submitCreate(){const g=id=>document.getElementById(id);
   const email=g('cm_email').value.trim(), est_name=g('cm_name').value.trim(), est_code=slugCode(g('cm_code').value.trim()||g('cm_name').value.trim());
   const msg=g('cm_msg'), btn=g('cm_btn');
   const show=(bg,fg,html)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=html;};
-  if(!email||!est_name){show('#fef2f2','#b91c1c','Email et nom de l\'établissement sont requis.');return;}
+  if(!email||!est_name){show('#fef2f2','#b91c1c','L\'email et le nom de l\'établissement sont requis.');return;}
   if(!SB){show('#fef2f2','#b91c1c','Connexion Supabase indisponible.');return;}
-  btn.disabled=true;const old=btn.textContent;btn.textContent='Création…';show('#f1f5f9','#334155','Création en cours…');
+  const modules=cmMods();
+  btn.disabled=true;const old=btn.textContent;btn.textContent='Déploiement…';show('#f1f5f9','#334155','Création du compte et de l\'espace…');
   try{
     const {data:{session}}=await SB.auth.getSession();
-    const seed=starterState({est_code,name:est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),plan:g('cm_plan').value,contact:g('cm_contact').value.trim()});
-    const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'provision',email,full_name:g('cm_contact').value.trim(),est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),plan:g('cm_plan').value,contact:g('cm_contact').value.trim(),seed})});
+    const payload={action:'provision',email,full_name:g('cm_contact').value.trim(),est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:email,plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules};
+    const sel={equip:cmSel('cm_equip'),frit:cmSel('cm_frit'),prod:cmSel('cm_prod')};
+    payload.seed=starterState({est_code,name:est_name,type:payload.type,city:payload.city,plan:payload.plan,contact:payload.contact},sel);
+    const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify(payload)});
     const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
     if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
     if(j.provisionalPassword){
-      show('#ecfdf5','#047857','✅ Compte créé.<br>Email : <b>'+escH(email)+'</b><br>Mot de passe provisoire : <b style="font-size:15px">'+escH(j.provisionalPassword)+'</b><br><small>Transmettez-le au restaurateur. Il devra le changer à sa première connexion.</small>');
+      show('#ecfdf5','#047857','✅ Compte clé en main créé.<br>Email : <b>'+escH(email)+'</b><br>Mot de passe provisoire : <b style="font-size:15px">'+escH(j.provisionalPassword)+'</b><br><small>Transmettez ces accès au restaurateur — il choisira son mot de passe à la 1re connexion.</small>');
     } else {
-      show('#ecfdf5','#047857','✅ Établissement <b>'+escH(est_name)+'</b> rattaché à <b>'+escH(email)+'</b>.<br><small>Cet email possède déjà un mot de passe ; le nouvel établissement apparaîtra dans son sélecteur.</small>');
+      show('#ecfdf5','#047857','✅ Établissement <b>'+escH(est_name)+'</b> rattaché à <b>'+escH(email)+'</b> (compte existant).<br><small>Le nouvel établissement apparaîtra dans son sélecteur.</small>');
     }
-    await loadAdminData();renderAdmin(adminView);
+    await loadAdminData();renderAdmin('clients');
   }catch(e){show('#fef2f2','#b91c1c','Erreur : '+escH(e.message||e));}
   btn.disabled=false;btn.textContent=old;
 }
@@ -784,31 +887,66 @@ async function submitCreate(){const g=id=>document.getElementById(id);
 const CLIENT_NAV=[
   {cat:'Pilotage'},
   {v:'dash',ic:'📊',t:'Vue d\'ensemble'},
-  {cat:'HACCP'},
-  {v:'h_zones',ic:'🧽',t:'Zones & Tâches',sub:1},
-  {v:'h_equip',ic:'🌡️',t:'Équipements',sub:1},
-  {v:'h_friteuses',ic:'🍟',t:'Friteuses',sub:1},
-  {v:'h_dlc',ic:'🏷️',t:'Étiquettes DLC',sub:1},
-  {v:'h_four',ic:'🚚',t:'Fournisseurs',sub:1},
-  {v:'h_docs',ic:'📁',t:'Documents',sub:1},
-  {v:'h_suivi',ic:'🕑',t:'Suivi HACCP',sub:1},
-  {v:'h_report',ic:'✉️',t:'Paramétrage rapports',sub:1},
-  {cat:'RH & Planning'},
-  {v:'rh_etab',ic:'🏢',t:'Établissement',sub:1},
-  {v:'rh_planning',ic:'🗓️',t:'Planning',sub:1},
-  {v:'rh_heures',ic:'⏱️',t:'Historique heures',sub:1},
+  {cat:'HACCP',mod:'haccp'},
+  {v:'h_zones',ic:'🧽',t:'Zones & Tâches',sub:1,mod:'haccp'},
+  {v:'h_equip',ic:'🌡️',t:'Équipements',sub:1,mod:'haccp'},
+  {v:'h_friteuses',ic:'🍟',t:'Friteuses',sub:1,mod:'haccp'},
+  {v:'h_dlc',ic:'🏷️',t:'Étiquettes DLC',sub:1,mod:'haccp'},
+  {v:'h_four',ic:'🚚',t:'Fournisseurs',sub:1,mod:'haccp'},
+  {v:'h_docs',ic:'📁',t:'Documents',sub:1,mod:'haccp'},
+  {v:'h_suivi',ic:'🕑',t:'Suivi HACCP',sub:1,mod:'haccp'},
+  {v:'h_report',ic:'✉️',t:'Paramétrage rapports',sub:1,mod:'haccp'},
+  {cat:'RH & Planning',mod:'rh'},
+  {v:'rh_etab',ic:'🏢',t:'Établissement',sub:1,mod:'rh'},
+  {v:'rh_planning',ic:'🗓️',t:'Planning',sub:1,mod:'rh'},
+  {v:'rh_heures',ic:'⏱️',t:'Historique heures',sub:1,mod:'rh'},
   {cat:'Gestion'},
-  {v:'food',ic:'💰',t:'Food Cost'},
-  {v:'fid',ic:'🎮',t:'Fidélisation'},
+  {v:'food',ic:'💰',t:'Food Cost',mod:'food'},
+  {v:'fid',ic:'🎮',t:'Fidélisation',mod:'fid'},
   {cat:'Configuration'},
   {v:'tablet',ic:'📱',t:'Tablette'},
   {v:'wiki',ic:'📖',t:'Wiki & Aide'},
 ];
+const ALL_MODULES=['haccp','rh','food','fid'];
+const MODULE_LABELS={haccp:'HACCP & hygiène',rh:'RH & Planning',food:'Food Cost',fid:'Fidélisation'};
+/* ===== Catalogue de déploiement (sélection rapide) ===== */
+const EQUIP_CATALOG=[
+  {key:'frigo',name:'Frigo positif',cat:'froidpos',min:0,max:4,icon:'❄️'},
+  {key:'congel',name:'Congélateur',cat:'froidneg',min:-30,max:-18,icon:'🧊'},
+  {key:'chambre',name:'Chambre froide',cat:'froidpos',min:0,max:6,icon:'🥬'},
+  {key:'vitrine',name:'Vitrine réfrigérée',cat:'froidpos',min:0,max:4,icon:'🥩'},
+  {key:'tourpizza',name:'Tour à pizza réfrigérée',cat:'froidpos',min:0,max:4,icon:'🍕'},
+  {key:'sushi',name:'Vitrine à sushi',cat:'froidpos',min:0,max:4,icon:'🍣'},
+  {key:'labo',name:'Labo réfrigéré',cat:'froidpos',min:0,max:4,icon:'🧁'},
+  {key:'bainmarie',name:'Bain-marie',cat:'chaud',min:63,max:90,icon:'🍲'},
+];
+const PRODUCT_CATALOG=[
+  {key:'sauce',name:'Sauce tomate maison'},{key:'pate',name:'Pâte à pizza'},{key:'mozza',name:'Mozzarella'},
+  {key:'jambon',name:'Jambon / charcuterie'},{key:'poulet',name:'Poulet cuit'},{key:'riz',name:'Riz cuit'},
+  {key:'saumon',name:'Saumon frais'},{key:'creme',name:'Crème pâtissière'},{key:'salade',name:'Salade lavée'},
+  {key:'viande',name:'Viande hachée'},
+];
+const FRITEUSE_CATALOG=[{key:'frit1',name:'Friteuse 1'},{key:'frit2',name:'Friteuse 2'}];
+const TYPE_PRESETS={
+  'Pizzeria':{equip:['frigo','congel','tourpizza','chambre'],prod:['sauce','pate','mozza','jambon'],frit:[]},
+  'Restaurant':{equip:['frigo','congel','chambre','bainmarie'],prod:['sauce','poulet','riz','salade'],frit:['frit1']},
+  'Fast-food':{equip:['frigo','congel','vitrine'],prod:['poulet','salade','viande'],frit:['frit1','frit2']},
+  'Boulangerie':{equip:['frigo','congel','labo'],prod:['creme'],frit:[]},
+  'Restaurant japonais':{equip:['frigo','congel','sushi'],prod:['riz','saumon'],frit:[]},
+  'Bar / Brasserie':{equip:['frigo','congel','bainmarie'],prod:['salade','poulet'],frit:['frit1']},
+};
+function modOn(k){return !k || !Array.isArray(state.modules) || state.modules.indexOf(k)>=0;}
 let clientView='dash';
-function buildClientSide(){const c=state.clients.find(x=>x.id===CID);
-  document.getElementById('client_side').innerHTML='<div class="brand"><span class="mk">✓</span> Vigie</div>'
-  +CLIENT_NAV.map(n=>n.cat?('<div class="cat">'+n.cat+'</div>'):('<div class="'+(n.sub?'sub-i':'nav-i')+(n.v===clientView?' active':'')+'" data-v="'+n.v+'" onclick="clientNav(\''+n.v+'\')"><span class="ic">'+n.ic+'</span> '+n.t+'</div>')).join('')
-  +'<div class="who"><div class="av">K</div><div><div class="nm">'+c.contact.split(' ')[0]+'</div><div class="rl">'+c.name+'</div></div></div>';}
+function buildClientSide(){const c=state.clients.find(x=>x.id===CID)||{contact:'—',name:''};
+  let out='';
+  for(let i=0;i<CLIENT_NAV.length;i++){const n=CLIENT_NAV[i];
+    if(n.cat){const kids=[];let j=i+1;for(;j<CLIENT_NAV.length&&!CLIENT_NAV[j].cat;j++){if(modOn(CLIENT_NAV[j].mod))kids.push(CLIENT_NAV[j]);}
+      if(kids.length){out+='<div class="cat">'+n.cat+'</div>';kids.forEach(k=>{out+='<div class="'+(k.sub?'sub-i':'nav-i')+(k.v===clientView?' active':'')+'" data-v="'+k.v+'" onclick="clientNav(\''+k.v+'\')"><span class="ic">'+k.ic+'</span> '+k.t+'</div>';});}
+      i=j-1;}
+  }
+  const nm=(c.contact||'—').trim();
+  document.getElementById('client_side').innerHTML='<div class="brand"><span class="mk">✓</span> Vigie</div>'+out
+  +'<div class="who"><div class="av">'+(nm[0]||'—').toUpperCase()+'</div><div><div class="nm">'+(nm.split(' ')[0]||'—')+'</div><div class="rl">'+(c.name||'')+'</div></div></div>';}
 function clientNav(v){clientView=v;document.querySelectorAll('#client_side [data-v]').forEach(n=>n.classList.toggle('active',n.dataset.v===v));renderClient(v);}
 function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.clients.find(x=>x.id===cid);const m=document.getElementById('client_main');
   const eqs=cEquip(cid);const today=todayRel(cid);const alerts=openAlerts(cid);
@@ -1354,7 +1492,14 @@ function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une va
   kpClose();toast(bad?'⚠︎ Alerte enregistrée + action corrective':'✓ Relevé : '+v.toFixed(1)+' °C');tbRender(tbCurrent);}
 
 /* create-client modal */
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal"><div class="mh"><h3>Créer un accès / rattacher un établissement</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb"><p class="tsub" style="margin-bottom:12px">Créez le compte d\'un restaurateur, ou rattachez un établissement supplémentaire à un email déjà existant (franchisé multi-sites : réutilisez le même email avec un nouveau code).</p><div class="field"><label>Email du restaurateur</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Ex. Jean Dupont"></div><div class="field"><label>Nom de l\'établissement</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Code établissement (identifiant unique)</label><input id="cm_code" placeholder="ex. trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Ex. Lyon 2e"></div><div class="field"><label>Abonnement</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:6px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer / rattacher</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal" style="width:640px;max-width:96vw"><div class="mh"><h3>Nouveau client — compte clé en main</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb" style="max-height:72vh;overflow:auto"><p class="tsub" style="margin-bottom:6px">Créez un accès complet et pré-configuré pour un restaurateur. Franchisé multi-sites : réutilisez le même email avec un nouveau code établissement.</p>'
++'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type" onchange="cmApplyPreset()"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
++'<div class="cm-sec">Informations légales</div><div class="cm-grid"><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>SIRET</label><input id="cm_siret" placeholder="123 456 789 00012"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
++'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
++'<div class="cm-sec">Abonnement</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div></div>'
++'<div class="cm-sec">Déploiement rapide — matériel & produits</div><p class="tsub" style="margin:-2px 0 8px;font-size:12px">Cochez le matériel et les produits du client (pré-cochés selon le type). Ils seront créés automatiquement dans son espace, sans ressaisie.</p><div class="cm-lab">Équipements</div><div id="cm_equip" class="cm-mods"></div><div class="cm-lab">Friteuses</div><div id="cm_frit" class="cm-mods"></div><div class="cm-lab">Produits (étiquettes DLC)</div><div id="cm_prod" class="cm-mods"></div>'
++'<div class="cm-sec">Modules activés</div><div id="cm_modules" class="cm-mods"><label class="cm-mod"><input type="checkbox" value="haccp" checked> 🛡️ HACCP & hygiène</label><label class="cm-mod"><input type="checkbox" value="rh" checked> 👥 RH & Planning</label><label class="cm-mod"><input type="checkbox" value="food" checked> 💰 Food Cost</label><label class="cm-mod"><input type="checkbox" value="fid" checked> 🎮 Fidélisation</label></div>'
++'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">🚀 Déployer le compte</button></div></div></div>');
 
 /* rapport imprimable */
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
@@ -1371,7 +1516,7 @@ document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="form_m
 /* ============ SYNCHRONISATION TEMPS RÉEL (Supabase) ============ */
 const SYNC={ready:false,client:null,cid:'c'+Math.floor(Math.random()*1e9),lastStr:'',applying:false,est:'default'};
 const _DATEFIELDS={releves:['at'],postes:['at'],reception:['at'],dlc:['ouvertAt','dlcAt'],huileTests:['at'],tracabilite:['at'],pertes:['at'],documents:['at'],friteuses:['changedAt']};
-function serializeState(){const o=JSON.parse(JSON.stringify(state));delete o.huiles;return o;}
+function serializeState(){const o=JSON.parse(JSON.stringify(state));delete o.huiles;delete o.modules;return o;}
 function reviveState(obj){Object.keys(_DATEFIELDS).forEach(coll=>{if(Array.isArray(obj[coll]))obj[coll].forEach(it=>_DATEFIELDS[coll].forEach(f=>{if(it&&it[f])it[f]=new Date(it[f]);}));});return obj;}
 function applyState(obj){reviveState(obj);Object.keys(obj).forEach(k=>{state[k]=obj[k];});state.huiles=state.friteuses;}
 function _rerenderAll(){try{buildClientSide();
@@ -1456,7 +1601,7 @@ async function enterAdmin(){
 const _ADMIN_COLLS=['equip','releves','postes','friteuses','fournisseurs','dlc','dlcCats','dlcProducts','reception','tracabilite','pertes','huileTests','documents','docFolders','zones','employees','jobs','conges','shifts','recipes','games'];
 async function loadAdminData(){
   const {data:ests}=await SB.from('establishments').select('*').order('created_at',{ascending:false});
-  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'—',city:e.city||'—',plan:e.plan||'Starter',status:e.status||'actif',since:(e.created_at||'').slice(0,10),contact:e.contact||'—'}));
+  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
   _ADMIN_COLLS.forEach(c=>state[c]=[]);
   const {data:rows}=await SB.from('app_state').select('est_code,data');
   (rows||[]).forEach(r=>{const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
@@ -1493,6 +1638,7 @@ async function switchEst(code){
   if(hasData){applyState(data.data);}
   else {const st=starterState(site);Object.keys(st).forEach(k=>state[k]=st[k]);state.huiles=state.friteuses;}
   CID=(state.clients&&state.clients[0])?state.clients[0].id:'c1';
+  state.modules=(site&&Array.isArray(site.modules))?site.modules.slice():ALL_MODULES.slice();
   SYNC.lastStr=JSON.stringify(serializeState());
   buildEstSwitcher();
   if(document.getElementById('app_terrain').classList.contains('active')){tbInit();} else {go('client');}
@@ -1508,7 +1654,7 @@ async function estSave(){if(!SB||!CUR)return;try{await SB.from('app_state').upse
 
 /* admin : ouvrir un établissement précis en back-office */
 async function adminOpenEst(code){
-  SITES=(state.clients||[]).map(c=>({est_code:c.est_code,name:c.name,type:c.type,city:c.city,plan:c.plan,contact:c.contact}));
+  SITES=(state.clients||[]).map(c=>({est_code:c.est_code,name:c.name,type:c.type,city:c.city,plan:c.plan,contact:c.contact,modules:c.modules}));
   document.getElementById('estsw').style.display='block';
   document.getElementById('ab_tablet').style.display='inline-block';
   buildEstSwitcher();
@@ -1520,27 +1666,35 @@ function openTabletFromBar(){document.getElementById('ab_tablet').style.display=
 function backToBackoffice(){document.getElementById('ab_backoffice').style.display='none';document.getElementById('ab_tablet').style.display='inline-block';go('client');}
 
 /* état de départ d'un nouvel établissement (config par défaut, relevés vides) */
-function starterState(site){
+function starterState(site, sel){
   const cid='c_'+(site&&site.est_code?site.est_code:('x'+Date.now())), t=Date.now();
+  const S=sel||{};
+  const equip=(Array.isArray(S.equip)&&S.equip.length)
+    ? S.equip.map((k,i)=>{const c=EQUIP_CATALOG.find(x=>x.key===k)||{name:k,cat:'froidpos',min:0,max:4,icon:'❄️'};return {id:'e'+t+i,clientId:cid,name:c.name,cat:c.cat,loc:'',min:c.min,max:c.max,icon:c.icon,photo:null,active:true};})
+    : [{id:'e'+t+'a',clientId:cid,name:'Frigo principal',cat:'froidpos',loc:'Cuisine',min:0,max:4,icon:'❄️',photo:null,active:true},
+       {id:'e'+t+'b',clientId:cid,name:'Congélateur',cat:'froidneg',loc:'Réserve',min:-30,max:-18,icon:'🧊',photo:null,active:true}];
+  const friteuses=(Array.isArray(S.frit)&&S.frit.length)
+    ? S.frit.map((k,i)=>{const c=FRITEUSE_CATALOG.find(x=>x.key===k)||{name:k};return {id:'h'+t+i,clientId:cid,name:c.name,marque:'',capacite:'',zone:'Cuisine',freq:'Quotidien',polarity:0,status:'ok',changedAt:new Date()};})
+    : [];
+  const dlcProducts=(Array.isArray(S.prod)&&S.prod.length)
+    ? S.prod.map((k,i)=>{const c=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};return {id:'dp'+t+i,clientId:cid,name:c.name,photo:null,catId:'dc1',ouvert:3,decongele:1,fabrique:3,active:true};})
+    : [];
   return {
     clients:[{id:cid,name:site&&site.name?site.name:'Mon établissement',type:site&&site.type?site.type:'Restaurant',city:site&&site.city?site.city:'',plan:site&&site.plan?site.plan:'Starter',status:'actif',since:new Date().toISOString().slice(0,10),contact:site&&site.contact?site.contact:''}],
-    equip:[
-      {id:'e'+t+'a',clientId:cid,name:'Frigo principal',cat:'froidpos',loc:'Cuisine',min:0,max:4,icon:'❄️',photo:null,active:true},
-      {id:'e'+t+'b',clientId:cid,name:'Congélateur',cat:'froidneg',loc:'Réserve',min:-30,max:-18,icon:'🧊',photo:null,active:true},
-    ],
+    equip:equip,
     releves:[],
     postes:[
       {id:'p'+t+'a',clientId:cid,zone:'Cuisine',name:'Plan de travail',freq:'Quotidien',done:false},
       {id:'p'+t+'b',clientId:cid,zone:'Cuisine',name:'Sol cuisine',freq:'Quotidien',done:false},
       {id:'p'+t+'c',clientId:cid,zone:'Salle',name:'Tables & comptoir',freq:'Quotidien',done:false},
     ],
-    friteuses:[], fournisseurs:[], dlc:[], reception:[], tracabilite:[], pertes:[], huileTests:[],
+    friteuses:friteuses, fournisseurs:[], dlc:[], reception:[], tracabilite:[], pertes:[], huileTests:[],
     dlcCats:[
       {id:'dc1',clientId:cid,name:'Produit ouvert',color:'#2563eb'},
       {id:'dc2',clientId:cid,name:'Décongelé',color:'#0ea5e9'},
       {id:'dc3',clientId:cid,name:'Fabrication maison',color:'#16a34a'},
     ],
-    dlcProducts:[],
+    dlcProducts:dlcProducts,
     zones:[{id:'z1',clientId:cid,name:'Cuisine'},{id:'z2',clientId:cid,name:'Salle'},{id:'z3',clientId:cid,name:'Sanitaires'}],
     docFolders:[{id:'fld1',clientId:cid,name:'Documents HACCP'}], documents:[],
     employees:[],
