@@ -237,6 +237,8 @@
   .cm-mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .cm-mod{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:9px 11px;cursor:pointer}
   .cm-mod input{width:auto;margin:0}
+  .side .locked{opacity:.55}
+  .side .lk{font-size:11px;margin-left:4px}
   @media(max-width:920px){
     .hero .wrap{grid-template-columns:1fr}.phone-mock{display:none}
     .feat-grid,.pricing,.grid3{grid-template-columns:1fr}
@@ -477,6 +479,7 @@
       <div class="cat">Administration</div>
       <div class="nav-i active" onclick="adminNav('dash',this)"><span class="ic">📊</span> Vue d'ensemble</div>
       <div class="nav-i" onclick="adminNav('clients',this)"><span class="ic">🏪</span> Clients</div>
+      <div class="nav-i" onclick="adminNav('deploy',this)"><span class="ic">🚀</span> Déploiement</div>
       <div class="nav-i" onclick="adminNav('plans',this)"><span class="ic">💳</span> Abonnements</div>
       <div class="nav-i" onclick="adminNav('alerts',this)"><span class="ic">🔔</span> Alertes réseau</div>
       <div class="cat">Bibliothèques</div>
@@ -775,7 +778,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     const typeOpts=['Pizzeria','Restaurant','Fast-food','Boulangerie','Restaurant japonais','Bar / Brasserie'].map(x=>opt(x,c.type)).join('');
     const planOpts=['Starter','Business','Réseau'].map(x=>opt(x,c.plan)).join('');
     const mods=Array.isArray(c.modules)?c.modules:ALL_MODULES;
-    m.innerHTML='<div class="topbar"><div><button class="btn ghost sm" onclick="adminNav(\'clients\',null)">← Clients</button><h1 style="margin-top:8px">'+escH(c.name)+' '+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status)+'</span>')+'</h1><div class="sub">'+escH(c.est_code)+' · '+escH(c.owner_email||'')+'</div></div><div class="actions"><button class="btn" onclick="adminOpenEst(\''+c.est_code+'\')">⚙️ Configurer l\'espace (HACCP…)</button>'+(c.status==='actif'?'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'suspendu\')">Suspendre</button>':'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'actif\')">Réactiver</button>')+'</div></div>'
+    m.innerHTML='<div class="topbar"><div><button class="btn ghost sm" onclick="adminNav(\'clients\',null)">← Clients</button><h1 style="margin-top:8px">'+escH(c.name)+' '+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status)+'</span>')+'</h1><div class="sub">'+escH(c.est_code)+' · '+escH(c.owner_email||'')+'</div></div><div class="actions">'+(c.status==='actif'?'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'suspendu\')">Suspendre</button>':'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'actif\')">Réactiver</button>')+'</div></div>'
     +'<div class="panel"><div class="ph"><h3>Informations</h3></div><div class="pb"><div class="cm-grid">'
     +'<div class="field"><label>Nom de l\'établissement</label><input id="cd_name" value="'+escH(c.name)+'"></div>'
     +'<div class="field"><label>Type</label><select id="cd_type">'+typeOpts+'</select></div>'
@@ -796,9 +799,47 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Accès au compte (multi-sites)</h3></div><div class="pb"><div id="cd_access"><div class="empty">Chargement…</div></div>'
     +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="cd_addemail" type="email" placeholder="email à rattacher à cet établissement" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px"><button class="btn sm" onclick="adminAddAccess(\''+c.est_code+'\')">＋ Rattacher</button></div><div id="cd_addmsg" style="font-size:12px;margin-top:8px;line-height:1.5"></div></div></div>';
     adminLoadAccess(c.est_code);
+  } else if(adminView==='deploy'){
+    const opts=state.clients.map(c=>'<option value="'+c.est_code+'"'+(c.est_code===adminDeploySel?' selected':'')+'>'+escH(c.name)+' ('+escH(c.est_code)+')</option>').join('');
+    m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Ajouter du matériel, des produits ou des modules à l\'espace d\'un client existant — utile quand un client appelle pour un ajout</div></div></div>'
+    +'<div class="panel"><div class="pb"><div class="field"><label>Client à déployer</label><select id="dp_client" onchange="adminDeploySelect()"><option value="">— Sélectionnez un client —</option>'+opts+'</select></div><div id="dp_body" style="margin-top:10px"><div class="empty">Choisissez un client pour préparer un déploiement.</div></div></div></div>';
+    if(adminDeploySel){const s=document.getElementById('dp_client');if(s)s.value=adminDeploySel;adminDeploySelect();}
   }
 }
 let adminSelEst=null;
+let adminDeploySel=null;
+function adminDeploySelect(){
+  const sel=document.getElementById('dp_client');const code=sel?sel.value:'';adminDeploySel=code||null;
+  const body=document.getElementById('dp_body');if(!body)return;
+  if(!code){body.innerHTML='<div class="empty">Choisissez un client pour préparer un déploiement.</div>';return;}
+  const c=state.clients.find(x=>x.est_code===code)||{};const mods=Array.isArray(c.modules)?c.modules:ALL_MODULES;
+  body.innerHTML='<div class="cm-sec">Équipements à ajouter</div><div id="dp_equip" class="cm-mods"></div>'
+    +'<div class="cm-sec">Friteuses à ajouter</div><div id="dp_frit" class="cm-mods"></div>'
+    +'<div class="cm-sec">Produits DLC à ajouter</div><div id="dp_prod" class="cm-mods"></div>'
+    +'<div class="cm-sec">Modules actifs du client</div><div id="dp_modules" class="cm-mods">'+ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(mods.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')+'</div>'
+    +'<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn" onclick="adminRunDeploy(\''+code+'\')">🚀 Déployer dans l\'espace du client</button><span id="dp_msg" style="font-size:12px"></span></div>'
+    +'<p class="tsub" style="margin-top:10px;font-size:12px">Le matériel et les produits cochés sont <b>ajoutés</b> à ce qui existe déjà (rien n\'est supprimé), et remontent en temps réel dans l\'espace du client.</p>';
+  catBoxes('dp_equip',EQUIP_CATALOG);catBoxes('dp_frit',FRITEUSE_CATALOG);catBoxes('dp_prod',PRODUCT_CATALOG);
+}
+async function adminRunDeploy(code){
+  const msg=document.getElementById('dp_msg');const eq=cmSel('dp_equip'),fr=cmSel('dp_frit'),pr=cmSel('dp_prod');
+  const modules=Array.from(document.querySelectorAll('#dp_modules input:checked')).map(x=>x.value);
+  if(msg){msg.style.color='#334155';msg.textContent='Déploiement…';}
+  try{
+    const {data,error}=await SB.from('app_state').select('data').eq('est_code',code).maybeSingle();if(error)throw error;
+    const d=(data&&data.data)?data.data:{};
+    const cid=(d.clients&&d.clients[0]&&d.clients[0].id)?d.clients[0].id:('c_'+code);const t=Date.now();
+    d.equip=d.equip||[];d.friteuses=d.friteuses||[];d.dlcProducts=d.dlcProducts||[];
+    eq.forEach((k,i)=>{const c2=EQUIP_CATALOG.find(x=>x.key===k)||{name:k,cat:'froidpos',min:0,max:4,icon:'❄️'};d.equip.push({id:'e'+t+'x'+i,clientId:cid,name:c2.name,cat:c2.cat,loc:'',min:c2.min,max:c2.max,icon:c2.icon,photo:null,active:true});});
+    fr.forEach((k,i)=>{const c2=FRITEUSE_CATALOG.find(x=>x.key===k)||{name:k};d.friteuses.push({id:'h'+t+'x'+i,clientId:cid,name:c2.name,marque:'',capacite:'',zone:'Cuisine',freq:'Quotidien',polarity:0,status:'ok',changedAt:new Date().toISOString()});});
+    pr.forEach((k,i)=>{const c2=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};d.dlcProducts.push({id:'dp'+t+'x'+i,clientId:cid,name:c2.name,photo:null,catId:'dc1',ouvert:3,decongele:1,fabrique:3,active:true});});
+    const {error:e2}=await SB.from('app_state').upsert({est_code:code,data:d,client_id:'admin-deploy',updated_at:new Date().toISOString()});if(e2)throw e2;
+    const {error:e3}=await SB.from('establishments').update({modules}).eq('est_code',code);if(e3)throw e3;
+    await loadAdminData();
+    if(msg){msg.style.color='#047857';msg.textContent='✅ Déployé : '+eq.length+' équipement(s), '+fr.length+' friteuse(s), '+pr.length+' produit(s).';}
+    toast('Déploiement effectué');adminDeploySelect();
+  }catch(e){if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
+}
 function adminClientDetail(code){adminSelEst=code;adminView='clientDetail';document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));renderAdmin('clientDetail');}
 async function adminSaveEst(code){const g=id=>document.getElementById(id);const ms=g('cd_savemsg');
   const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,price:g('cd_price').value===''?null:Number(g('cd_price').value)};
@@ -936,12 +977,14 @@ const TYPE_PRESETS={
   'Bar / Brasserie':{equip:['frigo','congel','bainmarie'],prod:['salade','poulet'],frit:['frit1']},
 };
 function modOn(k){return !k || !Array.isArray(state.modules) || state.modules.indexOf(k)>=0;}
+const NAV_MOD={};CLIENT_NAV.forEach(n=>{if(n.v&&n.mod)NAV_MOD[n.v]=n.mod;});
+function moduleBlockHTML(mod){return '<div class="topbar"><div><h1>'+escH(MODULE_LABELS[mod]||'Module')+'</h1></div></div><div class="panel"><div class="pb" style="text-align:center;padding:48px 20px"><div style="font-size:48px">🔒</div><h2 style="margin:12px 0 6px">Module non inclus dans votre abonnement</h2><p class="lead" style="max-width:480px;margin:0 auto 20px">Le module « '+escH(MODULE_LABELS[mod]||'')+' » n\'est pas activé sur votre compte. Pour le débloquer et y souscrire, contactez notre support.</p><a class="btn" href="mailto:support@vigie.app?subject='+encodeURIComponent('Souscription module '+(MODULE_LABELS[mod]||''))+'">✉️ Contacter le support</a></div></div>';}
 let clientView='dash';
 function buildClientSide(){const c=state.clients.find(x=>x.id===CID)||{contact:'—',name:''};
   let out='';
   for(let i=0;i<CLIENT_NAV.length;i++){const n=CLIENT_NAV[i];
-    if(n.cat){const kids=[];let j=i+1;for(;j<CLIENT_NAV.length&&!CLIENT_NAV[j].cat;j++){if(modOn(CLIENT_NAV[j].mod))kids.push(CLIENT_NAV[j]);}
-      if(kids.length){out+='<div class="cat">'+n.cat+'</div>';kids.forEach(k=>{out+='<div class="'+(k.sub?'sub-i':'nav-i')+(k.v===clientView?' active':'')+'" data-v="'+k.v+'" onclick="clientNav(\''+k.v+'\')"><span class="ic">'+k.ic+'</span> '+k.t+'</div>';});}
+    if(n.cat){const kids=[];let j=i+1;for(;j<CLIENT_NAV.length&&!CLIENT_NAV[j].cat;j++)kids.push(CLIENT_NAV[j]);
+      if(kids.length){out+='<div class="cat">'+n.cat+'</div>';kids.forEach(k=>{const locked=!modOn(k.mod);out+='<div class="'+(k.sub?'sub-i':'nav-i')+(k.v===clientView?' active':'')+(locked?' locked':'')+'" data-v="'+k.v+'" onclick="clientNav(\''+k.v+'\')"><span class="ic">'+k.ic+'</span> '+k.t+(locked?' <span class="lk">🔒</span>':'')+'</div>';});}
       i=j-1;}
   }
   const nm=(c.contact||'—').trim();
@@ -949,6 +992,7 @@ function buildClientSide(){const c=state.clients.find(x=>x.id===CID)||{contact:'
   +'<div class="who"><div class="av">'+(nm[0]||'—').toUpperCase()+'</div><div><div class="nm">'+(nm.split(' ')[0]||'—')+'</div><div class="rl">'+(c.name||'')+'</div></div></div>';}
 function clientNav(v){clientView=v;document.querySelectorAll('#client_side [data-v]').forEach(n=>n.classList.toggle('active',n.dataset.v===v));renderClient(v);}
 function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.clients.find(x=>x.id===cid);const m=document.getElementById('client_main');
+  const vmod=NAV_MOD[clientView];if(vmod&&!modOn(vmod)){m.innerHTML=moduleBlockHTML(vmod);return;}
   const eqs=cEquip(cid);const today=todayRel(cid);const alerts=openAlerts(cid);
   const conform=today.length?Math.round(100*today.filter(r=>r.status==='ok').length/today.length):100;
   const expected=eqs.filter(e=>isFroid(e)&&e.active!==false).length*2;
