@@ -2035,21 +2035,18 @@ function pvModalClose(){var m=document.getElementById('pv_modal');if(m)m.style.d
 function pvOpenActionModal(a){
   const S=PV_STATE;const b=S.brand;
   const isReview=/avis|google|review|étoile|etoile|note/i.test((a.label||'')+' '+(a.url||''));
-  const stars='<div style="margin:2px 0 12px">'+[0,1,2,3,4].map(function(i){return '<span class="pvstar" style="animation-delay:'+(i*0.12)+'s">★</span>';}).join('')+'</div>';
-  let head;
-  if(isReview){
-    head=stars
-     +'<h3 style="margin:0 0 10px;color:'+escH(b.color)+';font-size:19px;letter-spacing:.3px;line-height:1.25">LAISSEZ-NOUS VOTRE AVIS 5 ÉTOILES</h3>'
-     +'<div style="font-size:14.5px;color:#334155;margin-bottom:16px;line-height:1.55">Notez <b>'+escH(b.title||'notre restaurant')+'</b> sur Google puis revenez sur cette page pour participer à notre jeu.</div>';
-  }else{
-    head='<div style="width:64px;height:64px;border-radius:50%;background:'+pvHexA(b.color,0.14)+';display:grid;place-items:center;margin:0 auto 12px"><span style="font-size:30px;color:'+escH(b.color)+'">★</span></div>'
-     +'<h3 style="margin:0 0 8px;color:'+escH(b.color)+';font-size:19px;line-height:1.25">'+escH((a.label||'').toUpperCase())+'</h3>'
-     +'<div style="font-size:14.5px;color:#334155;margin-bottom:16px;line-height:1.55">Réalisez cette action puis revenez sur cette page pour participer à notre jeu.</div>';
-  }
-  pvModal(head
-   +'<button class="pv-btn" id="pv_act_btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url||'')+'\')">J\'y vais</button>'
-   +'<div id="pv_act_hint" class="tsub" style="font-size:11.5px;margin-top:10px">Vous serez redirigé, puis vous reviendrez sur cette page.</div>'
-   +'<div style="margin-top:10px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Annuler</a></div>');
+  const starIcon='<div style="width:88px;height:88px;border-radius:50%;background:linear-gradient(150deg,#4ade80,#10b981);display:grid;place-items:center;margin:0 auto 18px;box-shadow:0 10px 26px rgba(16,185,129,.35)"><svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#0b1220" stroke-width="1.8" stroke-linejoin="round"><path d="M12 2.5l2.9 6.2 6.6.8-4.9 4.6 1.3 6.5L12 17.3l-5.9 3.3 1.3-6.5L2.5 9.5l6.6-.8z"/></svg></div>';
+  const title=isReview?'Laissez un avis Google !':escH(a.label||'');
+  const btnLabel=isReview?'Écrire un avis':'J\'y vais';
+  const body=isReview
+   ?'Notez <b>'+escH((b.title||'notre restaurant').toUpperCase())+'</b> sur <b>Google</b> puis revenez sur cette page pour participer à notre jeu.'
+   :'Réalisez cette action puis revenez sur cette page pour participer à notre jeu.';
+  pvModal(starIcon
+   +'<h3 style="margin:0 0 14px;font-size:22px;color:#0b1220;line-height:1.25">'+title+'</h3>'
+   +'<div style="font-size:15px;color:#475569;margin-bottom:20px;line-height:1.6">'+body+'</div>'
+   +'<button class="pv-btn" id="pv_act_btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0;border-radius:999px;font-size:17px;padding:14px 20px" onclick="pvDoAction(\''+a.id+'\',\''+encodeURIComponent(a.url||'')+'\')">'+btnLabel+'</button>'
+   +'<div id="pv_act_hint" class="tsub" style="font-size:11.5px;margin-top:10px"></div>'
+   +'<div style="margin-top:6px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Annuler</a></div>');
 }
 function pvDoAction(id,url){const S=PV_STATE;if(S.usedActions[id]||S.verifying)return;S.pending=id;
   try{if(url)window.open(decodeURIComponent(url),'_blank');}catch(e){}
@@ -2064,7 +2061,7 @@ function pvVerify(id){const S=PV_STATE;if(S.usedActions[id]||S.verifying)return;
   var btn=document.getElementById('pv_act_btn');
   if(!btn){S.verifying=false;pvGrantCredit(id);return;}
   btn.disabled=true;btn.style.background='#cbd5e1';btn.style.color='#475569';btn.style.opacity='1';btn.onclick=null;
-  var hint=document.getElementById('pv_act_hint');if(hint)hint.textContent='Nous confirmons votre action, merci de patienter.';
+  var hint=document.getElementById('pv_act_hint');if(hint)hint.textContent='';
   var left=30;
   btn.innerHTML='<span class="pvspin" style="width:14px;height:14px;border-width:2px;border-color:#94a3b8;border-top-color:#475569;display:inline-block;vertical-align:-2px;margin:0 8px 0 0"></span>Vérification en cours…';
   var iv=setInterval(function(){
@@ -2073,9 +2070,9 @@ function pvVerify(id){const S=PV_STATE;if(S.usedActions[id]||S.verifying)return;
     if(!b2){clearInterval(iv);S.verifying=false;pvGrantCredit(id);return;}
     if(left>0)return;
     clearInterval(iv);S.verifying=false;pvGrantCredit(id);
-    b2.disabled=false;b2.style.background=S.brand.color;b2.style.color=pvContrast(S.brand.color);b2.textContent='Cliquez pour accéder au jeu';
+    b2.disabled=false;b2.style.background='#10b981';b2.style.color='#ffffff';b2.textContent='CLIQUEZ POUR ACCÉDER AU JEU';b2.style.fontSize='15px';b2.style.letterSpacing='.5px';
     b2.onclick=function(){pvModalClose();try{var c=document.getElementById('pv_controls');if(c)c.scrollIntoView({behavior:'smooth',block:'center'});}catch(e){}};
-    var h2=document.getElementById('pv_act_hint');if(h2)h2.textContent='Action vérifiée. Bonne chance !';
+    var h2=document.getElementById('pv_act_hint');if(h2)h2.textContent='';
   },1000);
 }
 async function pvSpin(){
@@ -2125,11 +2122,12 @@ function pvAfterSpin(j){
 }
 function pvShowWinStep(){
   const S=PV_STATE;const b=S.brand;if(!S.lastWin)return;
-  pvModal('<div style="font-size:14px;letter-spacing:4px;font-weight:900;color:#0b7d57;margin-bottom:4px">GAGNÉ !</div>'
-   +'<h3 style="margin:0 0 12px;color:#0b1220">Félicitations, vous remportez :</h3>'
-   +(S.lastWin.photo?'<img src="'+S.lastWin.photo+'" style="width:96px;height:96px;object-fit:cover;border-radius:16px;margin:0 auto 10px;display:block;box-shadow:0 8px 22px rgba(0,0,0,.15)">':'')
-   +'<div style="font-weight:900;font-size:19px;color:'+escH(b.color)+';margin-bottom:16px">'+escH(S.lastWin.prize||'')+'</div>'
-   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0" onclick="pvShowLeadForm()">Cliquez pour recevoir votre lot</button>');
+  pvModal('<div style="text-align:right;margin:-10px -8px 0 0"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:20px;color:#64748b;text-decoration:none;font-weight:600">✕</a></div>'
+   +'<div style="font-size:48px;line-height:1;margin-top:2px">🎉</div>'
+   +'<h3 style="margin:14px 0 20px;color:#16a34a;font-size:28px;letter-spacing:.5px;font-weight:900">GAGNÉ !</h3>'
+   +(S.lastWin.photo?'<img src="'+S.lastWin.photo+'" style="width:96px;height:96px;object-fit:contain;border-radius:16px;margin:0 auto 10px;display:block">':'')
+   +'<div style="font-weight:700;font-size:21px;color:#0b1220;margin-bottom:20px">'+escH(S.lastWin.prize||'')+'</div>'
+   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0;border-radius:999px;font-size:17px;padding:14px 20px" onclick="pvShowLeadForm()">Cliquez pour recevoir votre lot</button>');
 }
 function pvShowLeadForm(){
   const S=PV_STATE;const b=S.brand;
@@ -2165,23 +2163,26 @@ function pvPrizeHTML(token,prize){
   const S=PV_STATE;const redeemLink=fidBase()+'?lot='+token;
   const b=S.brand;const cond=(S.game.config||{}).conditions||{};const photo=(S.lastWin&&S.lastWin.photo)||'';
   let condHtml='';
-  if(cond.minOrder!=null&&cond.minOrder>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;font-size:12px;color:#92400e;margin-top:8px;text-align:left">Lot remis pour toute commande d\'au moins <b>'+Number(cond.minOrder).toFixed(0)+' €</b> chez '+escH(b.title||'l\'établissement')+'.</div>';
-  if(cond.delayHours&&cond.delayHours>0)condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-size:12px;color:#1d4ed8;margin-top:8px;text-align:left">Lot récupérable <b>'+cond.delayHours+' h</b> après l\'obtention.</div>';
-  condHtml+='<div style="background:#fef2f2;border-left:3px solid #dc2626;border-radius:10px;padding:9px 12px;font-size:12px;color:#991b1b;margin-top:8px;text-align:left">Faites valider le lot en caisse uniquement : une fois le QR code scanné et validé, il devient définitivement inutilisable.</div>';
-  return '<h3 style="color:#0b7d57;margin:0 0 2px">Félicitations !</h3><div class="tsub">Vous avez gagné :</div>'
-   +(photo?'<img src="'+photo+'" style="width:76px;height:76px;object-fit:cover;border-radius:14px;margin:8px auto 2px;display:block">':'')
-   +'<div style="font-weight:900;font-size:18px;color:'+escH(b.color)+';margin-bottom:8px">'+escH(prize||'')+'</div>'
-   +'<div class="pv-qr">'+qrImg(redeemLink,180)+'<div class="tsub" style="font-size:12px;margin-top:6px">Code : <b>'+escH(token)+'</b></div></div>'
-   +'<div style="font-weight:800;font-size:13px;margin-top:12px;color:#b45309">Conditions de récupération</div>'+condHtml
-   +'<div class="tsub" style="margin-top:10px;font-size:12px;font-weight:700">Prenez une capture d\'écran pour conserver votre lot.</div>';
+  if(cond.minOrder!=null&&cond.minOrder>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:11px 14px;font-size:13px;color:#92400e;margin-top:10px;text-align:left"><b>€</b>&nbsp; Récupérable sur présentation d\'une commande d\'un montant minimum de <b>'+Number(cond.minOrder).toFixed(0)+'€</b> chez "'+escH((b.title||'l\'établissement').toUpperCase())+'".</div>';
+  if(cond.delayHours&&cond.delayHours>0)condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:11px 14px;font-size:13px;color:#1d4ed8;margin-top:10px;text-align:left">🕐&nbsp; Ce lot sera récupérable <b>'+cond.delayHours+'h</b> après son obtention.</div>';
+  condHtml+='<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:14px;padding:11px 14px;font-size:13px;color:#991b1b;margin-top:10px;text-align:left">⚠️&nbsp; Attention à bien valider le lot en caisse, car une fois le QR code scanné et validé, il n\'est plus utilisable.</div>';
+  return '<div style="font-size:44px;line-height:1">🎉</div>'
+   +'<h3 style="color:'+escH(b.color)+';font-size:26px;margin:10px 0 4px;font-weight:900">Félicitations !</h3>'
+   +'<div style="font-size:16px;color:#334155">Vous avez gagné :</div>'
+   +(photo?'<img src="'+photo+'" style="width:84px;height:84px;object-fit:contain;border-radius:14px;margin:12px auto 4px;display:block">':'')
+   +'<div style="font-weight:800;font-size:21px;color:'+escH(b.color)+';margin:6px 0 12px">'+escH(prize||'')+'</div>'
+   +'<div class="pv-qr" style="background:#fff;border-radius:18px;box-shadow:0 8px 26px rgba(15,23,42,.12);padding:16px;display:inline-block">'+qrImg(redeemLink,180)+'<div style="font-size:14px;color:#475569;margin-top:8px">Code : <b>'+escH(token)+'</b></div></div>'
+   +'<div style="font-weight:800;font-size:15px;margin-top:16px;color:#b45309">⚠️ Conditions de récupération</div>'+condHtml
+   +'<div class="tsub" style="margin-top:12px;font-size:12px;font-weight:700">Prenez une capture d\'écran pour conserver votre lot.</div>';
 }
 function pvShowPrize(token,prize){
   const S=PV_STATE;
   const html=pvPrizeHTML(token,prize);
-  pvModal(html+'<div style="margin-top:12px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Fermer</a></div>');
+  pvModal('<div style="text-align:right;margin:-10px -8px 0 0"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:20px;color:#64748b;text-decoration:none;font-weight:600">✕</a></div>'+html);
   const rz=document.getElementById('pv_result');
   if(rz){rz.innerHTML='<div class="pv-result win" style="text-align:center">'+html+'</div>';}
   S.lastWin=null;pvRenderControls();pvRenderActions();
+  try{if(window.toast)toast('Merci ! Vos informations ont été enregistrées. Présentez votre QR code en caisse.');}catch(e){}
 }
 function tempChart(cid){const days=[];const t=new Date();t.setHours(0,0,0,0);for(let i=4;i>=0;i--){const d=new Date(t);d.setDate(d.getDate()-i);days.push(d);}
   const rs=cRel(cid).filter(r=>r.equipId==='e1'||r.equipId==='e3');
