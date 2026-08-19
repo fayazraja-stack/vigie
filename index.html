@@ -279,19 +279,87 @@
     #printReport,#printReport *{visibility:visible}
     #printReport{position:absolute;left:0;top:0;width:100%;padding:0 6px}
   }
+  /* ===== Barre d'application (connecté) ===== */
+  #appbar{position:fixed;top:0;left:0;right:0;height:52px;background:#0b1220;color:#fff;display:none;align-items:center;gap:14px;padding:0 16px;z-index:60}
+  body.authed #appbar{display:flex}
+  body.authed{padding-top:52px}
+  #appbar .ab-logo{display:flex;align-items:center;gap:8px;font-weight:800}
+  #appbar .ab-logo .dot{width:24px;height:24px;border-radius:7px;background:var(--brand);display:grid;place-items:center;color:#fff;font-size:14px}
+  #appbar .ab-sync{font-size:11px;color:#64748b;white-space:nowrap}
+  #appbar .sp{margin-left:auto}
+  #appbar .estsw{position:relative}
+  #appbar .estsw>button{background:#1e293b;color:#fff;border:1px solid #334155;border-radius:10px;padding:7px 12px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px;cursor:pointer}
+  #appbar .estsw .menu{position:absolute;top:44px;left:0;min-width:250px;background:#fff;color:#0f172a;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.25);padding:6px;display:none;max-height:60vh;overflow:auto}
+  #appbar .estsw.open .menu{display:block}
+  #appbar .estsw .menu .it{padding:9px 11px;border-radius:8px;cursor:pointer;font-size:13px;display:flex;flex-direction:column;gap:2px}
+  #appbar .estsw .menu .it:hover{background:#f1f5f9}
+  #appbar .estsw .menu .it small{color:#64748b;font-size:11px}
+  #appbar .estsw .menu .it.active{background:#ecfdf5}
+  #appbar .ab-user{font-size:12px;color:#cbd5e1;white-space:nowrap}
+  #appbar .ab-btn{background:transparent;border:1px solid #334155;color:#fff;border-radius:9px;padding:6px 11px;font-size:12px;cursor:pointer}
+  #appbar .ab-btn:hover{background:#1e293b}
+  /* ===== Écran de connexion ===== */
+  #authgate{position:fixed;inset:0;background:linear-gradient(135deg,#0b1220,#132a3f);display:none;align-items:center;justify-content:center;z-index:200;padding:20px}
+  #authgate.on{display:flex}
+  #authgate .card{background:#fff;border-radius:20px;max-width:400px;width:100%;padding:30px;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+  #authgate .lg{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;margin-bottom:14px}
+  #authgate .lg .dot{width:34px;height:34px;border-radius:10px;background:var(--brand);display:grid;place-items:center;color:#fff;font-size:18px}
+  #authgate p.h{color:#64748b;font-size:13px;margin:0 0 6px}
+  #authgate label{display:block;font-size:12px;font-weight:700;color:#334155;margin:12px 0 5px}
+  #authgate input{width:100%;padding:11px 13px;border:1px solid #cbd5e1;border-radius:11px;font-size:14px;box-sizing:border-box}
+  #authgate input:focus{outline:none;border-color:var(--brand)}
+  #authgate .primary{width:100%;margin-top:18px;background:var(--brand);color:#fff;border:0;padding:12px;border-radius:11px;font-weight:700;font-size:14px;cursor:pointer}
+  #authgate .primary:disabled{opacity:.6}
+  #authgate .link{background:0;border:0;color:var(--brand);font-size:12px;cursor:pointer;margin-top:12px;padding:0;display:block}
+  #authgate .msg{font-size:12.5px;margin-top:14px;padding:10px 12px;border-radius:9px;display:none;line-height:1.4}
+  #authgate .msg.err{display:block;background:#fef2f2;color:#b91c1c}
+  #authgate .msg.ok{display:block;background:#ecfdf5;color:#047857}
+  #authgate .close{position:absolute;top:16px;right:20px;color:#94a3b8;background:0;border:0;font-size:26px;cursor:pointer;line-height:1}
+  .auth-pane{display:none}.auth-pane.on{display:block}
 </style>
 </head>
 <body>
 
-<div id="demobar">
-  <div class="db-logo"><span class="dot">✓</span> Vigie <span class="db-tag">démo · nom provisoire</span></div>
-  <div class="segs">
-    <button data-view="vitrine" class="active">🌐 Vitrine</button>
-    <button data-view="admin">🛠️ Admin</button>
-    <button data-view="client">🏪 Back-office restaurateur</button>
-    <button data-view="app_terrain">📱 Tablette terrain</button>
+<!-- Barre d'application (visible uniquement une fois connecté) -->
+<div id="appbar">
+  <div class="ab-logo"><span class="dot">✓</span> Vigie</div>
+  <span class="ab-sync" id="ab_sync">● connexion…</span>
+  <div class="estsw" id="estsw" style="display:none"><button onclick="toggleEstSw()"><span id="estsw_cur">—</span> ▾</button><div class="menu" id="estsw_menu"></div></div>
+  <span class="sp"></span>
+  <span class="ab-user" id="ab_user"></span>
+  <button class="ab-btn" id="ab_tablet" style="display:none" onclick="openTabletFromBar()">📱 Tablette</button>
+  <button class="ab-btn" id="ab_backoffice" style="display:none" onclick="backToBackoffice()">← Back-office</button>
+  <button class="ab-btn" onclick="doLogout()">Déconnexion</button>
+</div>
+
+<!-- Écran de connexion / réinitialisation -->
+<div id="authgate">
+  <div class="card" style="position:relative">
+    <button class="close" onclick="closeLogin()" title="Fermer">×</button>
+    <div class="lg"><span class="dot">✓</span> Vigie</div>
+    <div class="auth-pane on" id="pane_login">
+      <p class="h">Connectez-vous à votre espace.</p>
+      <label>Email</label><input id="lg_email" type="email" autocomplete="username" placeholder="vous@restaurant.fr">
+      <label>Mot de passe</label><input id="lg_pwd" type="password" autocomplete="current-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+      <button class="primary" onclick="doLogin()">Se connecter</button>
+      <button class="link" onclick="showPane('forgot')">Mot de passe oublié ?</button>
+      <div class="msg" id="lg_msg"></div>
+    </div>
+    <div class="auth-pane" id="pane_forgot">
+      <p class="h">Recevez un lien par email pour réinitialiser votre mot de passe.</p>
+      <label>Email</label><input id="fg_email" type="email" placeholder="vous@restaurant.fr">
+      <button class="primary" onclick="doForgot()">Envoyer le lien</button>
+      <button class="link" onclick="showPane('login')">← Retour à la connexion</button>
+      <div class="msg" id="fg_msg"></div>
+    </div>
+    <div class="auth-pane" id="pane_change">
+      <p class="h" id="ch_h">Choisissez votre nouveau mot de passe.</p>
+      <label>Nouveau mot de passe</label><input id="ch_pwd" type="password" placeholder="8 caractères minimum">
+      <label>Confirmez le mot de passe</label><input id="ch_pwd2" type="password" placeholder="Retapez le mot de passe" onkeydown="if(event.key==='Enter')doChangePassword()">
+      <button class="primary" onclick="doChangePassword()">Enregistrer</button>
+      <div class="msg" id="ch_msg"></div>
+    </div>
   </div>
-  <div class="db-hint">Prototype cliquable — données partagées entre les espaces</div>
 </div>
 
 <!-- ===================== VITRINE ===================== -->
@@ -302,8 +370,8 @@
     <a class="link" onclick="scrollToId('f-how')">Fonctionnement</a>
     <a class="link" onclick="scrollToId('f-price')">Tarifs</a>
     <span class="sp"></span>
-    <a class="btn ghost sm" onclick="go('client')">Se connecter</a>
-    <a class="btn sm" onclick="go('app_terrain')">Voir la démo</a>
+    <a class="btn ghost sm" onclick="openLogin()">Se connecter</a>
+    <a class="btn sm" onclick="openLogin()">Espace pro</a>
   </div></div>
   <div class="hero"><div class="wrap">
     <div>
@@ -311,8 +379,8 @@
       <h1>Pilotez votre restaurant : <span class="hl">HACCP</span>, équipe & marges.</h1>
       <p class="sub">Vigie réunit l'hygiène alimentaire, la gestion des équipes, le food cost et la fidélisation dans une seule plateforme. Vos équipiers saisissent tout sur tablette, vous pilotez à distance.</p>
       <div class="cta">
-        <a class="btn" onclick="go('app_terrain')">📱 Essayer la tablette</a>
-        <a class="btn ghost" onclick="go('client')">Voir le back-office</a>
+        <a class="btn" onclick="openLogin()">Accéder à mon espace</a>
+        <a class="btn ghost" onclick="openLogin()">Se connecter</a>
       </div>
       <div class="trust"><span>✓ <b>HACCP</b> complet</span><span>✓ <b>RH & Planning</b></span><span>✓ <b>Food Cost</b></span><span>✓ <b>Fidélisation</b></span></div>
     </div>
@@ -449,15 +517,14 @@
 <script>
 window.VIGIE_SYNC = {
   url: "https://eqhiunitgjkzbgocydfa.supabase.co",
-  key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaGl1bml0Z2premJnb2N5ZGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODgxOTEsImV4cCI6MjEwMjY2NDE5MX0.g_4nSBVRIO-ghxTaySZ_xp-cqJtPFTfJaR6oht5p9nQ",
-  estCode: "pizzeria-bella"   // identifiant de l'établissement (le même sur le back-office et les tablettes)
+  key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxaGl1bml0Z2premJnb2N5ZGZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcwODgxOTEsImV4cCI6MjEwMjY2NDE5MX0.g_4nSBVRIO-ghxTaySZ_xp-cqJtPFTfJaR6oht5p9nQ"
 };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
 /* ============ DATA ============ */
-const CID='c1';
+let CID='c1';
 const now=()=>new Date();
 const fmtTime=d=>d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 const fmtDate=d=>d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
@@ -645,12 +712,10 @@ function kpi(l,n,d,dir){return '<div class="kpi"><div class="lab">'+l+'</div><di
 /* view switching */
 function go(v){document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
   document.getElementById(v).classList.add('active');
-  document.querySelectorAll('#demobar .segs button').forEach(b=>b.classList.toggle('active',b.dataset.view===v));
   window.scrollTo(0,0);
-  if(v==='admin')renderAdmin('dash');
-  if(v==='client'){buildClientSide();renderClient('dash');}
+  if(v==='admin')renderAdmin(adminView);
+  if(v==='client'){buildClientSide();renderClient(clientView);}
   if(v==='app_terrain')tbInit();}
-document.querySelectorAll('#demobar .segs button').forEach(b=>b.onclick=()=>go(b.dataset.view));
 function scrollToId(id){document.getElementById(id).scrollIntoView({behavior:'smooth'});}
 
 /* ============ ADMIN ============ */
@@ -668,7 +733,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'</tbody></table></div></div><div class="panel"><div class="ph"><h3>Alertes récentes réseau</h3></div><div class="pb">'+netAlerts()+'</div></div></div>';
   } else if(adminView==='clients'){
     m.innerHTML='<div class="topbar"><div><h1>Clients</h1><div class="sub">'+state.clients.length+' établissements</div></div><div class="actions"><button class="btn" onclick="openCreate()">＋ Nouveau client</button></div></div><div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Contact</th><th>Ville</th><th>Plan</th><th>Depuis</th><th>Statut</th><th></th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.contact+'</td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+new Date(c.since).toLocaleDateString('fr-FR')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td><td><button class="btn ghost sm" onclick="go(\'client\')">Ouvrir →</button></td></tr>').join('')+'</tbody></table></div></div>';
+    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.contact+'</td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+new Date(c.since).toLocaleDateString('fr-FR')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td><td><button class="btn ghost sm" onclick="adminOpenEst(\''+c.est_code+'\')">Ouvrir →</button></td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='plans'){
     m.innerHTML='<div class="topbar"><div><h1>Abonnements</h1><div class="sub">Répartition & revenu récurrent</div></div></div><div class="kpis">'+['Starter','Business','Réseau'].map(p=>kpi(p,state.clients.filter(c=>c.plan===p).length+' clients',({Starter:'49 €',Business:'99 €','Réseau':'290 €'})[p]+'/mois','up')).join('')+kpi('MRR total',mrr+' €','récurrent','up')+'</div><div class="panel"><div class="ph"><h3>Détail</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Client</th><th>Plan</th><th>Mensualité</th><th>Statut</th></tr></thead><tbody>'
     +state.clients.map(c=>'<tr><td class="tname">'+c.name+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">essai</span>')+'</td></tr>').join('')+'</tbody></table></div></div>';
@@ -692,10 +757,30 @@ function netAlerts(all){let items=[];state.clients.forEach(c=>openAlerts(c.id).f
   return items.map(o=>{const e=eqById(o.r.equipId);return '<div class="alert-i"><div class="ai bad">🌡️</div><div><div class="at">'+o.c.name+' — '+e.name+'</div><div class="as">'+o.r.value+' °C (cible '+seuilTxt(e)+') · '+(o.r.action||'action en attente')+'</div></div><div class="aw">'+ago(o.r.at)+'</div></div>';}).join('');}
 function openCreate(){document.getElementById('cm_mask').classList.add('on');}
 function closeCreate(){document.getElementById('cm_mask').classList.remove('on');}
-function submitCreate(){const g=id=>document.getElementById(id);
-  const name=g('cm_name').value.trim()||'Nouveau client';
-  state.clients.unshift({id:'c'+Date.now(),name,type:g('cm_type').value,city:g('cm_city').value.trim()||'—',plan:g('cm_plan').value,status:'essai',since:new Date().toISOString().slice(0,10),contact:g('cm_contact').value.trim()||'—'});
-  closeCreate();renderAdmin('clients');toast('✅ Compte « '+name+' » créé');}
+function cmSuggestCode(){const c=document.getElementById('cm_code');if(c&&!c._touched){c.value=slugCode(document.getElementById('cm_name').value);}}
+function slugCode(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||('etab-'+Math.floor(Math.random()*1e4));}
+async function submitCreate(){const g=id=>document.getElementById(id);
+  const email=g('cm_email').value.trim(), est_name=g('cm_name').value.trim(), est_code=slugCode(g('cm_code').value.trim()||g('cm_name').value.trim());
+  const msg=g('cm_msg'), btn=g('cm_btn');
+  const show=(bg,fg,html)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=html;};
+  if(!email||!est_name){show('#fef2f2','#b91c1c','Email et nom de l\'établissement sont requis.');return;}
+  if(!SB){show('#fef2f2','#b91c1c','Connexion Supabase indisponible.');return;}
+  btn.disabled=true;const old=btn.textContent;btn.textContent='Création…';show('#f1f5f9','#334155','Création en cours…');
+  try{
+    const {data:{session}}=await SB.auth.getSession();
+    const seed=starterState({est_code,name:est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),plan:g('cm_plan').value,contact:g('cm_contact').value.trim()});
+    const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify({action:'provision',email,full_name:g('cm_contact').value.trim(),est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),plan:g('cm_plan').value,contact:g('cm_contact').value.trim(),seed})});
+    const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
+    if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
+    if(j.provisionalPassword){
+      show('#ecfdf5','#047857','✅ Compte créé.<br>Email : <b>'+escH(email)+'</b><br>Mot de passe provisoire : <b style="font-size:15px">'+escH(j.provisionalPassword)+'</b><br><small>Transmettez-le au restaurateur. Il devra le changer à sa première connexion.</small>');
+    } else {
+      show('#ecfdf5','#047857','✅ Établissement <b>'+escH(est_name)+'</b> rattaché à <b>'+escH(email)+'</b>.<br><small>Cet email possède déjà un mot de passe ; le nouvel établissement apparaîtra dans son sélecteur.</small>');
+    }
+    await loadAdminData();renderAdmin(adminView);
+  }catch(e){show('#fef2f2','#b91c1c','Erreur : '+escH(e.message||e));}
+  btn.disabled=false;btn.textContent=old;
+}
 
 /* ============ CLIENT BACK-OFFICE ============ */
 const CLIENT_NAV=[
@@ -1271,7 +1356,7 @@ function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une va
   kpClose();toast(bad?'⚠︎ Alerte enregistrée + action corrective':'✓ Relevé : '+v.toFixed(1)+' °C');tbRender(tbCurrent);}
 
 /* create-client modal */
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal"><div class="mh"><h3>Nouveau client</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb"><div class="field"><label>Nom de l\'établissement</label><input id="cm_name" placeholder="Ex. Trattoria Roma"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Ex. Lyon 2e"></div><div class="field"><label>Contact / responsable</label><input id="cm_contact" placeholder="Ex. Jean Dupont"></div><div class="field"><label>Abonnement</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Annuler</button><button class="btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal"><div class="mh"><h3>Créer un accès / rattacher un établissement</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb"><p class="tsub" style="margin-bottom:12px">Créez le compte d\'un restaurateur, ou rattachez un établissement supplémentaire à un email déjà existant (franchisé multi-sites : réutilisez le même email avec un nouveau code).</p><div class="field"><label>Email du restaurateur</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Ex. Jean Dupont"></div><div class="field"><label>Nom de l\'établissement</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Code établissement (identifiant unique)</label><input id="cm_code" placeholder="ex. trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Ex. Lyon 2e"></div><div class="field"><label>Abonnement</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:6px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer / rattacher</button></div></div></div>');
 
 /* rapport imprimable */
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
@@ -1296,28 +1381,183 @@ function _rerenderAll(){try{buildClientSide();
   if(document.getElementById('admin').classList.contains('active'))renderAdmin(adminView);
   if(document.getElementById('app_terrain').classList.contains('active'))tbRender(tbCurrent);
 }catch(e){console.warn('rerender',e);}}
-async function syncSave(){if(!SYNC.client)return;try{await SYNC.client.from('app_state').upsert({est_code:SYNC.est,data:serializeState(),client_id:SYNC.cid,updated_at:new Date().toISOString()});}catch(e){console.warn('save',e);}}
-async function syncInit(){
-  const cfg=window.VIGIE_SYNC||{};
-  if(!cfg.url||!cfg.key||cfg.url.indexOf('http')<0||!window.supabase){return;} // mode local (hors-ligne)
-  try{
-    SYNC.client=window.supabase.createClient(cfg.url,cfg.key);SYNC.est=cfg.estCode||'default';
-    const {data}=await SYNC.client.from('app_state').select('data').eq('est_code',SYNC.est).maybeSingle();
-    if(data&&data.data&&Object.keys(data.data).length){applyState(data.data);SYNC.lastStr=JSON.stringify(serializeState());_rerenderAll();}
-    else{SYNC.lastStr='';await syncSave();SYNC.lastStr=JSON.stringify(serializeState());}
-    SYNC.client.channel('rt_'+SYNC.est).on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:'est_code=eq.'+SYNC.est},payload=>{
-      const row=payload.new;if(!row||!row.data||row.client_id===SYNC.cid)return;
-      SYNC.applying=true;applyState(row.data);SYNC.lastStr=JSON.stringify(serializeState());_rerenderAll();SYNC.applying=false;
-      toast('🔄 Mise à jour reçue');
-    }).subscribe();
-    SYNC.ready=true;
-    setInterval(()=>{if(!SYNC.ready||SYNC.applying)return;const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;syncSave();}},1500);
-    const tag=document.querySelector('#demobar .db-tag');if(tag){tag.textContent='● en ligne · synchronisé';tag.style.color='#34d399';}
-  }catch(e){console.warn('sync init',e);}
+/* ============ AUTHENTIFICATION + SYNCHRO PAR ÉTABLISSEMENT ============ */
+let SB=null, ME=null, SITES=[], CUR=null, RECOVERY=false, SYNCTIMER=null, CH=null;
+const CFG=window.VIGIE_SYNC||{};
+function escH(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function setSync(txt,color){const el=document.getElementById('ab_sync');if(el){el.textContent=txt;el.style.color=color||'#64748b';}}
+
+/* ---- écran de connexion ---- */
+function openLogin(){document.getElementById('authgate').classList.add('on');showPane('login');}
+function closeLogin(){document.getElementById('authgate').classList.remove('on');}
+function showPane(p){document.querySelectorAll('#authgate .auth-pane').forEach(x=>x.classList.remove('on'));const el=document.getElementById('pane_'+p);if(el)el.classList.add('on');}
+
+async function authInit(){
+  if(!CFG.url||!CFG.key||!window.supabase){ go('vitrine'); return; } // mode démo local (hors-ligne)
+  SB=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+  SB.auth.onAuthStateChange((event)=>{
+    if(event==='PASSWORD_RECOVERY'){RECOVERY=true;openLogin();showPane('change');document.getElementById('ch_h').textContent='Réinitialisation — choisissez un nouveau mot de passe.';}
+  });
+  const {data:{session}}=await SB.auth.getSession();
+  if(session && !RECOVERY){ await afterLogin(session); } else if(!RECOVERY){ go('vitrine'); }
+}
+
+async function doLogin(){
+  const email=document.getElementById('lg_email').value.trim(), pwd=document.getElementById('lg_pwd').value, msg=document.getElementById('lg_msg');
+  if(!email||!pwd){msg.className='msg err';msg.textContent='Renseignez votre email et votre mot de passe.';return;}
+  msg.className='msg';msg.style.display='block';msg.textContent='Connexion…';
+  const {data,error}=await SB.auth.signInWithPassword({email,password:pwd});
+  if(error){msg.className='msg err';msg.textContent='Email ou mot de passe incorrect.';return;}
+  await afterLogin(data.session);
+}
+
+async function afterLogin(session){
+  try{SB.realtime.setAuth(session.access_token);}catch(e){}
+  const {data:prof}=await SB.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  ME=prof||{id:session.user.id,email:session.user.email,role:'user'};
+  if(ME.must_change_password && !RECOVERY){openLogin();showPane('change');document.getElementById('ch_h').textContent='Première connexion : définissez votre mot de passe.';return;}
+  closeLogin();
+  document.body.classList.add('authed');
+  document.getElementById('ab_user').textContent=ME.email||'';
+  setSync('● en ligne · synchronisé','#34d399');
+  if(ME.role==='admin'){await enterAdmin();} else {await enterResto();}
+}
+
+async function doForgot(){
+  const email=document.getElementById('fg_email').value.trim(), msg=document.getElementById('fg_msg');
+  if(!email){msg.className='msg err';msg.textContent='Renseignez votre email.';return;}
+  const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+  if(error){msg.className='msg err';msg.textContent=error.message;return;}
+  msg.className='msg ok';msg.textContent="Si un compte existe pour cet email, un lien de réinitialisation vient d'être envoyé. Pensez à vérifier vos spams.";
+}
+
+async function doChangePassword(){
+  const p1=document.getElementById('ch_pwd').value, p2=document.getElementById('ch_pwd2').value, msg=document.getElementById('ch_msg');
+  if((p1||'').length<8){msg.className='msg err';msg.textContent='8 caractères minimum.';return;}
+  if(p1!==p2){msg.className='msg err';msg.textContent='Les deux mots de passe ne correspondent pas.';return;}
+  const {error}=await SB.auth.updateUser({password:p1});
+  if(error){msg.className='msg err';msg.textContent=error.message;return;}
+  try{if(ME&&ME.id)await SB.from('profiles').update({must_change_password:false}).eq('id',ME.id);}catch(e){}
+  if(ME)ME.must_change_password=false; RECOVERY=false;
+  msg.className='msg ok';msg.textContent='Mot de passe enregistré. Ouverture de votre espace…';
+  const {data:{session}}=await SB.auth.getSession();
+  if(session){await afterLogin(session);} else {showPane('login');}
+}
+
+async function doLogout(){try{await SB.auth.signOut();}catch(e){} location.reload();}
+function goHome(){if(!document.body.classList.contains('authed'))return; if(ME&&ME.role==='admin'){enterAdmin();} else {backToBackoffice();}}
+
+/* ---- espace ADMIN ---- */
+async function enterAdmin(){
+  document.getElementById('estsw').style.display='none';
+  document.getElementById('ab_tablet').style.display='none';
+  document.getElementById('ab_backoffice').style.display='none';
+  await loadAdminData();
+  go('admin');
+}
+const _ADMIN_COLLS=['equip','releves','postes','friteuses','fournisseurs','dlc','dlcCats','dlcProducts','reception','tracabilite','pertes','huileTests','documents','docFolders','zones','employees','jobs','conges','shifts','recipes','games'];
+async function loadAdminData(){
+  const {data:ests}=await SB.from('establishments').select('*').order('created_at',{ascending:false});
+  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'—',city:e.city||'—',plan:e.plan||'Starter',status:e.status||'actif',since:(e.created_at||'').slice(0,10),contact:e.contact||'—'}));
+  _ADMIN_COLLS.forEach(c=>state[c]=[]);
+  const {data:rows}=await SB.from('app_state').select('est_code,data');
+  (rows||[]).forEach(r=>{const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
+  state.huiles=state.friteuses; reviveState(state);
+}
+
+/* ---- espace RESTAURATEUR (multi-sites) ---- */
+async function enterResto(){
+  const {data:mem}=await SB.from('memberships').select('est_code, establishments(*)');
+  SITES=(mem||[]).map(m=>m.establishments).filter(Boolean);
+  if(!SITES.length){document.body.classList.add('authed');go('vitrine');toast('Aucun établissement rattaché à votre compte. Contactez votre administrateur.');return;}
+  document.getElementById('estsw').style.display='block';
+  document.getElementById('ab_tablet').style.display='inline-block';
+  document.getElementById('ab_backoffice').style.display='none';
+  buildEstSwitcher();
+  await switchEst(SITES[0].est_code);
+}
+function buildEstSwitcher(){
+  const cur=SITES.find(s=>s.est_code===CUR)||SITES[0];
+  const curEl=document.getElementById('estsw_cur');if(curEl)curEl.textContent=cur?cur.name:'—';
+  const m=document.getElementById('estsw_menu');if(m)m.innerHTML=SITES.map(s=>'<div class="it'+(s.est_code===CUR?' active':'')+'" onclick="switchEst(\''+s.est_code+'\')"><span>'+escH(s.name)+'</span><small>'+escH(s.city||'')+(s.plan?' · '+escH(s.plan):'')+'</small></div>').join('');
+}
+function toggleEstSw(){document.getElementById('estsw').classList.toggle('open');}
+document.addEventListener('click',e=>{const sw=document.getElementById('estsw');if(sw&&!sw.contains(e.target))sw.classList.remove('open');});
+
+async function switchEst(code){
+  const sw=document.getElementById('estsw');if(sw)sw.classList.remove('open');
+  if(code===CUR && SYNC.ready) return;
+  SYNC.ready=false; if(SYNCTIMER){clearInterval(SYNCTIMER);SYNCTIMER=null;} if(CH){try{SB.removeChannel(CH);}catch(e){}CH=null;}
+  CUR=code;
+  const site=SITES.find(s=>s.est_code===code)||{est_code:code,name:code};
+  const {data}=await SB.from('app_state').select('data').eq('est_code',code).maybeSingle();
+  const hasData=data&&data.data&&Object.keys(data.data).length;
+  if(hasData){applyState(data.data);}
+  else {const st=starterState(site);Object.keys(st).forEach(k=>state[k]=st[k]);state.huiles=state.friteuses;}
+  CID=(state.clients&&state.clients[0])?state.clients[0].id:'c1';
+  SYNC.lastStr=JSON.stringify(serializeState());
+  buildEstSwitcher();
+  if(document.getElementById('app_terrain').classList.contains('active')){tbInit();} else {go('client');}
+  if(!hasData){await estSave();SYNC.lastStr=JSON.stringify(serializeState());}
+  CH=SB.channel('rt_'+code).on('postgres_changes',{event:'*',schema:'public',table:'app_state',filter:'est_code=eq.'+code},payload=>{
+    const row=payload.new;if(!row||!row.data||row.client_id===SYNC.cid)return;
+    SYNC.applying=true;applyState(row.data);CID=(state.clients&&state.clients[0])?state.clients[0].id:CID;SYNC.lastStr=JSON.stringify(serializeState());_rerenderAll();SYNC.applying=false;toast('🔄 Mise à jour reçue');
+  }).subscribe();
+  SYNC.ready=true;
+  SYNCTIMER=setInterval(()=>{if(!SYNC.ready||SYNC.applying)return;const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
+}
+async function estSave(){if(!SB||!CUR)return;try{await SB.from('app_state').upsert({est_code:CUR,data:serializeState(),client_id:SYNC.cid,updated_at:new Date().toISOString()});}catch(e){console.warn('save',e);}}
+
+/* admin : ouvrir un établissement précis en back-office */
+async function adminOpenEst(code){
+  SITES=(state.clients||[]).map(c=>({est_code:c.est_code,name:c.name,type:c.type,city:c.city,plan:c.plan,contact:c.contact}));
+  document.getElementById('estsw').style.display='block';
+  document.getElementById('ab_tablet').style.display='inline-block';
+  buildEstSwitcher();
+  await switchEst(code);
+}
+
+/* passage tablette <-> back-office */
+function openTabletFromBar(){document.getElementById('ab_tablet').style.display='none';document.getElementById('ab_backoffice').style.display='inline-block';tbInit();go('app_terrain');}
+function backToBackoffice(){document.getElementById('ab_backoffice').style.display='none';document.getElementById('ab_tablet').style.display='inline-block';go('client');}
+
+/* état de départ d'un nouvel établissement (config par défaut, relevés vides) */
+function starterState(site){
+  const cid='c_'+(site&&site.est_code?site.est_code:('x'+Date.now())), t=Date.now();
+  return {
+    clients:[{id:cid,name:site&&site.name?site.name:'Mon établissement',type:site&&site.type?site.type:'Restaurant',city:site&&site.city?site.city:'',plan:site&&site.plan?site.plan:'Starter',status:'actif',since:new Date().toISOString().slice(0,10),contact:site&&site.contact?site.contact:''}],
+    equip:[
+      {id:'e'+t+'a',clientId:cid,name:'Frigo principal',cat:'froidpos',loc:'Cuisine',min:0,max:4,icon:'❄️',photo:null,active:true},
+      {id:'e'+t+'b',clientId:cid,name:'Congélateur',cat:'froidneg',loc:'Réserve',min:-30,max:-18,icon:'🧊',photo:null,active:true},
+    ],
+    releves:[],
+    postes:[
+      {id:'p'+t+'a',clientId:cid,zone:'Cuisine',name:'Plan de travail',freq:'Quotidien',done:false},
+      {id:'p'+t+'b',clientId:cid,zone:'Cuisine',name:'Sol cuisine',freq:'Quotidien',done:false},
+      {id:'p'+t+'c',clientId:cid,zone:'Salle',name:'Tables & comptoir',freq:'Quotidien',done:false},
+    ],
+    friteuses:[], fournisseurs:[], dlc:[], reception:[], tracabilite:[], pertes:[], huileTests:[],
+    dlcCats:[
+      {id:'dc1',clientId:cid,name:'Produit ouvert',color:'#2563eb'},
+      {id:'dc2',clientId:cid,name:'Décongelé',color:'#0ea5e9'},
+      {id:'dc3',clientId:cid,name:'Fabrication maison',color:'#16a34a'},
+    ],
+    dlcProducts:[],
+    zones:[{id:'z1',clientId:cid,name:'Cuisine'},{id:'z2',clientId:cid,name:'Salle'},{id:'z3',clientId:cid,name:'Sanitaires'}],
+    docFolders:[{id:'fld1',clientId:cid,name:'Documents HACCP'}], documents:[],
+    employees:[],
+    jobs:[
+      {id:'j1',clientId:cid,name:'Cuisine',color:'#2563eb'},
+      {id:'j2',clientId:cid,name:'Salle',color:'#16a34a'},
+      {id:'j3',clientId:cid,name:'Caisse',color:'#f59e0b'},
+    ],
+    conges:[], shifts:[], shiftTemplates:[], recipes:[], games:[], equipPhotos:[], productPhotos:[],
+    rhCfg:{}, rapportCfg:{}, estCode:site&&site.est_code?site.est_code:''
+  };
 }
 
 /* init */
-buildClientSide();tbInit();setInterval(tickClock,30000);syncInit();
+setInterval(tickClock,30000);authInit();
 </script>
 </body>
 </html>
