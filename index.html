@@ -2131,13 +2131,17 @@ function pvShowWinStep(){
 }
 function pvShowLeadForm(){
   const S=PV_STATE;const b=S.brand;
-  const inp='width:100%;box-sizing:border-box;padding:11px;border:1px solid #cbd5e1;border-radius:10px;margin-bottom:8px;font-size:14px';
-  pvModal('<h3 style="margin:0 0 4px">Vous avez gagné '+escH((S.lastWin&&S.lastWin.prize)||'')+' !</h3>'
-   +'<div style="font-size:13px;color:#475569;margin-bottom:12px">Renseignez vos coordonnées pour récupérer votre gain.</div>'
-   +'<div style="text-align:left"><input id="pv_prenom" placeholder="Prénom *" style="'+inp+'"><input id="pv_email" type="email" placeholder="Email *" style="'+inp+'"><input id="pv_tel" type="tel" placeholder="Numéro de téléphone *" style="'+inp+'"></div>'
-   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:2px" onclick="pvSubmitLead()">Valider</button>'
-   +'<div id="pv_lead_msg" style="font-size:12px;color:#b91c1c;margin-top:8px;font-weight:700"></div>'
-   +'<div class="tsub" style="font-size:11px;margin-top:8px">Vos informations sont transmises au restaurant pour la remise du lot.</div>');
+  const inp='width:100%;box-sizing:border-box;padding:13px 14px;border:1.5px solid #e2e8f0;border-radius:999px;margin:6px 0 14px;font-size:15px;outline-color:'+escH(b.color);
+  const lab='display:block;text-align:left;font-weight:700;font-size:15px;color:#0b1220';
+  pvModal('<h3 style="margin:2px 0 10px;font-size:25px;color:#0b1220;font-weight:900">🎉 Gagné !</h3>'
+   +'<div style="font-size:16px;color:#475569;margin-bottom:18px;line-height:1.5">Vous avez gagné '+escH((S.lastWin&&S.lastWin.prize)||'')+' !<br>Renseignez vos infos pour récupérer votre gain</div>'
+   +'<div style="text-align:left">'
+   +'<label style="'+lab+'">Prénom</label><input id="pv_prenom" placeholder="Jean" style="'+inp+'">'
+   +'<label style="'+lab+'">Email</label><input id="pv_email" type="email" placeholder="jean@example.com" style="'+inp+'">'
+   +'<label style="'+lab+'">Numéro de téléphone</label><input id="pv_tel" type="tel" placeholder="06 12 34 56 78" style="'+inp+'">'
+   +'</div>'
+   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:2px;border-radius:999px;font-size:17px;padding:14px 20px" onclick="pvSubmitLead()">Valider</button>'
+   +'<div id="pv_lead_msg" style="font-size:12.5px;color:#b91c1c;margin-top:8px;font-weight:700"></div>');
 }
 async function pvSubmitLead(){
   const S=PV_STATE;const gv=function(id){return (document.getElementById(id)||{}).value||'';};
@@ -2165,7 +2169,7 @@ function pvPrizeHTML(token,prize){
   let condHtml='';
   if(cond.minOrder!=null&&cond.minOrder>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:11px 14px;font-size:13px;color:#92400e;margin-top:10px;text-align:left"><b>€</b>&nbsp; Récupérable sur présentation d\'une commande d\'un montant minimum de <b>'+Number(cond.minOrder).toFixed(0)+'€</b> chez "'+escH((b.title||'l\'établissement').toUpperCase())+'".</div>';
   if(cond.delayHours&&cond.delayHours>0)condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:11px 14px;font-size:13px;color:#1d4ed8;margin-top:10px;text-align:left">🕐&nbsp; Ce lot sera récupérable <b>'+cond.delayHours+'h</b> après son obtention.</div>';
-  condHtml+='<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:14px;padding:11px 14px;font-size:13px;color:#991b1b;margin-top:10px;text-align:left">⚠️&nbsp; Attention à bien valider le lot en caisse, car une fois le QR code scanné et validé, il n\'est plus utilisable.</div>';
+  condHtml+='<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:14px;padding:11px 14px;font-size:13px;color:#991b1b;margin-top:10px;text-align:left">⚠️&nbsp; Attention à valider le lot bien en caisse et bien avant, car une fois le QR code scanné il ne sera plus utilisable.</div>';
   return '<div style="font-size:44px;line-height:1">🎉</div>'
    +'<h3 style="color:'+escH(b.color)+';font-size:26px;margin:10px 0 4px;font-weight:900">Félicitations !</h3>'
    +'<div style="font-size:16px;color:#334155">Vous avez gagné :</div>'
@@ -2173,7 +2177,7 @@ function pvPrizeHTML(token,prize){
    +'<div style="font-weight:800;font-size:21px;color:'+escH(b.color)+';margin:6px 0 12px">'+escH(prize||'')+'</div>'
    +'<div class="pv-qr" style="background:#fff;border-radius:18px;box-shadow:0 8px 26px rgba(15,23,42,.12);padding:16px;display:inline-block">'+qrImg(redeemLink,180)+'<div style="font-size:14px;color:#475569;margin-top:8px">Code : <b>'+escH(token)+'</b></div></div>'
    +'<div style="font-weight:800;font-size:15px;margin-top:16px;color:#b45309">⚠️ Conditions de récupération</div>'+condHtml
-   +'<div class="tsub" style="margin-top:12px;font-size:12px;font-weight:700">Prenez une capture d\'écran pour conserver votre lot.</div>';
+   +'<div style="margin-top:14px;font-size:14px;font-weight:800;color:#0b1220">📸 Prenez une capture d\'écran pour récupérer votre lot !</div>';
 }
 function pvShowPrize(token,prize){
   const S=PV_STATE;
