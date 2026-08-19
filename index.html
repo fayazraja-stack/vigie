@@ -825,6 +825,7 @@ function scrollToId(id){document.getElementById(id).scrollIntoView({behavior:'sm
 /* ============ ADMIN ============ */
 let adminView='dash';
 function adminNav(v,el){if(v==='deploy'&&el)dpResetWizard();adminView=v;document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));if(el)el.classList.add('active');renderAdmin(v);}
+function cliName(c){if(!c)return '';const n=c.name||'';return c.commercial&&c.commercial!==n?n+' ('+c.commercial+')':n;}
 function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('admin_main');
   const totalAlerts=state.clients.reduce((s,c)=>s+openAlerts(c.id).length,0);
   const actifs=state.clients.filter(c=>c.status==='actif').length;
@@ -833,7 +834,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     m.innerHTML='<div class="topbar"><div><h1>Vue d\'ensemble</h1><div class="sub">Parc clients & santé du réseau</div></div><div class="actions"><button class="btn" onclick="openCreate()">＋ Nouveau client</button></div></div>'
     +'<div class="kpis">'+kpi('Clients actifs',actifs,'sur '+state.clients.length,'up')+kpi('Relevés du jour',state.clients.reduce((s,c)=>s+todayRel(c.id).length,0),'réseau','up')+kpi('Alertes ouvertes',totalAlerts,'à traiter',totalAlerts?'down':'up')+kpi('MRR',mrr+' €','récurrent','up')+'</div>'
     +'<div class="grid2"><div class="panel"><div class="ph"><h3>Établissements</h3><div class="actions"><button class="btn ghost sm" onclick="openCreate()">＋ Ajouter</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Ville</th><th>Plan</th><th>Alertes</th><th>Statut</th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td><div class="tname">'+c.name+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+(openAlerts(c.id).length?'<span class="chip bad">'+openAlerts(c.id).length+' </span>':'<span class="chip ok">0</span>')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':(c.status==='prospect'?'<span class="chip muted">prospect</span>':'<span class="chip warn">'+escH(c.status||'essai')+'</span>'))+'</td></tr>').join('')
+    +state.clients.map(c=>'<tr><td><div class="tname">'+escH(cliName(c))+'</div><div class="tsub">'+c.type+'</div></td><td>'+c.city+'</td><td><span class="chip muted">'+c.plan+'</span></td><td>'+(openAlerts(c.id).length?'<span class="chip bad">'+openAlerts(c.id).length+' </span>':'<span class="chip ok">0</span>')+'</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':(c.status==='prospect'?'<span class="chip muted">prospect</span>':'<span class="chip warn">'+escH(c.status||'essai')+'</span>'))+'</td></tr>').join('')
     +'</tbody></table></div></div><div class="panel"><div class="ph"><h3>Alertes récentes réseau</h3></div><div class="pb">'+netAlerts()+'</div></div></div>';
   } else if(adminView==='clients'){
     const cities=Array.from(new Set((state.clients||[]).map(c=>c.city).filter(Boolean))).sort();
@@ -847,10 +848,10 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<select id="cl_fplan" onchange="clientApplyFilter()"><option value="">Toutes formules</option><option>Starter</option><option>Business</option><option>Réseau</option></select>'
     +'<button class="btn ghost sm" onclick="clientResetFilter()">Réinitialiser</button></div></div></div>'
     +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Établissement</th><th>Réseau</th><th>Contact</th><th>Ville</th><th>Plan</th><th>Statut</th><th></th></tr></thead><tbody id="cl_tbody">'
-    +state.clients.map(c=>'<tr data-est="'+escH(c.est_code)+'" data-search="'+escH((c.name+' '+(c.contact||'')+' '+(c.city||'')+' '+(c.owner_email||'')+' '+(c.network||'')).toLowerCase())+'" data-net="'+escH(c.network||'')+'" data-city="'+escH(c.city||'')+'" data-status="'+escH(c.status||'')+'" data-plan="'+escH(c.plan||'')+'"><td><div class="tname">'+escH(c.name)+'</div><div class="tsub">'+escH(c.type||'')+'</div></td><td>'+(c.network?'<span class="chip muted">'+escH(c.network)+'</span>':'—')+'</td><td>'+escH(c.contact||'—')+'</td><td>'+escH(c.city||'—')+'</td><td><span class="chip muted">'+escH(c.plan||'')+'</span></td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status||'')+'</span>')+'</td><td><button class="btn ghost sm" onclick="adminClientDetail(\''+c.est_code+'\')">Gérer →</button></td></tr>').join('')+'</tbody></table></div></div>';
+    +state.clients.map(c=>'<tr data-est="'+escH(c.est_code)+'" data-search="'+escH((c.name+' '+(c.commercial||'')+' '+(c.contact||'')+' '+(c.city||'')+' '+(c.owner_email||'')+' '+(c.network||'')).toLowerCase())+'" data-net="'+escH(c.network||'')+'" data-city="'+escH(c.city||'')+'" data-status="'+escH(c.status||'')+'" data-plan="'+escH(c.plan||'')+'"><td><div class="tname">'+escH(cliName(c))+'</div><div class="tsub">'+escH(c.type||'')+'</div></td><td>'+(c.network?'<span class="chip muted">'+escH(c.network)+'</span>':'—')+'</td><td>'+escH(c.contact||'—')+'</td><td>'+escH(c.city||'—')+'</td><td><span class="chip muted">'+escH(c.plan||'')+'</span></td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status||'')+'</span>')+'</td><td><button class="btn ghost sm" onclick="adminClientDetail(\''+c.est_code+'\')">Gérer →</button></td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='plans'){
     m.innerHTML='<div class="topbar"><div><h1>Abonnements</h1><div class="sub">Répartition & revenu récurrent</div></div></div><div class="kpis">'+['Starter','Business','Réseau'].map(p=>kpi(p,state.clients.filter(c=>c.plan===p).length+' clients',({Starter:'49 €',Business:'99 €','Réseau':'290 €'})[p]+'/mois','up')).join('')+kpi('MRR total',mrr+' €','récurrent','up')+'</div><div class="panel"><div class="ph"><h3>Détail</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Client</th><th>Plan</th><th>Mensualité</th><th>Statut</th></tr></thead><tbody>'
-    +state.clients.map(c=>'<tr><td class="tname">'+c.name+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':(c.status==='prospect'?'<span class="chip muted">prospect</span>':'<span class="chip warn">'+escH(c.status||'essai')+'</span>'))+'</td></tr>').join('')+'</tbody></table></div></div>';
+    +state.clients.map(c=>'<tr><td class="tname">'+escH(cliName(c))+'</td><td>'+c.plan+'</td><td>'+({Starter:49,Business:99,'Réseau':290})[c.plan]+' €</td><td>'+(c.status==='actif'?'<span class="chip ok">actif</span>':(c.status==='prospect'?'<span class="chip muted">prospect</span>':'<span class="chip warn">'+escH(c.status||'essai')+'</span>'))+'</td></tr>').join('')+'</tbody></table></div></div>';
   } else if(adminView==='alerts'){
     m.innerHTML='<div class="topbar"><div><h1>Alertes réseau</h1><div class="sub">'+totalAlerts+' alerte(s) sur le parc</div></div></div><div class="panel"><div class="pb">'+netAlerts(true)+'</div></div>';
   } else if(adminView==='veille'){
@@ -900,9 +901,10 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     const typeOpts=['Pizzeria','Restaurant','Fast-food','Boulangerie','Restaurant japonais','Bar / Brasserie'].map(x=>opt(x,c.type)).join('');
     const planOpts=['Starter','Business','Réseau'].map(x=>opt(x,c.plan)).join('');
     const mods=Array.isArray(c.modules)?c.modules:ALL_MODULES;
-    m.innerHTML='<div class="topbar"><div><button class="btn ghost sm" onclick="adminNav(\'clients\',null)">← Clients</button><h1 style="margin-top:8px">'+escH(c.name)+' '+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status)+'</span>')+'</h1><div class="sub">'+escH(c.est_code)+' · '+escH(c.owner_email||'')+'</div></div><div class="actions">'+(c.status==='actif'?'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'suspendu\')">Suspendre</button>':'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'actif\')">Réactiver</button>')+'</div></div>'
+    m.innerHTML='<div class="topbar"><div><button class="btn ghost sm" onclick="adminNav(\'clients\',null)">← Clients</button><h1 style="margin-top:8px">'+escH(cliName(c))+' '+(c.status==='actif'?'<span class="chip ok">actif</span>':'<span class="chip warn">'+escH(c.status)+'</span>')+'</h1><div class="sub">'+escH(c.est_code)+' · '+escH(c.owner_email||'')+'</div></div><div class="actions">'+(c.status==='actif'?'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'suspendu\')">Suspendre</button>':'<button class="btn ghost" onclick="adminSetStatus(\''+c.est_code+'\',\'actif\')">Réactiver</button>')+'</div></div>'
     +'<div class="panel"><div class="ph"><h3>Informations</h3></div><div class="pb"><div class="cm-grid">'
     +'<div class="field"><label>Nom de l\'établissement</label><input id="cd_name" value="'+escH(c.name)+'"></div>'
+    +'<div class="field"><label>Nom commercial *</label><input id="cd_commercial" value="'+escH(c.commercial||'')+'" placeholder="Enseigne"></div>'
     +'<div class="field"><label>Type</label><select id="cd_type">'+typeOpts+'</select></div>'
     +'<div class="field"><label>Adresse</label><input id="cd_address" value="'+escH(c.address||'')+'"></div>'
     +'<div class="field"><label>Code postal</label><input id="cd_cp" value="'+escH(c.postal_code||'')+'"></div>'
@@ -965,7 +967,7 @@ function dpCaptureStep(){
 function dpNext(){dpCaptureStep();if(dpStep===1&&!dpSel.clients.length){toast('Sélectionnez au moins un client.');return;}if(dpStep<DP_STEPS.length)dpStep++;renderAdmin('deploy');}
 function dpPrev(){dpCaptureStep();if(dpStep>1)dpStep--;renderAdmin('deploy');}
 function dpRenderClients(){const c=document.getElementById('dp_clients');if(!c)return;
-  c.innerHTML=(state.clients||[]).map(cl=>'<label class="cm-mod dp-cli" data-name="'+escH((cl.name+' '+cl.est_code+' '+(cl.city||'')).toLowerCase())+'"><input type="checkbox" value="'+cl.est_code+'"'+(dpSel.clients.indexOf(cl.est_code)>=0?' checked':'')+' onchange="dpUpdateCount()"> '+escH(cl.name)+' <small style="color:#94a3b8">'+escH(cl.city||'')+'</small></label>').join('')||'<div class="empty">Aucun client. Créez-en d\'abord dans l\'onglet Clients.</div>';
+  c.innerHTML=(state.clients||[]).map(cl=>'<label class="cm-mod dp-cli" data-name="'+escH((cl.name+' '+(cl.commercial||'')+' '+cl.est_code+' '+(cl.city||'')).toLowerCase())+'"><input type="checkbox" value="'+cl.est_code+'"'+(dpSel.clients.indexOf(cl.est_code)>=0?' checked':'')+' onchange="dpUpdateCount()"> '+escH(cliName(cl))+' <small style="color:#94a3b8">'+escH(cl.city||'')+'</small></label>').join('')||'<div class="empty">Aucun client. Créez-en d\'abord dans l\'onglet Clients.</div>';
   dpUpdateCount();}
 function dpFilterClients(){const q=((document.getElementById('dp_csearch')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#dp_clients label').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});}
 function dpToggleAll(){const on=document.getElementById('dp_all').checked;document.querySelectorAll('#dp_clients label').forEach(l=>{if(l.style.display!=='none'){const cb=l.querySelector('input');if(cb)cb.checked=on;}});dpUpdateCount();}
@@ -982,7 +984,7 @@ function dpSummaryHTML(){
   const eqN=nm(dpSel.equip,EQUIP_CATALOG),frN=nm(dpSel.frit,FRITEUSE_CATALOG),prN=nm(dpSel.prod,PRODUCT_CATALOG);
   const line=(label,arr)=>'<div style="margin-bottom:10px"><b>'+label+'</b> ('+arr.length+') : '+(arr.length?escH(arr.join(', ')):'<span class="tsub">aucun</span>')+'</div>';
   let h='<div class="panel" style="background:#f8fafc"><div class="pb">';
-  h+='<div style="margin-bottom:10px"><b>Clients ciblés</b> ('+clients.length+') : '+(clients.length?escH(clients.map(c=>c.name).join(', ')):'<span class="tsub">aucun</span>')+'</div>';
+  h+='<div style="margin-bottom:10px"><b>Clients ciblés</b> ('+clients.length+') : '+(clients.length?escH(clients.map(cliName).join(', ')):'<span class="tsub">aucun</span>')+'</div>';
   h+=line('Équipements',eqN)+line('Friteuses',frN)+line('Produits',prN);
   h+='<div><b>Modules</b> : '+(dpSel.applyMods?(escH(dpSel.modules.map(k=>MODULE_LABELS[k]).join(', '))+' — mis à jour'):'<span class="tsub">inchangés</span>')+'</div>';
   h+='</div></div>';return h;
@@ -1015,7 +1017,7 @@ async function dpDeployOne(code,eq,fr,pr,modules){
 }
 function adminClientDetail(code){adminSelEst=code;adminView='clientDetail';document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));renderAdmin('clientDetail');}
 async function adminSaveEst(code){const g=id=>document.getElementById(id);const ms=g('cd_savemsg');
-  const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,network:(function(){let v=g('cd_network').value;if(v==='__indep__')v='';return v||null;})(),price:g('cd_price').value===''?null:Number(g('cd_price').value)};
+  const row={name:g('cd_name').value.trim(),commercial_name:g('cd_commercial')?g('cd_commercial').value.trim():null,type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,network:(function(){let v=g('cd_network').value;if(v==='__indep__')v='';return v||null;})(),price:g('cd_price').value===''?null:Number(g('cd_price').value)};
   ms.style.color='#334155';ms.textContent='Enregistrement…';
   try{const {error}=await SB.from('establishments').update(row).eq('est_code',code);if(error)throw error;await loadAdminData();ms.style.color='#047857';ms.textContent=' Enregistré';toast('Infos client enregistrées');}catch(e){ms.style.color='#b91c1c';ms.textContent='Erreur : '+(e.message||e);}
 }
@@ -1108,9 +1110,9 @@ function clientApplyFilter(){const g=id=>(document.getElementById(id)||{}).value
 function clientResetFilter(){['cl_search','cl_fnet','cl_fcity','cl_fstatus','cl_fplan'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});clientApplyFilter();}
 function csvCell(v){v=(v==null?'':String(v));if(/[";\n]/.test(v))v='"'+v.replace(/"/g,'""')+'"';return v;}
 function exportClientsCsv(){const ests=Array.from(document.querySelectorAll('#cl_tbody tr')).filter(tr=>tr.style.display!=='none').map(tr=>tr.getAttribute('data-est'));
-  const cols=['Nom','Type','Réseau','Ville','Code postal','Adresse','Responsable','Téléphone','Email','Raison sociale','SIRET','TVA','Formule','Prix','Statut','Depuis'];
+  const cols=['Nom','Nom commercial','Type','Réseau','Ville','Code postal','Adresse','Responsable','Téléphone','Email','Raison sociale','SIRET','TVA','Formule','Prix','Statut','Depuis'];
   const lines=[cols.join(';')];
-  (state.clients||[]).filter(c=>ests.indexOf(c.est_code)>=0).forEach(c=>{lines.push([c.name,c.type,c.network,c.city,c.postal_code,c.address,c.contact,c.phone,c.owner_email,c.legal_name,c.siret,c.tva,c.plan,c.price,c.status,c.since].map(csvCell).join(';'));});
+  (state.clients||[]).filter(c=>ests.indexOf(c.est_code)>=0).forEach(c=>{lines.push([c.name,c.commercial||'',c.type,c.network,c.city,c.postal_code,c.address,c.contact,c.phone,c.owner_email,c.legal_name,c.siret,c.tva,c.plan,c.price,c.status,c.since].map(csvCell).join(';'));});
   const csv='﻿'+lines.join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='clients-vigie.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);toast('Export de '+ests.length+' client(s)');}
 let adminPhotoTab='equipPhotos';
 function setAdminPhotoTab(t){adminPhotoTab=t;renderAdmin('photos');}
@@ -1146,6 +1148,8 @@ async function cmFetchSiret(){const g=id=>document.getElementById(id);const raw=
     const s=e.siege||{};
     if(e.nom_raison_sociale||e.nom_complet)g('cm_legal').value=e.nom_raison_sociale||e.nom_complet;
     if(!g('cm_name').value)g('cm_name').value=e.nom_complet||e.nom_raison_sociale||'';
+    const me0=(e.matching_etablissements||[])[0]||{};const ens=(me0.liste_enseignes&&me0.liste_enseignes[0])||(e.sigle)||'';
+    if(!g('cm_commercial').value)g('cm_commercial').value=ens||e.nom_complet||'';
     const street=[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ')||s.adresse||'';
     if(street){let st=street;if(s.code_postal)st=st.replace(new RegExp('\\s*'+s.code_postal+'.*$'),'').trim();g('cm_address').value=st;}
     if(s.code_postal)g('cm_cp').value=s.code_postal;
@@ -1165,6 +1169,8 @@ async function cdFetchSiret(){const g=id=>document.getElementById(id);const raw=
     if(!e){show('#92400e','Aucune entreprise trouvée pour ce numéro.');return;}
     const s=e.siege||{};
     if(e.nom_raison_sociale||e.nom_complet)g('cd_legal').value=e.nom_raison_sociale||e.nom_complet;
+    const cme0=(e.matching_etablissements||[])[0]||{};const cens=(cme0.liste_enseignes&&cme0.liste_enseignes[0])||(e.sigle)||'';
+    if(g('cd_commercial')&&!g('cd_commercial').value)g('cd_commercial').value=cens||e.nom_complet||'';
     const street=[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ')||s.adresse||'';
     if(street){let st=street;if(s.code_postal)st=st.replace(new RegExp('\\s*'+s.code_postal+'.*$'),'').trim();g('cd_address').value=st;}
     if(s.code_postal)g('cd_cp').value=s.code_postal;if(s.libelle_commune)g('cd_city').value=s.libelle_commune;
@@ -1180,7 +1186,7 @@ async function submitCreate(){const g=id=>document.getElementById(id);
   const email=g('cm_email').value.trim(), est_name=g('cm_name').value.trim(), est_code=slugCode(g('cm_code').value.trim()||g('cm_name').value.trim());
   const msg=g('cm_msg'), btn=g('cm_btn');
   const show=(bg,fg,html)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=html;};
-  const missing=[];if(!est_name)missing.push('Nom de l\'établissement');if(!email)missing.push('Email de connexion');if(!g('cm_network').value)missing.push('Réseau / franchise (ou « Indépendant »)');
+  const missing=[];if(!est_name)missing.push('Nom de l\'établissement');if(!g('cm_commercial').value.trim())missing.push('Nom commercial');if(!email)missing.push('Email de connexion');if(!g('cm_network').value)missing.push('Réseau / franchise (ou « Indépendant »)');
   if(missing.length){show('#fef2f2','#b91c1c','Champ(s) obligatoire(s) manquant(s) : <b>'+missing.join(', ')+'</b>.');return;}
   if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){show('#fef2f2','#b91c1c','L\'email « '+escH(email)+' » n\'est pas valide.');return;}
   if(!SB){show('#fef2f2','#b91c1c','Connexion Supabase indisponible.');return;}
@@ -1189,7 +1195,7 @@ async function submitCreate(){const g=id=>document.getElementById(id);
   btn.disabled=true;const old=btn.textContent;btn.textContent='Déploiement…';show('#f1f5f9','#334155','Création du compte et de l\'espace…');
   try{
     const {data:{session}}=await SB.auth.getSession();
-    const payload={action:'provision',email,full_name:g('cm_contact').value.trim(),est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:email,plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules};
+    const payload={action:'provision',email,full_name:g('cm_contact').value.trim(),est_code,est_name,commercial_name:g('cm_commercial').value.trim(),type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:email,plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules};
     const seed=starterState({est_code,name:est_name,type:payload.type,city:payload.city,plan:payload.plan,contact:payload.contact});
     seed.equip=[];seed.friteuses=[];seed.dlcProducts=[];
     payload.seed=seed;
@@ -1217,7 +1223,7 @@ async function submitProspect(){const g=id=>document.getElementById(id);
   try{
     const {data:{session}}=await SB.auth.getSession();
     let network=g('cm_network').value;if(network==='__indep__')network='';
-    const payload={action:'save_prospect',est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:g('cm_email').value.trim(),plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules:cmMods(),status:'prospect'};
+    const payload={action:'save_prospect',est_code,est_name,commercial_name:g('cm_commercial').value.trim(),type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:g('cm_email').value.trim(),plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules:cmMods(),status:'prospect'};
     const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify(payload)});
     const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
     if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
@@ -1512,7 +1518,7 @@ function crmExport(){if(!CRM_ROWS.length){toast('Aucune donnée à exporter');re
   const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='base-clients.csv';a.click();}
 /* ---- Base de données client (admin, tous établissements) ---- */
 let ACRM_ROWS=[];
-function adminEstName(code){const c=(state.clients||[]).find(function(x){return x.est_code===code;});return c?c.name:code;}
+function adminEstName(code){const c=(state.clients||[]).find(function(x){return x.est_code===code;});return c?cliName(c):code;}
 async function adminCrmLoad(){
   const body=document.getElementById('acrm_body');if(!body)return;
   try{const {data}=await SB.from('fid_wins').select('*').order('created_at',{ascending:false}).limit(5000);
@@ -2537,7 +2543,7 @@ function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une va
 
 /* create-client modal */
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal" style="width:640px;max-width:96vw"><div class="mh"><h3>Nouveau client — compte clé en main</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb" style="max-height:72vh;overflow:auto"><p class="tsub" style="margin-bottom:6px">Créez un accès complet et pré-configuré pour un restaurateur. Franchisé multi-sites : réutilisez le même email avec un nouveau code établissement.</p>'
-+'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
++'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Nom commercial *</label><input id="cm_commercial" placeholder="Ex. La Trattoria (enseigne)"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
 +'<div class="cm-sec">Informations légales</div><p class="tsub" style="margin:-2px 0 8px;font-size:12px"> Saisissez le SIRET puis cliquez « Remplir » : la raison sociale, l\'adresse, la ville et la TVA se remplissent automatiquement.</p><div class="cm-grid"><div class="field"><label>SIRET (remplissage auto)</label><div style="display:flex;gap:6px"><input id="cm_siret" placeholder="14 chiffres" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();cmFetchSiret();}"><button type="button" class="btn ghost sm" onclick="cmFetchSiret()" title="Récupérer les infos">Remplir</button></div></div><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
 +'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
 +'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise *</label><select id="cm_network"><option value="">— Choisir —</option></select></div></div>'
@@ -2682,7 +2688,7 @@ async function enterAdmin(){
 const _ADMIN_COLLS=['equip','releves','postes','friteuses','fournisseurs','dlc','dlcCats','dlcProducts','reception','tracabilite','pertes','huileTests','documents','docFolders','zones','employees','jobs','conges','shifts','recipes','games'];
 async function loadAdminData(){
   const {data:ests}=await SB.from('establishments').select('*').order('created_at',{ascending:false});
-  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',network:e.network||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
+  state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,commercial:e.commercial_name||'',type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',network:e.network||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
   _ADMIN_COLLS.forEach(c=>state[c]=[]);
   const {data:rows}=await SB.from('app_state').select('est_code,data');
   (rows||[]).forEach(r=>{if(r.est_code==='__admin__')return;const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
