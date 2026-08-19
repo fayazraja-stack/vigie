@@ -1513,7 +1513,7 @@ const FID_PALETTE=['#0e7c58','#f59e0b','#2563eb','#e11d48','#7c3aed','#0891b2','
 function fidBase(){return location.origin+location.pathname;}
 function qrImg(text,size){size=size||180;try{if(window.qrcode){const qr=qrcode(0,'M');qr.addData(text);qr.make();return '<img src="'+qr.createDataURL(6,2)+'" width="'+size+'" height="'+size+'" alt="QR">';}}catch(e){}return '<div style="font-family:monospace;font-size:11px;word-break:break-all;padding:8px">'+escH(text)+'</div>';}
 function openInfoHTML(title,html){let mask=document.getElementById('info_mask');if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="info_mask"><div class="modal" style="width:440px;max-width:96vw"><div class="mh"><h3 id="info_title"></h3><button class="x" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">✕</button></div><div class="mb" id="info_body"></div></div></div>');mask=document.getElementById('info_mask');}document.getElementById('info_title').textContent=title;document.getElementById('info_body').innerHTML=html;mask.classList.add('on');}
-function fidWinsFor(gid){return FID_WINS.filter(w=>w.game_id===gid);}
+function fidWinsFor(gid){return FID_WINS.filter(w=>w.game_id===gid&&w.status!=='lost');}
 function fidExportLeads(){const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});if(!leads.length){toast('Aucun contact à exporter');return;}
   const rows=[['Nom','Email','Telephone','Lot','Statut','Date']];
   leads.forEach(function(w){rows.push([w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
@@ -1790,7 +1790,7 @@ function helpBox(items){return '<div class="panel" style="margin-top:16px;backgr
   +items.map(function(it){return '<div style="font-size:12.5px;color:#475569;line-height:1.55;margin-bottom:4px">• <b style="color:#0b1220">'+it[0]+'</b> : '+it[1]+'</div>';}).join('')+'</div></div>';}
 function fidRenderBody(){
   const body=document.getElementById('fid_body');if(!body)return;
-  const totalWins=FID_WINS.length, redeemed=FID_WINS.filter(w=>w.status==='redeemed').length, pending=totalWins-redeemed, actifs=FID_GAMES.filter(g=>g.active).length;
+  const totalWins=FID_WINS.filter(w=>w.status!=='lost').length, redeemed=FID_WINS.filter(w=>w.status==='redeemed').length, pending=totalWins-redeemed, actifs=FID_GAMES.filter(g=>g.active).length;
   let html='';
   if(clientView==='fid_stats'){
     const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});
@@ -2056,6 +2056,7 @@ async function fidValidateToken(){const el=document.getElementById('fid_token');
   try{const {data:w}=await SB.from('fid_wins').select('*').eq('token',t).maybeSingle();
     if(!w){msg.style.color='#b91c1c';msg.innerHTML='Code introuvable. Vérifiez la saisie.';return;}
     if(w.est_code!==CUR){msg.style.color='#b91c1c';msg.innerHTML='Ce lot appartient à un autre établissement.';return;}
+    if(w.status==='lost'){msg.style.color='#b91c1c';msg.innerHTML='Ce code ne correspond pas à un lot gagné.';return;}
     if(w.status==='redeemed'){msg.style.color='#b91c1c';msg.innerHTML='Lot déjà récupéré le '+veFmtDate(w.redeemed_at)+'. Ce code est invalide.';return;}
     const g=FID_GAMES.find(function(x){return x.id===w.game_id;});const cond=(g&&g.config&&g.config.conditions)||{};
     if(cond.delayHours&&w.created_at){const avail=new Date(new Date(w.created_at).getTime()+cond.delayHours*3600000);
@@ -2347,7 +2348,53 @@ function pvAfterSpin(j){
   if(j.win){const segs=(S.game.config||{}).segments||[];const sg=segs[j.index]||{};
     S.lastWin={id:j.id,prize:j.prize||j.label,photo:sg.photo||''};
     if(S.lead){pvClaim();}else{pvShowWinStep();}}
-  else{const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='<div class="pv-result lose"><h3>Pas de chance…</h3><div>Vous n\'avez rien gagné cette fois-ci.</div></div>';pvRenderControls();pvRenderActions();}
+  else{
+    const rz=document.getElementById('pv_result');if(rz)rz.innerHTML='<div class="pv-result lose"><h3>Pas de chance…</h3><div>Vous n\'avez rien gagné cette fois-ci.</div></div>';
+    pvRenderControls();pvRenderActions();
+    pvShowLoseForm();
+  }
+}
+function pvShowLoseForm(){
+  const S=PV_STATE;const b=S.brand;
+  const inp='width:100%;box-sizing:border-box;padding:13px 14px;border:1.5px solid #e2e8f0;border-radius:999px;margin:6px 0 14px;font-size:15px;outline-color:'+escH(b.color);
+  const lab='display:block;text-align:left;font-weight:700;font-size:15px;color:#0b1220';
+  if(S.lead){
+    pvModal('<div style="font-size:44px;line-height:1">😕</div>'
+     +'<h3 style="margin:12px 0 6px;font-size:24px;color:#0b1220;font-weight:900">Dommage !</h3>'
+     +'<div style="font-size:15px;color:#475569;margin-bottom:18px;line-height:1.55">Retentez votre chance la prochaine fois.</div>'
+     +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:0;border-radius:999px;font-size:16px;padding:13px 20px" onclick="pvModalClose()">Fermer</button>');
+    return;
+  }
+  pvModal('<div style="font-size:44px;line-height:1">😕</div>'
+   +'<h3 style="margin:12px 0 6px;font-size:24px;color:#0b1220;font-weight:900">Dommage !</h3>'
+   +'<div style="font-size:15px;color:#475569;margin-bottom:16px;line-height:1.55">Retentez votre chance la prochaine fois.<br>Laissez-nous vos coordonnées pour être informé de nos prochains jeux et offres.</div>'
+   +'<div style="text-align:left">'
+   +'<label style="'+lab+'">Prénom</label><input id="pv_prenom" placeholder="Jean" style="'+inp+'">'
+   +'<label style="'+lab+'">Email</label><input id="pv_email" type="email" placeholder="jean@example.com" style="'+inp+'">'
+   +'<label style="'+lab+'">Numéro de téléphone</label><input id="pv_tel" type="tel" placeholder="06 12 34 56 78" style="'+inp+'">'
+   +'</div>'
+   +'<button class="pv-btn" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';width:100%;margin-top:2px;border-radius:999px;font-size:17px;padding:14px 20px" onclick="pvSubmitLoseLead()">Valider</button>'
+   +'<div id="pv_lead_msg" style="font-size:12.5px;color:#b91c1c;margin-top:8px;font-weight:700"></div>'
+   +'<div style="margin-top:8px"><a href="javascript:void(0)" onclick="pvModalClose()" style="font-size:12px;color:#94a3b8">Non merci</a></div>');
+}
+async function pvSubmitLoseLead(){
+  const S=PV_STATE;const gv=function(id){return (document.getElementById(id)||{}).value||'';};
+  const prenom=gv('pv_prenom').trim(),tel=gv('pv_tel').trim(),email=gv('pv_email').trim();
+  const msg=document.getElementById('pv_lead_msg');
+  if(!prenom||!tel||!email){if(msg)msg.textContent='Merci de remplir tous les champs.';return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)){if(msg)msg.textContent='Adresse email invalide.';return;}
+  const telN=tel.replace(/[\s.\-()]/g,'');
+  if(!/^(?:\+33|0033|0)[1-9]\d{8}$/.test(telN)){if(msg)msg.textContent='Numéro de téléphone invalide (ex. 06 12 34 56 78).';return;}
+  S.lead={name:prenom,phone:telN,email:email};
+  if(msg){msg.style.color='#334155';msg.textContent='Enregistrement…';}
+  try{
+    const r=await fetch(CFG.url+'/functions/v1/fid-play',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key,'Authorization':'Bearer '+CFG.key},body:JSON.stringify({action:'lead',est_code:S.est,game_id:S.gid,name:prenom,phone:telN,email:email})});
+    const j=await r.json();if(!r.ok||j.error)throw new Error(j.error||'Erreur');
+    pvModal('<div style="font-size:44px;line-height:1">😕</div>'
+     +'<h3 style="margin:12px 0 6px;font-size:24px;font-weight:900">Dommage !</h3>'
+     +'<div style="font-size:15px;color:#475569;margin-bottom:16px;line-height:1.55">Merci ! Vos informations ont été enregistrées.<br>Retentez votre chance la prochaine fois.</div>'
+     +'<button class="pv-btn" style="background:'+escH(PV_STATE.brand.color)+';color:'+pvContrast(PV_STATE.brand.color)+';width:100%;margin-top:0;border-radius:999px;font-size:16px;padding:13px 20px" onclick="pvModalClose()">Fermer</button>');
+  }catch(e){if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
 }
 function pvShowWinStep(){
   const S=PV_STATE;const b=S.brand;if(!S.lastWin)return;
