@@ -239,6 +239,17 @@
   .cm-mod input{width:auto;margin:0}
   .side .locked{opacity:.55}
   .side .lk{font-size:11px;margin-left:4px}
+  .dp-search{width:100%;padding:10px 13px;border:1px solid #cbd5e1;border-radius:10px;font-size:14px;box-sizing:border-box}
+  .dp-search.sm{width:auto;padding:5px 9px;font-size:12px;margin-left:8px;font-weight:400}
+  .dp-list{max-height:230px;overflow:auto;border:1px solid #e2e8f0;border-radius:10px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .dp-grp{margin-bottom:12px}
+  .dp-grp-t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#64748b;margin:8px 0 6px}
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+  .cat-card{display:flex;align-items:center;gap:10px;border:1px solid #e2e8f0;border-radius:12px;padding:8px 10px;background:#fff}
+  .cat-thumb{width:44px;height:44px;border-radius:9px;background:#f1f5f9;display:grid;place-items:center;font-size:22px;overflow:hidden;flex:0 0 auto}
+  .cat-thumb img{width:100%;height:100%;object-fit:cover}
+  .cat-info{flex:1;min-width:0}
+  .cat-act{display:flex;gap:2px;flex:0 0 auto}
   @media(max-width:920px){
     .hero .wrap{grid-template-columns:1fr}.phone-mock{display:none}
     .feat-grid,.pricing,.grid3{grid-template-columns:1fr}
@@ -483,6 +494,7 @@
       <div class="nav-i" onclick="adminNav('plans',this)"><span class="ic">💳</span> Abonnements</div>
       <div class="nav-i" onclick="adminNav('alerts',this)"><span class="ic">🔔</span> Alertes réseau</div>
       <div class="cat">Bibliothèques</div>
+      <div class="nav-i" onclick="adminNav('catalog',this)"><span class="ic">📦</span> Catalogue</div>
       <div class="nav-i" onclick="adminNav('photos',this)"><span class="ic">🖼️</span> Photothèque</div>
       <div class="who"><div class="av">A</div><div><div class="nm">Admin Vigie</div><div class="rl">Super-administrateur</div></div></div>
     </aside>
@@ -771,6 +783,17 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="panel"><div class="pb"><div class="imggrid" style="grid-template-columns:repeat(6,1fr)">'
     +list.map(p=>'<div class="imgchoice" style="cursor:default"><img src="'+p.url+'"><span>'+p.label+'</span><button class="btn ghost sm" style="margin-top:6px" onclick="adminPhotoDel(\''+p.id+'\')">🗑</button></div>').join('')
     +'</div></div></div>';
+  } else if(adminView==='catalog'){
+    const kinds=[['equip','Équipements',EQUIP_CATALOG],['friteuse','Friteuses',FRITEUSE_CATALOG],['product','Produits (DLC)',PRODUCT_CATALOG]];
+    let body='';
+    kinds.forEach(function(kk){const k=kk[0],label=kk[1],arr=kk[2]||[];
+      const groups={};arr.forEach(it=>{const g=it.sub||'—';(groups[g]=groups[g]||[]).push(it);});
+      body+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>'+label+' ('+arr.length+')</h3><div class="actions"><button class="btn ghost sm" onclick="catNew(\''+k+'\')">＋ Ajouter</button></div></div><div class="pb">';
+      if(!arr.length){body+='<div class="empty">Aucun élément. Cliquez « Ajouter ».</div>';}
+      else{body+=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'📦')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(k==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+(it.min)+'→'+(it.max)+'°C</div>':'<div class="tsub">'+escH(it.sub||'')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')">✏️</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')">🗑</button></div></div>').join('')+'</div></div>').join('');}
+      body+='</div></div>';
+    });
+    m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Base d\'équipements, friteuses et produits — sert au déploiement chez les clients</div></div><div class="actions"><button class="btn" onclick="catNew(\'equip\')">＋ Nouvel élément</button></div></div><div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="cat_search" placeholder="Rechercher dans le catalogue…" oninput="catFilter()"></div></div>'+body;
   } else if(adminView==='clientDetail'){
     const c=state.clients.find(x=>x.est_code===adminSelEst);
     if(!c){adminNav('clients',null);return;}
@@ -800,45 +823,55 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="cd_addemail" type="email" placeholder="email à rattacher à cet établissement" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px"><button class="btn sm" onclick="adminAddAccess(\''+c.est_code+'\')">＋ Rattacher</button></div><div id="cd_addmsg" style="font-size:12px;margin-top:8px;line-height:1.5"></div></div></div>';
     adminLoadAccess(c.est_code);
   } else if(adminView==='deploy'){
-    const opts=state.clients.map(c=>'<option value="'+c.est_code+'"'+(c.est_code===adminDeploySel?' selected':'')+'>'+escH(c.name)+' ('+escH(c.est_code)+')</option>').join('');
-    m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Ajouter du matériel, des produits ou des modules à l\'espace d\'un client existant — utile quand un client appelle pour un ajout</div></div></div>'
-    +'<div class="panel"><div class="pb"><div class="field"><label>Client à déployer</label><select id="dp_client" onchange="adminDeploySelect()"><option value="">— Sélectionnez un client —</option>'+opts+'</select></div><div id="dp_body" style="margin-top:10px"><div class="empty">Choisissez un client pour préparer un déploiement.</div></div></div></div>';
-    if(adminDeploySel){const s=document.getElementById('dp_client');if(s)s.value=adminDeploySel;adminDeploySelect();}
+    m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Ajouter du matériel, des produits ou des modules à un ou plusieurs clients — même un réseau entier d\'un coup</div></div></div>'
+    +'<div class="panel"><div class="pb">'
+    +'<div class="cm-sec">1. Clients ciblés</div>'
+    +'<input class="dp-search" id="dp_csearch" placeholder="Rechercher un client…" oninput="dpFilterClients()">'
+    +'<label class="cm-mod" style="margin:8px 0;max-width:220px"><input type="checkbox" id="dp_all" onchange="dpToggleAll()"> Tout sélectionner</label>'
+    +'<div id="dp_clients" class="dp-list"></div><div id="dp_count" class="tsub" style="margin-top:6px">0 client sélectionné</div>'
+    +'<div class="cm-sec">2. Équipements à ajouter <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_equip\',this.value)"></div><div id="dp_equip"></div>'
+    +'<div class="cm-sec">Friteuses</div><div id="dp_frit" class="cm-mods"></div>'
+    +'<div class="cm-sec">Produits DLC <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_prod\',this.value)"></div><div id="dp_prod"></div>'
+    +'<div class="cm-sec">3. Modules (optionnel)</div><label class="cm-mod" style="max-width:380px"><input type="checkbox" id="dp_applymods" onchange="dpToggleModsPanel()"> Mettre à jour les modules des clients sélectionnés</label><div id="dp_modules" class="cm-mods" style="display:none;margin-top:8px">'+ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'" checked> '+escH(MODULE_LABELS[k])+'</label>').join('')+'</div>'
+    +'<div style="margin-top:18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="adminRunDeployMulti()">🚀 Déployer</button><span id="dp_msg" style="font-size:12px"></span></div>'
+    +'<p class="tsub" style="margin-top:8px;font-size:12px">Les éléments cochés sont <b>ajoutés</b> à l\'existant (rien n\'est supprimé) et remontent en temps réel chez les clients.</p>'
+    +'</div></div>';
+    dpRenderClients();dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';});catBoxes('dp_frit',FRITEUSE_CATALOG);dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';});
   }
 }
 let adminSelEst=null;
 let adminDeploySel=null;
-function adminDeploySelect(){
-  const sel=document.getElementById('dp_client');const code=sel?sel.value:'';adminDeploySel=code||null;
-  const body=document.getElementById('dp_body');if(!body)return;
-  if(!code){body.innerHTML='<div class="empty">Choisissez un client pour préparer un déploiement.</div>';return;}
-  const c=state.clients.find(x=>x.est_code===code)||{};const mods=Array.isArray(c.modules)?c.modules:ALL_MODULES;
-  body.innerHTML='<div class="cm-sec">Équipements à ajouter</div><div id="dp_equip" class="cm-mods"></div>'
-    +'<div class="cm-sec">Friteuses à ajouter</div><div id="dp_frit" class="cm-mods"></div>'
-    +'<div class="cm-sec">Produits DLC à ajouter</div><div id="dp_prod" class="cm-mods"></div>'
-    +'<div class="cm-sec">Modules actifs du client</div><div id="dp_modules" class="cm-mods">'+ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(mods.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')+'</div>'
-    +'<div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center"><button class="btn" onclick="adminRunDeploy(\''+code+'\')">🚀 Déployer dans l\'espace du client</button><span id="dp_msg" style="font-size:12px"></span></div>'
-    +'<p class="tsub" style="margin-top:10px;font-size:12px">Le matériel et les produits cochés sont <b>ajoutés</b> à ce qui existe déjà (rien n\'est supprimé), et remontent en temps réel dans l\'espace du client.</p>';
-  catBoxes('dp_equip',EQUIP_CATALOG);catBoxes('dp_frit',FRITEUSE_CATALOG);catBoxes('dp_prod',PRODUCT_CATALOG);
+function dpRenderClients(){const c=document.getElementById('dp_clients');if(!c)return;
+  c.innerHTML=(state.clients||[]).map(cl=>'<label class="cm-mod dp-cli" data-name="'+escH((cl.name+' '+cl.est_code+' '+(cl.city||'')).toLowerCase())+'"><input type="checkbox" value="'+cl.est_code+'" onchange="dpUpdateCount()"> '+escH(cl.name)+'</label>').join('')||'<div class="empty">Aucun client. Créez-en d\'abord dans l\'onglet Clients.</div>';
+  dpUpdateCount();}
+function dpFilterClients(){const q=((document.getElementById('dp_csearch')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#dp_clients label').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});}
+function dpToggleAll(){const on=document.getElementById('dp_all').checked;document.querySelectorAll('#dp_clients label').forEach(l=>{if(l.style.display!=='none'){const cb=l.querySelector('input');if(cb)cb.checked=on;}});dpUpdateCount();}
+function dpUpdateCount(){const n=document.querySelectorAll('#dp_clients input:checked').length;const el=document.getElementById('dp_count');if(el)el.textContent=n+' client'+(n>1?'s':'')+' sélectionné'+(n>1?'s':'');}
+function dpToggleModsPanel(){const p=document.getElementById('dp_modules');if(p)p.style.display=document.getElementById('dp_applymods').checked?'':'none';}
+function dpBuildPicker(containerId,catalog,groupOf){const groups={};(catalog||[]).forEach(it=>{const g=groupOf(it)||'Autres';(groups[g]=groups[g]||[]).push(it);});const c=document.getElementById(containerId);if(!c)return;
+  c.innerHTML=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cm-mods">'+groups[g].map(it=>'<label class="cm-mod" data-name="'+escH((it.name||'').toLowerCase())+'"><input type="checkbox" value="'+it.key+'"> '+(it.photo?'<img src="'+it.photo+'" style="width:20px;height:20px;border-radius:5px;object-fit:cover">':(it.icon?it.icon+' ':''))+escH(it.name)+'</label>').join('')+'</div></div>').join('');}
+function dpFilter(containerId,q){q=(q||'').toLowerCase().trim();document.querySelectorAll('#'+containerId+' label.cm-mod').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});document.querySelectorAll('#'+containerId+' .dp-grp').forEach(gr=>{const any=Array.from(gr.querySelectorAll('label.cm-mod')).some(l=>l.style.display!=='none');gr.style.display=any?'':'none';});}
+async function adminRunDeployMulti(){
+  const codes=Array.from(document.querySelectorAll('#dp_clients input:checked')).map(x=>x.value);const msg=document.getElementById('dp_msg');
+  const set=(c,t)=>{if(msg){msg.style.color=c;msg.textContent=t;}};
+  if(!codes.length){set('#b91c1c','Sélectionnez au moins un client.');return;}
+  const eq=cmSel('dp_equip'),fr=cmSel('dp_frit'),pr=cmSel('dp_prod');
+  const applyMods=document.getElementById('dp_applymods').checked;
+  const modules=applyMods?Array.from(document.querySelectorAll('#dp_modules input:checked')).map(x=>x.value):null;
+  if(!eq.length&&!fr.length&&!pr.length&&!applyMods){set('#b91c1c','Sélectionnez au moins un élément ou activez la mise à jour des modules.');return;}
+  set('#334155','Déploiement sur '+codes.length+' client(s)…');let done=0,fail=0;
+  for(const code of codes){try{await dpDeployOne(code,eq,fr,pr,modules);done++;}catch(e){fail++;}}
+  await loadAdminData();set(fail?'#b45309':'#047857','✅ Déployé sur '+done+' client(s)'+(fail?(' · '+fail+' échec(s)'):'')+'.');toast('Déploiement terminé ('+done+'/'+codes.length+')');
 }
-async function adminRunDeploy(code){
-  const msg=document.getElementById('dp_msg');const eq=cmSel('dp_equip'),fr=cmSel('dp_frit'),pr=cmSel('dp_prod');
-  const modules=Array.from(document.querySelectorAll('#dp_modules input:checked')).map(x=>x.value);
-  if(msg){msg.style.color='#334155';msg.textContent='Déploiement…';}
-  try{
-    const {data,error}=await SB.from('app_state').select('data').eq('est_code',code).maybeSingle();if(error)throw error;
-    const d=(data&&data.data)?data.data:{};
-    const cid=(d.clients&&d.clients[0]&&d.clients[0].id)?d.clients[0].id:('c_'+code);const t=Date.now();
-    d.equip=d.equip||[];d.friteuses=d.friteuses||[];d.dlcProducts=d.dlcProducts||[];
-    eq.forEach((k,i)=>{const c2=EQUIP_CATALOG.find(x=>x.key===k)||{name:k,cat:'froidpos',min:0,max:4,icon:'❄️'};d.equip.push({id:'e'+t+'x'+i,clientId:cid,name:c2.name,cat:c2.cat,loc:'',min:c2.min,max:c2.max,icon:c2.icon,photo:null,active:true});});
-    fr.forEach((k,i)=>{const c2=FRITEUSE_CATALOG.find(x=>x.key===k)||{name:k};d.friteuses.push({id:'h'+t+'x'+i,clientId:cid,name:c2.name,marque:'',capacite:'',zone:'Cuisine',freq:'Quotidien',polarity:0,status:'ok',changedAt:new Date().toISOString()});});
-    pr.forEach((k,i)=>{const c2=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};d.dlcProducts.push({id:'dp'+t+'x'+i,clientId:cid,name:c2.name,photo:null,catId:'dc1',ouvert:3,decongele:1,fabrique:3,active:true});});
-    const {error:e2}=await SB.from('app_state').upsert({est_code:code,data:d,client_id:'admin-deploy',updated_at:new Date().toISOString()});if(e2)throw e2;
-    const {error:e3}=await SB.from('establishments').update({modules}).eq('est_code',code);if(e3)throw e3;
-    await loadAdminData();
-    if(msg){msg.style.color='#047857';msg.textContent='✅ Déployé : '+eq.length+' équipement(s), '+fr.length+' friteuse(s), '+pr.length+' produit(s).';}
-    toast('Déploiement effectué');adminDeploySelect();
-  }catch(e){if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
+async function dpDeployOne(code,eq,fr,pr,modules){
+  const {data,error}=await SB.from('app_state').select('data').eq('est_code',code).maybeSingle();if(error)throw error;
+  const d=(data&&data.data)?data.data:{};const cid=(d.clients&&d.clients[0]&&d.clients[0].id)?d.clients[0].id:('c_'+code);const t=Date.now();
+  d.equip=d.equip||[];d.friteuses=d.friteuses||[];d.dlcProducts=d.dlcProducts||[];
+  eq.forEach((k,i)=>{const c2=EQUIP_CATALOG.find(x=>x.key===k)||{name:k,cat:'froidpos',min:0,max:4,icon:'❄️'};d.equip.push({id:'e'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,cat:c2.cat,loc:'',min:c2.min,max:c2.max,icon:c2.icon||'❄️',photo:c2.photo||null,active:true});});
+  fr.forEach((k,i)=>{const c2=FRITEUSE_CATALOG.find(x=>x.key===k)||{name:k};d.friteuses.push({id:'h'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,marque:'',capacite:'',zone:'Cuisine',freq:'Quotidien',polarity:0,status:'ok',changedAt:new Date().toISOString()});});
+  pr.forEach((k,i)=>{const c2=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};d.dlcProducts.push({id:'dp'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,photo:c2.photo||null,catId:'dc1',ouvert:3,decongele:1,fabrique:3,active:true});});
+  const {error:e2}=await SB.from('app_state').upsert({est_code:code,data:d,client_id:'admin-deploy',updated_at:new Date().toISOString()});if(e2)throw e2;
+  if(modules){const {error:e3}=await SB.from('establishments').update({modules}).eq('est_code',code);if(e3)throw e3;}
 }
 function adminClientDetail(code){adminSelEst=code;adminView='clientDetail';document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));renderAdmin('clientDetail');}
 async function adminSaveEst(code){const g=id=>document.getElementById(id);const ms=g('cd_savemsg');
@@ -880,8 +913,8 @@ function adminRevoke(email,code){openConfirm('Retirer l\'accès','Retirer l\'acc
 });}
 let adminPhotoTab='equipPhotos';
 function setAdminPhotoTab(t){adminPhotoTab=t;renderAdmin('photos');}
-function adminPhotoDel(id){const p=state[adminPhotoTab].find(x=>x.id===id);openConfirm('Supprimer la photo','Voulez-vous vraiment supprimer '+((p&&p.label)||'cette photo')+' de la bibliothèque ? Cette action est définitive.',()=>{const i=state[adminPhotoTab].findIndex(x=>x.id===id);if(i>=0)state[adminPhotoTab].splice(i,1);renderAdmin('photos');toast('Photo supprimée de la bibliothèque');});}
-function adminPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state[adminPhotoTab].push({id:'lib'+Date.now(),label:f.name.replace(/\.[^.]+$/,'').slice(0,18),url:rd.result});renderAdmin('photos');toast('Photo ajoutée à la bibliothèque — dispo pour les clients');};rd.readAsDataURL(f);}
+function adminPhotoDel(id){const p=state[adminPhotoTab].find(x=>x.id===id);openConfirm('Supprimer la photo','Voulez-vous vraiment supprimer '+((p&&p.label)||'cette photo')+' de la bibliothèque ? Cette action est définitive.',()=>{const i=state[adminPhotoTab].findIndex(x=>x.id===id);if(i>=0)state[adminPhotoTab].splice(i,1);renderAdmin('photos');saveAdminPhotos();toast('Photo supprimée de la bibliothèque');});}
+function adminPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state[adminPhotoTab].push({id:'lib'+Date.now(),label:f.name.replace(/\.[^.]+$/,'').slice(0,18),url:rd.result});renderAdmin('photos');saveAdminPhotos();toast('Photo ajoutée à la bibliothèque');};rd.readAsDataURL(f);}
 function netAlerts(all){let items=[];state.clients.forEach(c=>openAlerts(c.id).forEach(r=>items.push({c,r})));items.sort((a,b)=>b.r.at-a.r.at);if(!all)items=items.slice(0,6);
   if(!items.length)return '<div class="empty">✅ Aucune alerte ouverte sur le réseau.</div>';
   return items.map(o=>{const e=eqById(o.r.equipId);return '<div class="alert-i"><div class="ai bad">🌡️</div><div><div class="at">'+o.c.name+' — '+e.name+'</div><div class="as">'+o.r.value+' °C (cible '+seuilTxt(e)+') · '+(o.r.action||'action en attente')+'</div></div><div class="aw">'+ago(o.r.at)+'</div></div>';}).join('');}
@@ -902,15 +935,19 @@ async function submitCreate(){const g=id=>document.getElementById(id);
   const email=g('cm_email').value.trim(), est_name=g('cm_name').value.trim(), est_code=slugCode(g('cm_code').value.trim()||g('cm_name').value.trim());
   const msg=g('cm_msg'), btn=g('cm_btn');
   const show=(bg,fg,html)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=html;};
-  if(!email||!est_name){show('#fef2f2','#b91c1c','L\'email et le nom de l\'établissement sont requis.');return;}
+  const missing=[];if(!est_name)missing.push('Nom de l\'établissement');if(!email)missing.push('Email de connexion');
+  if(missing.length){show('#fef2f2','#b91c1c','Champ(s) obligatoire(s) manquant(s) : <b>'+missing.join(', ')+'</b>.');return;}
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){show('#fef2f2','#b91c1c','L\'email « '+escH(email)+' » n\'est pas valide.');return;}
   if(!SB){show('#fef2f2','#b91c1c','Connexion Supabase indisponible.');return;}
   const modules=cmMods();
+  if(!modules.length){show('#fef2f2','#b91c1c','Sélectionnez au moins un module.');return;}
   btn.disabled=true;const old=btn.textContent;btn.textContent='Déploiement…';show('#f1f5f9','#334155','Création du compte et de l\'espace…');
   try{
     const {data:{session}}=await SB.auth.getSession();
     const payload={action:'provision',email,full_name:g('cm_contact').value.trim(),est_code,est_name,type:g('cm_type').value,city:g('cm_city').value.trim(),address:g('cm_address').value.trim(),postal_code:g('cm_cp').value.trim(),legal_name:g('cm_legal').value.trim(),siret:g('cm_siret').value.trim(),tva:g('cm_tva').value.trim(),phone:g('cm_phone').value.trim(),contact_email:email,plan:g('cm_plan').value,price:g('cm_price').value,start_date:g('cm_start').value||null,contact:g('cm_contact').value.trim(),modules};
-    const sel={equip:cmSel('cm_equip'),frit:cmSel('cm_frit'),prod:cmSel('cm_prod')};
-    payload.seed=starterState({est_code,name:est_name,type:payload.type,city:payload.city,plan:payload.plan,contact:payload.contact},sel);
+    const seed=starterState({est_code,name:est_name,type:payload.type,city:payload.city,plan:payload.plan,contact:payload.contact});
+    seed.equip=[];seed.friteuses=[];seed.dlcProducts=[];
+    payload.seed=seed;
     const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify(payload)});
     const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
     if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
@@ -951,7 +988,7 @@ const CLIENT_NAV=[
 const ALL_MODULES=['haccp','rh','food','fid'];
 const MODULE_LABELS={haccp:'HACCP & hygiène',rh:'RH & Planning',food:'Food Cost',fid:'Fidélisation'};
 /* ===== Catalogue de déploiement (sélection rapide) ===== */
-const EQUIP_CATALOG=[
+let EQUIP_CATALOG=[
   {key:'frigo',name:'Frigo positif',cat:'froidpos',min:0,max:4,icon:'❄️'},
   {key:'congel',name:'Congélateur',cat:'froidneg',min:-30,max:-18,icon:'🧊'},
   {key:'chambre',name:'Chambre froide',cat:'froidpos',min:0,max:6,icon:'🥬'},
@@ -961,13 +998,14 @@ const EQUIP_CATALOG=[
   {key:'labo',name:'Labo réfrigéré',cat:'froidpos',min:0,max:4,icon:'🧁'},
   {key:'bainmarie',name:'Bain-marie',cat:'chaud',min:63,max:90,icon:'🍲'},
 ];
-const PRODUCT_CATALOG=[
-  {key:'sauce',name:'Sauce tomate maison'},{key:'pate',name:'Pâte à pizza'},{key:'mozza',name:'Mozzarella'},
-  {key:'jambon',name:'Jambon / charcuterie'},{key:'poulet',name:'Poulet cuit'},{key:'riz',name:'Riz cuit'},
-  {key:'saumon',name:'Saumon frais'},{key:'creme',name:'Crème pâtissière'},{key:'salade',name:'Salade lavée'},
-  {key:'viande',name:'Viande hachée'},
+let PRODUCT_CATALOG=[
+  {key:'sauce',name:'Sauce tomate maison',sub:'Sauces & bases'},{key:'pate',name:'Pâte à pizza',sub:'Sauces & bases'},
+  {key:'mozza',name:'Mozzarella',sub:'Produits laitiers'},{key:'creme',name:'Crème pâtissière',sub:'Pâtisserie'},
+  {key:'jambon',name:'Jambon / charcuterie',sub:'Charcuterie'},{key:'poulet',name:'Poulet cuit',sub:'Viandes'},
+  {key:'viande',name:'Viande hachée',sub:'Viandes'},{key:'saumon',name:'Saumon frais',sub:'Poissons'},
+  {key:'riz',name:'Riz cuit',sub:'Féculents'},{key:'salade',name:'Salade lavée',sub:'Légumes'},
 ];
-const FRITEUSE_CATALOG=[{key:'frit1',name:'Friteuse 1'},{key:'frit2',name:'Friteuse 2'}];
+let FRITEUSE_CATALOG=[{key:'frit1',name:'Friteuse 1'},{key:'frit2',name:'Friteuse 2'}];
 const TYPE_PRESETS={
   'Pizzeria':{equip:['frigo','congel','tourpizza','chambre'],prod:['sauce','pate','mozza','jambon'],frit:[]},
   'Restaurant':{equip:['frigo','congel','chambre','bainmarie'],prod:['sauce','poulet','riz','salade'],frit:['frit1']},
@@ -1537,13 +1575,40 @@ function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une va
 
 /* create-client modal */
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal" style="width:640px;max-width:96vw"><div class="mh"><h3>Nouveau client — compte clé en main</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb" style="max-height:72vh;overflow:auto"><p class="tsub" style="margin-bottom:6px">Créez un accès complet et pré-configuré pour un restaurateur. Franchisé multi-sites : réutilisez le même email avec un nouveau code établissement.</p>'
-+'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type" onchange="cmApplyPreset()"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
++'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
 +'<div class="cm-sec">Informations légales</div><div class="cm-grid"><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>SIRET</label><input id="cm_siret" placeholder="123 456 789 00012"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
 +'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
 +'<div class="cm-sec">Abonnement</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div></div>'
-+'<div class="cm-sec">Déploiement rapide — matériel & produits</div><p class="tsub" style="margin:-2px 0 8px;font-size:12px">Cochez le matériel et les produits du client (pré-cochés selon le type). Ils seront créés automatiquement dans son espace, sans ressaisie.</p><div class="cm-lab">Équipements</div><div id="cm_equip" class="cm-mods"></div><div class="cm-lab">Friteuses</div><div id="cm_frit" class="cm-mods"></div><div class="cm-lab">Produits (étiquettes DLC)</div><div id="cm_prod" class="cm-mods"></div>'
 +'<div class="cm-sec">Modules activés</div><div id="cm_modules" class="cm-mods"><label class="cm-mod"><input type="checkbox" value="haccp" checked> 🛡️ HACCP & hygiène</label><label class="cm-mod"><input type="checkbox" value="rh" checked> 👥 RH & Planning</label><label class="cm-mod"><input type="checkbox" value="food" checked> 💰 Food Cost</label><label class="cm-mod"><input type="checkbox" value="fid" checked> 🎮 Fidélisation</label></div>'
-+'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">🚀 Déployer le compte</button></div></div></div>');
++'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
+
+/* ===== Catalogue (base éditable) ===== */
+let catEditId=null, catEditKind='equip', catPhoto=null;
+function catFilter(){const q=((document.getElementById('cat_search')||{}).value||'').toLowerCase().trim();
+  document.querySelectorAll('#admin_main .cat-card').forEach(c=>{const n=c.getAttribute('data-name')||'';c.style.display=(!q||n.indexOf(q)>=0)?'':'none';});
+  document.querySelectorAll('#admin_main .dp-grp').forEach(g=>{const any=Array.from(g.querySelectorAll('.cat-card')).some(c=>c.style.display!=='none');g.style.display=any?'':'none';});}
+function catNew(kind){catEditId=null;catEditKind=kind||'equip';catPhoto=null;catFillForm({kind:catEditKind});catOpen('Nouvel élément du catalogue');}
+function catEdit(key){let it=null,kind=null;[['equip',EQUIP_CATALOG],['friteuse',FRITEUSE_CATALOG],['product',PRODUCT_CATALOG]].forEach(kk=>{const f=(kk[1]||[]).find(x=>x.key===key);if(f){it=f;kind=kk[0];}});if(!it)return;catEditId=key;catEditKind=kind;catPhoto=it.photo||null;catFillForm({kind:kind,name:it.name,sub:it.sub,cat:it.cat,min:it.min,max:it.max,icon:it.icon});catOpen('Modifier l\'élément');}
+function catOpen(title){document.getElementById('cat_title').textContent=title;document.getElementById('cat_mask').classList.add('on');}
+function catClose(){document.getElementById('cat_mask').classList.remove('on');const l=document.getElementById('cat_lib');if(l)l.style.display='none';}
+function catFillForm(o){const g=id=>document.getElementById(id);g('cat_name').value=o.name||'';g('cat_kind').value=o.kind||'equip';g('cat_sub').value=o.sub||'';g('cat_cat').value=o.cat||'froidpos';g('cat_min').value=(o.min!=null?o.min:'');g('cat_max').value=(o.max!=null?o.max:'');g('cat_icon').value=o.icon||'';catPhotoPrev();catKindChange();const msg=g('cat_msg');if(msg)msg.style.display='none';}
+function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');}
+function catPhotoPrev(){const im=document.getElementById('cat_photo_prev');if(!im)return;if(catPhoto){im.src=catPhoto;im.style.display='';}else{im.style.display='none';}}
+function catPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{catPhoto=rd.result;catPhotoPrev();};rd.readAsDataURL(f);}
+function catPhotoClear(){catPhoto=null;catPhotoPrev();}
+function catPickFromLib(){const lib=document.getElementById('cat_lib');const kind=document.getElementById('cat_kind').value;const src=(kind==='product'?state.productPhotos:state.equipPhotos)||[];
+  if(!lib.style.display||lib.style.display==='none'){lib.innerHTML=src.length?src.map(p=>'<div class="imgchoice" onclick="catSetPhoto(\''+p.id+'\',\''+kind+'\')"><img src="'+p.url+'"><span>'+escH(p.label)+'</span></div>').join(''):'<div class="empty">Photothèque vide pour ce type. Ajoutez des photos dans l\'onglet Photothèque.</div>';lib.style.display='';}else{lib.style.display='none';}}
+function catSetPhoto(id,kind){const src=(kind==='product'?state.productPhotos:state.equipPhotos)||[];const p=src.find(x=>x.id===id);if(p){catPhoto=p.url;catPhotoPrev();document.getElementById('cat_lib').style.display='none';}}
+async function catSave(){const g=id=>document.getElementById(id);const name=g('cat_name').value.trim();const kind=g('cat_kind').value;const msg=g('cat_msg');
+  const show=(bg,fg,tx)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.textContent=tx;};
+  if(!name){show('#fef2f2','#b91c1c','Le nom est obligatoire.');return;}
+  const id=catEditId||(slugCode(name)+'-'+Math.floor(Math.random()*10000));
+  const row={id:id,kind:kind,name:name,sub:g('cat_sub').value.trim()||null,cat:kind==='equip'?g('cat_cat').value:null,tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true};
+  show('#f1f5f9','#334155','Enregistrement…');
+  try{const {error}=await SB.from('catalog').upsert(row);if(error)throw error;await loadCatalog();catClose();renderAdmin('catalog');toast('Catalogue mis à jour');}catch(e){show('#fef2f2','#b91c1c','Erreur : '+(e.message||e));}
+}
+function catDelete(key){openConfirm('Supprimer l\'élément','Retirer cet élément du catalogue ? (les clients déjà déployés ne sont pas affectés)',async()=>{try{const {error}=await SB.from('catalog').delete().eq('id',key);if(error)throw error;await loadCatalog();renderAdmin('catalog');toast('Élément supprimé du catalogue');}catch(e){toast('Erreur : '+(e.message||e));}});}
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option></select></div><div class="field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Froid positif, Viandes…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder="❄️"></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#f1f5f9;display:none"><label class="btn ghost sm" style="cursor:pointer">⬆︎ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()">🖼️ Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
 
 /* rapport imprimable */
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
@@ -1648,8 +1713,26 @@ async function loadAdminData(){
   state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
   _ADMIN_COLLS.forEach(c=>state[c]=[]);
   const {data:rows}=await SB.from('app_state').select('est_code,data');
-  (rows||[]).forEach(r=>{const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
+  (rows||[]).forEach(r=>{if(r.est_code==='__admin__')return;const d=r.data||{};const cidv='c_'+r.est_code;_ADMIN_COLLS.forEach(c=>{if(Array.isArray(d[c]))d[c].forEach(it=>state[c].push(Object.assign({},it,{clientId:cidv})));});});
   state.huiles=state.friteuses; reviveState(state);
+  await loadCatalog(); await loadAdminPhotos();
+}
+async function loadCatalog(){
+  try{const {data}=await SB.from('catalog').select('*').eq('active',true).order('sub',{ascending:true});
+    if(data){const map=r=>({key:r.id,name:r.name,sub:r.sub||'',cat:r.cat||null,min:r.tmin,max:r.tmax,icon:r.icon||'',photo:r.photo||null});
+      EQUIP_CATALOG=data.filter(r=>r.kind==='equip').map(map);
+      FRITEUSE_CATALOG=data.filter(r=>r.kind==='friteuse').map(map);
+      PRODUCT_CATALOG=data.filter(r=>r.kind==='product').map(map);
+    }
+  }catch(e){console.warn('loadCatalog',e);}
+}
+async function loadAdminPhotos(){
+  try{const {data}=await SB.from('app_state').select('data').eq('est_code','__admin__').maybeSingle();
+    const d=(data&&data.data)?data.data:{};state.equipPhotos=Array.isArray(d.equipPhotos)?d.equipPhotos:[];state.productPhotos=Array.isArray(d.productPhotos)?d.productPhotos:[];
+  }catch(e){state.equipPhotos=state.equipPhotos||[];state.productPhotos=state.productPhotos||[];}
+}
+async function saveAdminPhotos(){
+  try{await SB.from('app_state').upsert({est_code:'__admin__',data:{equipPhotos:state.equipPhotos||[],productPhotos:state.productPhotos||[]},client_id:'admin',updated_at:new Date().toISOString()});}catch(e){console.warn('saveAdminPhotos',e);}
 }
 
 /* ---- espace RESTAURATEUR (multi-sites) ---- */
