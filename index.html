@@ -842,7 +842,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="field"><label>N° TVA</label><input id="cd_tva" value="'+escH(c.tva||'')+'"></div>'
     +'<div class="field"><label>Formule</label><select id="cd_plan">'+planOpts+'</select></div>'
     +'<div class="field"><label>Prix mensuel (€)</label><input id="cd_price" type="number" value="'+escH(c.price!=null&&c.price!==''?c.price:'')+'"></div>'
-    +'<div class="field"><label>Réseau / franchise</label><select id="cd_network">'+netOptionsHTML(c.network||'')+'</select></div>'
+    +'<div class="field"><label>Réseau / franchise</label><select id="cd_network">'+netOptionsHTML(c.network?c.network:'__indep__')+'</select></div>'
     +'</div><div style="margin-top:14px"><button class="btn" onclick="adminSaveEst(\''+c.est_code+'\')">💾 Enregistrer les infos</button> <span id="cd_savemsg" style="font-size:12px;margin-left:8px"></span></div></div></div>'
     +'<div class="panel" style="margin-top:16px"><div class="ph"><h3>Modules activés</h3></div><div class="pb"><div class="cm-mods" id="cd_modules">'
     +ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(mods.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')
@@ -851,7 +851,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input id="cd_addemail" type="email" placeholder="email à rattacher à cet établissement" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid #cbd5e1;border-radius:9px"><button class="btn sm" onclick="adminAddAccess(\''+c.est_code+'\')">＋ Rattacher</button></div><div id="cd_addmsg" style="font-size:12px;margin-top:8px;line-height:1.5"></div></div></div>';
     adminLoadAccess(c.est_code);
   } else if(adminView==='deploy'){
-    const steps=[['clients','Clients'],['equip','Équipements'],['frit','Friteuses'],['prod','Produits'],['modules','Modules'],['recap','Récapitulatif']];
+    const steps=DP_STEPS;
     const stepper='<div class="dp-steps">'+steps.map((s,i)=>'<div class="dp-st'+(i+1===dpStep?' cur':'')+(i+1<dpStep?' done':'')+'"><span class="n">'+(i+1<dpStep?'✓':(i+1))+'</span> '+s[1]+'</div>').join('')+'</div>';
     const stepKey=steps[dpStep-1][0];let content='';
     if(stepKey==='clients'){
@@ -866,10 +866,8 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
       content='<div class="cm-sec">Étape 3 — Friteuses à ajouter</div><div id="dp_frit" class="cm-mods"></div>';
     } else if(stepKey==='prod'){
       content='<div class="cm-sec">Étape 4 — Produits DLC à ajouter <input class="dp-search sm" placeholder="rechercher…" oninput="dpFilter(\'dp_prod\',this.value)"></div><div id="dp_prod"></div>';
-    } else if(stepKey==='modules'){
-      content='<div class="cm-sec">Étape 5 — Modules (optionnel)</div><label class="cm-mod" style="max-width:400px"><input type="checkbox" id="dp_applymods" '+(dpSel.applyMods?'checked':'')+' onchange="dpToggleModsPanel()"> Mettre à jour les modules des clients sélectionnés</label><div id="dp_modules" class="cm-mods" style="'+(dpSel.applyMods?'':'display:none;')+'margin-top:8px">'+ALL_MODULES.map(k=>'<label class="cm-mod"><input type="checkbox" value="'+k+'"'+(dpSel.modules.indexOf(k)>=0?' checked':'')+'> '+escH(MODULE_LABELS[k])+'</label>').join('')+'</div>';
     } else if(stepKey==='recap'){
-      content='<div class="cm-sec">Étape 6 — Récapitulatif</div>'+dpSummaryHTML()+'<div style="margin-top:16px"><button class="btn" onclick="dpConfirmDeploy()">🚀 Déployer</button> <span id="dp_msg" style="font-size:12px;margin-left:8px"></span></div>';
+      content='<div class="cm-sec">Étape 5 — Récapitulatif</div>'+dpSummaryHTML()+'<div style="margin-top:16px"><button class="btn" onclick="dpConfirmDeploy()">🚀 Déployer</button> <span id="dp_msg" style="font-size:12px;margin-left:8px"></span></div>';
     }
     const navBtns='<div class="dp-nav">'+(dpStep>1?'<button class="btn ghost" onclick="dpPrev()">← Précédent</button>':'<span></span>')+(dpStep<steps.length?'<button class="btn" onclick="dpNext()">Suivant →</button>':'<span></span>')+'</div>';
     m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Assistant pas à pas — ajouter matériel / produits / modules à un ou plusieurs clients</div></div></div>'+stepper+'<div class="panel"><div class="pb">'+content+navBtns+'</div></div>';
@@ -881,6 +879,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
 }
 let adminSelEst=null;
 let adminDeploySel=null;
+const DP_STEPS=[['clients','Clients'],['equip','Équipements'],['frit','Friteuses'],['prod','Produits'],['recap','Récapitulatif']];
 let dpStep=1;
 let dpSel={clients:[],equip:[],frit:[],prod:[],applyMods:false,modules:[]};
 function dpResetWizard(){dpStep=1;dpSel={clients:[],equip:[],frit:[],prod:[],applyMods:false,modules:ALL_MODULES.slice()};}
@@ -891,7 +890,7 @@ function dpCaptureStep(){
   if(document.getElementById('dp_prod'))dpSel.prod=cmSel('dp_prod');
   if(document.getElementById('dp_applymods')){dpSel.applyMods=document.getElementById('dp_applymods').checked;dpSel.modules=Array.from(document.querySelectorAll('#dp_modules input:checked')).map(x=>x.value);}
 }
-function dpNext(){dpCaptureStep();if(dpStep===1&&!dpSel.clients.length){toast('Sélectionnez au moins un client.');return;}if(dpStep<6)dpStep++;renderAdmin('deploy');}
+function dpNext(){dpCaptureStep();if(dpStep===1&&!dpSel.clients.length){toast('Sélectionnez au moins un client.');return;}if(dpStep<DP_STEPS.length)dpStep++;renderAdmin('deploy');}
 function dpPrev(){dpCaptureStep();if(dpStep>1)dpStep--;renderAdmin('deploy');}
 function dpRenderClients(){const c=document.getElementById('dp_clients');if(!c)return;
   c.innerHTML=(state.clients||[]).map(cl=>'<label class="cm-mod dp-cli" data-name="'+escH((cl.name+' '+cl.est_code+' '+(cl.city||'')).toLowerCase())+'"><input type="checkbox" value="'+cl.est_code+'"'+(dpSel.clients.indexOf(cl.est_code)>=0?' checked':'')+' onchange="dpUpdateCount()"> '+escH(cl.name)+' <small style="color:#94a3b8">'+escH(cl.city||'')+'</small></label>').join('')||'<div class="empty">Aucun client. Créez-en d\'abord dans l\'onglet Clients.</div>';
@@ -920,14 +919,17 @@ function dpConfirmDeploy(){
   if(!dpSel.clients.length){toast('Aucun client sélectionné.');return;}
   if(!dpSel.equip.length&&!dpSel.frit.length&&!dpSel.prod.length&&!dpSel.applyMods){toast('Rien à déployer : sélectionnez des éléments ou activez les modules.');return;}
   const n=dpSel.clients.length;
-  openConfirm('Confirmer le déploiement','Déployer sur '+n+' client'+(n>1?'s':'')+' : '+dpSel.equip.length+' équipement(s), '+dpSel.frit.length+' friteuse(s), '+dpSel.prod.length+' produit(s)'+(dpSel.applyMods?' + mise à jour des modules':'')+' ?',adminRunDeployWizard);
+  openConfirm('Confirmer le déploiement','Déployer sur '+n+' client'+(n>1?'s':'')+' : '+dpSel.equip.length+' équipement(s), '+dpSel.frit.length+' friteuse(s), '+dpSel.prod.length+' produit(s) ?',adminRunDeployWizard,'🚀 Déployer',false);
 }
 async function adminRunDeployWizard(){
   const msg=document.getElementById('dp_msg');const set=(c,t)=>{if(msg){msg.style.color=c;msg.textContent=t;}};
   const codes=dpSel.clients.slice(),eq=dpSel.equip,fr=dpSel.frit,pr=dpSel.prod,modules=dpSel.applyMods?dpSel.modules:null;
-  set('#334155','Déploiement sur '+codes.length+' client(s)…');let done=0,fail=0;
-  for(const code of codes){try{await dpDeployOne(code,eq,fr,pr,modules);done++;}catch(e){fail++;}}
-  await loadAdminData();set(fail?'#b45309':'#047857','✅ Déployé sur '+done+' client(s)'+(fail?(' · '+fail+' échec(s)'):'')+'. Vous pouvez lancer un nouveau déploiement.');toast('Déploiement terminé ('+done+'/'+codes.length+')');
+  set('#334155','Déploiement sur '+codes.length+' client(s)…');let done=0,fail=0,lastErr='';
+  for(const code of codes){try{await dpDeployOne(code,eq,fr,pr,modules);done++;}catch(e){fail++;lastErr=(e&&e.message)?e.message:String(e);}}
+  await loadAdminData();
+  if(fail){set('#b91c1c','⚠️ Déployé sur '+done+'/'+codes.length+' client(s) · '+fail+' échec(s). Détail : '+escH(lastErr));}
+  else {set('#047857','✅ Déployé sur '+done+' client(s). Vous pouvez lancer un nouveau déploiement.');}
+  toast('Déploiement terminé ('+done+'/'+codes.length+')');
 }
 async function dpDeployOne(code,eq,fr,pr,modules){
   const {data,error}=await SB.from('app_state').select('data').eq('est_code',code).maybeSingle();if(error)throw error;
@@ -941,7 +943,7 @@ async function dpDeployOne(code,eq,fr,pr,modules){
 }
 function adminClientDetail(code){adminSelEst=code;adminView='clientDetail';document.querySelectorAll('#admin .nav-i').forEach(n=>n.classList.remove('active'));renderAdmin('clientDetail');}
 async function adminSaveEst(code){const g=id=>document.getElementById(id);const ms=g('cd_savemsg');
-  const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,network:g('cd_network').value.trim()||null,price:g('cd_price').value===''?null:Number(g('cd_price').value)};
+  const row={name:g('cd_name').value.trim(),type:g('cd_type').value,address:g('cd_address').value.trim(),postal_code:g('cd_cp').value.trim(),city:g('cd_city').value.trim(),phone:g('cd_phone').value.trim(),contact:g('cd_contact').value.trim(),legal_name:g('cd_legal').value.trim(),siret:g('cd_siret').value.trim(),tva:g('cd_tva').value.trim(),plan:g('cd_plan').value,network:(function(){let v=g('cd_network').value;if(v==='__indep__')v='';return v||null;})(),price:g('cd_price').value===''?null:Number(g('cd_price').value)};
   ms.style.color='#334155';ms.textContent='Enregistrement…';
   try{const {error}=await SB.from('establishments').update(row).eq('est_code',code);if(error)throw error;await loadAdminData();ms.style.color='#047857';ms.textContent='✅ Enregistré';toast('Infos client enregistrées');}catch(e){ms.style.color='#b91c1c';ms.textContent='Erreur : '+(e.message||e);}
 }
@@ -1005,8 +1007,32 @@ function cmApplyPreset(){const t=(document.getElementById('cm_type')||{}).value;
   document.querySelectorAll('#cm_prod input').forEach(c=>c.checked=(p.prod||[]).indexOf(c.value)>=0);}
 function cmSel(containerId){return Array.from(document.querySelectorAll('#'+containerId+' input:checked')).map(x=>x.value);}
 function cmNetworks(){const s=new Set();(state.networks||[]).forEach(n=>{if(n&&n.name)s.add(n.name);});(state.clients||[]).forEach(c=>{if(c.network)s.add(c.network);});return Array.from(s).sort();}
-function netOptionsHTML(selected){return '<option value="">— Aucun réseau —</option>'+cmNetworks().map(n=>'<option value="'+escH(n)+'"'+(n===selected?' selected':'')+'>'+escH(n)+'</option>').join('');}
+function netOptionsHTML(selected){return '<option value=""'+(selected===''||selected==null?' selected':'')+'>— Choisir —</option>'
+  +'<option value="__indep__"'+(selected==='__indep__'?' selected':'')+'>Indépendant (non franchisé)</option>'
+  +cmNetworks().map(n=>'<option value="'+escH(n)+'"'+(n===selected?' selected':'')+'>'+escH(n)+'</option>').join('');}
 function cmFillNetworkList(sel){const el=document.getElementById('cm_network');if(el)el.innerHTML=netOptionsHTML(sel||'');}
+function frTva(siren){if(!/^\d{9}$/.test(siren))return '';const key=(12+3*(Number(siren)%97))%97;return 'FR'+String(key).padStart(2,'0')+siren;}
+async function cmFetchSiret(){const g=id=>document.getElementById(id);const raw=(g('cm_siret').value||'').replace(/\D/g,'');const msg=g('cm_msg');
+  const show=(bg,fg,t)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=t;};
+  if(!/^\d{9}$/.test(raw)&&!/^\d{14}$/.test(raw)){show('#fef2f2','#b91c1c','Entrez un SIRET (14 chiffres) ou un SIREN (9 chiffres).');return;}
+  show('#f1f5f9','#334155','Recherche de l\'entreprise…');
+  try{
+    const r=await fetch('https://recherche-entreprises.api.gouv.fr/search?q='+encodeURIComponent(raw)+'&page=1&per_page=1');
+    if(!r.ok)throw new Error('service indisponible');
+    const j=await r.json();const e=j.results&&j.results[0];
+    if(!e){show('#fffbeb','#92400e','Aucune entreprise trouvée pour ce numéro. Saisissez les infos manuellement.');return;}
+    const s=e.siege||{};
+    if(e.nom_raison_sociale||e.nom_complet)g('cm_legal').value=e.nom_raison_sociale||e.nom_complet;
+    if(!g('cm_name').value)g('cm_name').value=e.nom_complet||e.nom_raison_sociale||'';
+    const street=[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ')||s.adresse||'';
+    if(street){let st=street;if(s.code_postal)st=st.replace(new RegExp('\\s*'+s.code_postal+'.*$'),'').trim();g('cm_address').value=st;}
+    if(s.code_postal)g('cm_cp').value=s.code_postal;
+    if(s.libelle_commune)g('cm_city').value=s.libelle_commune;
+    const tva=frTva(raw.slice(0,9));if(tva)g('cm_tva').value=tva;
+    cmSuggestCode();
+    show('#ecfdf5','#047857','✅ Infos récupérées : <b>'+escH(e.nom_complet||e.nom_raison_sociale||'')+'</b>. Vérifiez et complétez si besoin.');
+  }catch(err){show('#fef2f2','#b91c1c','Impossible de récupérer les infos automatiquement. Vérifiez le numéro ou saisissez manuellement.');}
+}
 function cmResetForm(){['cm_name','cm_code','cm_address','cm_cp','cm_city','cm_legal','cm_siret','cm_tva','cm_contact','cm_phone','cm_email','cm_price','cm_network'].forEach(id=>{const el=document.getElementById(id);if(el){el.value='';el._touched=false;}});const s=document.getElementById('cm_start');if(s)s.value=new Date().toISOString().slice(0,10);document.querySelectorAll('#cm_modules input').forEach(c=>c.checked=true);const msg=document.getElementById('cm_msg');if(msg)msg.style.display='none';cmFillNetworkList();}
 function cmSuggestCode(){const c=document.getElementById('cm_code');if(c&&!c._touched){c.value=slugCode(document.getElementById('cm_name').value);}}
 function slugCode(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||('etab-'+Math.floor(Math.random()*1e4));}
@@ -1015,7 +1041,7 @@ async function submitCreate(){const g=id=>document.getElementById(id);
   const email=g('cm_email').value.trim(), est_name=g('cm_name').value.trim(), est_code=slugCode(g('cm_code').value.trim()||g('cm_name').value.trim());
   const msg=g('cm_msg'), btn=g('cm_btn');
   const show=(bg,fg,html)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.innerHTML=html;};
-  const missing=[];if(!est_name)missing.push('Nom de l\'établissement');if(!email)missing.push('Email de connexion');
+  const missing=[];if(!est_name)missing.push('Nom de l\'établissement');if(!email)missing.push('Email de connexion');if(!g('cm_network').value)missing.push('Réseau / franchise (ou « Indépendant »)');
   if(missing.length){show('#fef2f2','#b91c1c','Champ(s) obligatoire(s) manquant(s) : <b>'+missing.join(', ')+'</b>.');return;}
   if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){show('#fef2f2','#b91c1c','L\'email « '+escH(email)+' » n\'est pas valide.');return;}
   if(!SB){show('#fef2f2','#b91c1c','Connexion Supabase indisponible.');return;}
@@ -1031,8 +1057,8 @@ async function submitCreate(){const g=id=>document.getElementById(id);
     const res=await fetch(CFG.url+'/functions/v1/admin-provision',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token,'apikey':CFG.key},body:JSON.stringify(payload)});
     const j=await res.json().catch(()=>({error:'Réponse invalide du serveur'}));
     if(!res.ok||j.error){throw new Error(j.error||('Erreur '+res.status));}
-    const network=g('cm_network').value.trim();
-    if(network){try{await SB.from('establishments').update({network}).eq('est_code',est_code);}catch(e){}}
+    let network=g('cm_network').value;if(network==='__indep__')network='';
+    try{await SB.from('establishments').update({network:network||null}).eq('est_code',est_code);}catch(e){}
     if(j.invited){
       show('#ecfdf5','#047857','✅ Compte créé.<br>Un <b>email d\'invitation</b> a été envoyé à <b>'+escH(email)+'</b> pour qu\'il définisse son mot de passe et accède à son espace. Vous n\'avez rien d\'autre à faire.');
     } else if(j.provisionalPassword){
@@ -1469,7 +1495,7 @@ function formSubmit(){const vals={};document.querySelectorAll('#form_body [data-
 
 /* confirmation modale */
 let _confirmYes=null;
-function openConfirm(title,msg,onYes){_confirmYes=onYes;document.getElementById('cf_title').textContent=title;document.getElementById('cf_msg').textContent=msg;document.getElementById('cf_mask').classList.add('on');}
+function openConfirm(title,msg,onYes,okLabel,danger){_confirmYes=onYes;document.getElementById('cf_title').textContent=title;document.getElementById('cf_msg').textContent=msg;const ok=document.getElementById('cf_ok');if(ok){ok.textContent=okLabel||'Confirmer';ok.className='btn'+(danger===false?'':' danger');}document.getElementById('cf_mask').classList.add('on');}
 function confirmClose(){document.getElementById('cf_mask').classList.remove('on');}
 function confirmYes(){document.getElementById('cf_mask').classList.remove('on');if(_confirmYes)_confirmYes();}
 
@@ -1660,9 +1686,9 @@ function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une va
 /* create-client modal */
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cm_mask"><div class="modal" style="width:640px;max-width:96vw"><div class="mh"><h3>Nouveau client — compte clé en main</h3><button class="x" onclick="closeCreate()">✕</button></div><div class="mb" style="max-height:72vh;overflow:auto"><p class="tsub" style="margin-bottom:6px">Créez un accès complet et pré-configuré pour un restaurateur. Franchisé multi-sites : réutilisez le même email avec un nouveau code établissement.</p>'
 +'<div class="cm-sec">Identité de l\'établissement</div><div class="cm-grid"><div class="field"><label>Nom de l\'établissement *</label><input id="cm_name" placeholder="Ex. Trattoria Roma" oninput="cmSuggestCode()"></div><div class="field"><label>Type</label><select id="cm_type"><option>Pizzeria</option><option>Restaurant</option><option>Fast-food</option><option>Boulangerie</option><option>Restaurant japonais</option><option>Bar / Brasserie</option></select></div><div class="field"><label>Code établissement</label><input id="cm_code" placeholder="trattoria-roma" oninput="this._touched=true"></div><div class="field"><label>Adresse</label><input id="cm_address" placeholder="12 rue de la Paix"></div><div class="field"><label>Code postal</label><input id="cm_cp" placeholder="69002"></div><div class="field"><label>Ville</label><input id="cm_city" placeholder="Lyon 2e"></div></div>'
-+'<div class="cm-sec">Informations légales</div><div class="cm-grid"><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>SIRET</label><input id="cm_siret" placeholder="123 456 789 00012"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
++'<div class="cm-sec">Informations légales</div><p class="tsub" style="margin:-2px 0 8px;font-size:12px">💡 Saisissez le SIRET puis cliquez 🔎 : la raison sociale, l\'adresse, la ville et la TVA se remplissent automatiquement.</p><div class="cm-grid"><div class="field"><label>SIRET (remplissage auto)</label><div style="display:flex;gap:6px"><input id="cm_siret" placeholder="14 chiffres" style="flex:1" onkeydown="if(event.key===\'Enter\'){event.preventDefault();cmFetchSiret();}"><button type="button" class="btn ghost sm" onclick="cmFetchSiret()" title="Récupérer les infos">🔎</button></div></div><div class="field"><label>Raison sociale</label><input id="cm_legal" placeholder="SAS Trattoria Roma"></div><div class="field"><label>N° TVA</label><input id="cm_tva" placeholder="FR12345678900"></div></div>'
 +'<div class="cm-sec">Contact & responsable</div><div class="cm-grid"><div class="field"><label>Nom du responsable</label><input id="cm_contact" placeholder="Jean Dupont"></div><div class="field"><label>Téléphone</label><input id="cm_phone" placeholder="04 78 00 00 00"></div><div class="field" style="grid-column:1/-1"><label>Email de connexion *</label><input id="cm_email" type="email" placeholder="responsable@restaurant.fr"></div></div>'
-+'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise (optionnel)</label><select id="cm_network"><option value="">— Aucun réseau —</option></select></div></div>'
++'<div class="cm-sec">Abonnement & réseau</div><div class="cm-grid"><div class="field"><label>Formule</label><select id="cm_plan"><option>Starter</option><option selected>Business</option><option>Réseau</option></select></div><div class="field"><label>Prix mensuel (€)</label><input id="cm_price" type="number" placeholder="99"></div><div class="field"><label>Date de début</label><input id="cm_start" type="date"></div><div class="field"><label>Réseau / franchise *</label><select id="cm_network"><option value="">— Choisir —</option></select></div></div>'
 +'<div class="cm-sec">Modules activés</div><div id="cm_modules" class="cm-mods"><label class="cm-mod"><input type="checkbox" value="haccp" checked> 🛡️ HACCP & hygiène</label><label class="cm-mod"><input type="checkbox" value="rh" checked> 👥 RH & Planning</label><label class="cm-mod"><input type="checkbox" value="food" checked> 💰 Food Cost</label><label class="cm-mod"><input type="checkbox" value="fid" checked> 🎮 Fidélisation</label></div>'
 +'<div class="msg" id="cm_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px;line-height:1.5"></div></div><div class="mf"><button class="btn ghost" onclick="closeCreate()">Fermer</button><button class="btn" id="cm_btn" onclick="submitCreate()">Créer le compte</button></div></div></div>');
 
@@ -1699,7 +1725,7 @@ document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_ma
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
 
 /* confirmation modal */
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cf_mask"><div class="modal" style="width:420px"><div class="mh"><h3 id="cf_title">Confirmer</h3><button class="x" onclick="confirmClose()">✕</button></div><div class="mb"><p id="cf_msg" style="color:var(--slate);font-size:14px;line-height:1.5"></p></div><div class="mf"><button class="btn ghost" onclick="confirmClose()">Annuler</button><button class="btn danger" onclick="confirmYes()">Supprimer</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cf_mask"><div class="modal" style="width:420px"><div class="mh"><h3 id="cf_title">Confirmer</h3><button class="x" onclick="confirmClose()">✕</button></div><div class="mb"><p id="cf_msg" style="color:var(--slate);font-size:14px;line-height:1.5"></p></div><div class="mf"><button class="btn ghost" onclick="confirmClose()">Annuler</button><button class="btn danger" id="cf_ok" onclick="confirmYes()">Confirmer</button></div></div></div>');
 
 /* image picker modal */
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="img_mask"><div class="modal" style="width:560px"><div class="mh"><h3>Choisir une image</h3><button class="x" onclick="imgClose()">✕</button></div><div class="mb"><p class="tsub" style="margin-bottom:10px">Photothèque partagée (gérée par l\'administrateur) — ou importez la vôtre.</p><div id="img_grid" class="imggrid"></div><div style="margin-top:14px"><label class="btn ghost" style="cursor:pointer">⬆︎ Importer ma photo<input type="file" accept="image/*" hidden onchange="imgUpload(event)"></label></div></div></div></div>');
