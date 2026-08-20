@@ -548,7 +548,7 @@
 
 <!-- ===================== TABLETTE TERRAIN ===================== -->
 <section id="app_terrain" class="view">
-  <div class="fa-intro">
+  <div class="fa-intro" id="tb_intro">
     <h2> La tablette opérationnelle</h2>
     <p>Reproduction fidèle du parcours terrain : choix du module, identification de l'employé, puis les 6 briques HACCP. Saisissez une température hors seuil → une alerte + action corrective se déclenche et remonte instantanément dans le back-office restaurateur et l'admin.</p>
   </div>
@@ -4002,6 +4002,8 @@ async function startTabletLink(code){
     CID=(state.clients&&state.clients[0])?state.clients[0].id:'c1';
     state.modules=Array.isArray(j.modules)?j.modules.slice():ALL_MODULES.slice();
     SYNC.lastStr=JSON.stringify(serializeState());
+    const intro=document.getElementById('tb_intro');if(intro)intro.style.display='none';
+    document.body.style.background='#0b1220';
     go('app_terrain');tbInit();
     SYNCTIMER=setInterval(function(){const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
   }catch(e){document.body.innerHTML='<div style="padding:80px 20px;text-align:center">Connexion impossible — vérifiez votre réseau puis rechargez la page.</div>';}
