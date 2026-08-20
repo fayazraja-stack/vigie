@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0e9f6e">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vigie">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Vigie — Plateforme HACCP & Restaurant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -197,6 +202,44 @@
   .tb-foot{display:flex;gap:10px;padding:10px 20px;border-top:1px solid #eee;background:#fff}
   .tb-foot button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px;display:flex;gap:6px;align-items:center}
   .tb-foot .imp{margin-left:auto;color:var(--brand-d)}
+  .tb-foot .netpill{display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;font-weight:800;font-size:12px;border:1px solid var(--line);background:#fff;color:var(--brand-d)}
+  .tb-foot .netpill.off{background:#fff7ed;border-color:#fdba74;color:#c2410c}
+  .tb-foot .netpill .dot{width:8px;height:8px;border-radius:50%;background:#0e9f6e}
+  .tb-foot .netpill.off .dot{background:#f97316}
+  .tb-foot .imp.ok{color:#0e9f6e;border-color:#a7f3d0;background:#f0fdf7}
+  .offbar{background:#fff7ed;border-bottom:1px solid #fdba74;color:#9a3412;padding:8px 18px;font-size:13px;font-weight:700;display:none;align-items:center;gap:9px}
+  .offbar.on{display:flex}
+  .offbar .sp{margin-left:auto;font-weight:600;opacity:.85}
+  /* --- imprimante --- */
+  .prn-mask{position:fixed;inset:0;background:rgba(11,18,32,.55);display:none;align-items:center;justify-content:center;z-index:120;padding:18px}
+  .prn-mask.on{display:flex}
+  .prn{background:#fff;width:470px;max-width:100%;max-height:92vh;overflow:auto;border-radius:22px;padding:22px;animation:pop .2s ease;color:var(--ink)}
+  .prn h3{margin:0;font-size:19px;display:flex;align-items:center;gap:9px}
+  .prn .psub{color:var(--muted);font-size:13px;margin:4px 0 16px}
+  .prn .pback{border:0;background:#f1f5f9;border-radius:9px;width:30px;height:30px;font-size:15px;font-weight:800;cursor:pointer}
+  .prn .px{margin-left:auto;border:0;background:#f1f5f9;border-radius:9px;width:30px;height:30px;font-size:14px;cursor:pointer}
+  .prn-card{border:1px solid var(--line);border-radius:14px;padding:13px 15px;display:flex;align-items:center;gap:12px;margin-bottom:10px;background:#fafcff}
+  .prn-card .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:16px;background:#f1f5f9;flex:none}
+  .prn-card.ok{background:#f0fdf7;border-color:#a7f3d0}
+  .prn-card.ok .ic{background:#d1fae5}
+  .prn-card .nm{font-weight:800;font-size:14.5px}
+  .prn-card .sb{color:var(--muted);font-size:12.5px}
+  .prn-btn{width:100%;border:1px solid var(--line);background:#fff;border-radius:14px;padding:14px;font-weight:800;font-size:14.5px;display:flex;align-items:center;justify-content:center;gap:9px;margin-bottom:10px;cursor:pointer}
+  .prn-btn:hover{background:#f8fafc}
+  .prn-btn.main{background:var(--brand);border-color:var(--brand);color:#fff}
+  .prn-btn.main:hover{background:var(--brand-d)}
+  .prn-btn:disabled{opacity:.45;cursor:not-allowed}
+  .prn-btn.row{justify-content:flex-start;text-align:left}
+  .prn-btn.row .nm{font-weight:800;font-size:14px}.prn-btn.row .sb{font-weight:600;color:var(--muted);font-size:12px}
+  .prn-lab{font-size:11px;font-weight:800;letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin:16px 0 7px}
+  .prn select,.prn input{width:100%;box-sizing:border-box;padding:11px 12px;border:1.5px solid var(--line);border-radius:12px;font-weight:700;font-size:14px;background:#fff;color:var(--ink)}
+  .prn .adv{border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-top:14px}
+  .prn .adv summary{cursor:pointer;font-weight:800;font-size:13.5px;list-style:none}
+  .prn .adv summary::-webkit-details-marker{display:none}
+  .prn .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+  .prn .g3 label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px}
+  .prn .warn{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:12px;padding:11px 13px;font-size:13px;line-height:1.5}
+  .prn .hint{color:var(--muted);font-size:12.5px;margin-top:-4px;margin-bottom:12px}
   .tb-title-k{text-align:center;color:var(--muted);font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase}
   .tb-title{text-align:center;font-size:26px;font-weight:800;margin:4px 0 16px;letter-spacing:-.6px}
   .modgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;margin:0 auto}
@@ -588,11 +631,13 @@
       <div class="est"><span class="badge">V</span> <span id="tb_est">Pizzeria Bella</span></div>
       <div class="clock" id="tb_clock">--:--<br><small>Mar. 18 Août</small></div>
     </div>
+    <div class="offbar" id="tb_offbar">📴 <span>Mode hors ligne — tout est enregistré sur la tablette</span><span class="sp" id="tb_offbar_n"></span></div>
     <div class="tb-body" id="tb_body"></div>
     <div class="tb-foot" id="tb_foot" style="display:none">
-      <button onclick="tbHome()"> Accueil</button>
-      <button onclick="tbGo('archmenu')"> Archives</button>
-      <button class="imp" onclick="toast(' Imprimante connectée (démo)')"> ● Imprimante</button>
+      <button onclick="tbHome()">🏠 Accueil</button>
+      <button onclick="tbGo('archmenu')">🗂 Archives</button>
+      <span class="netpill" id="tb_net" title="État de la connexion"><span class="dot"></span><span id="tb_net_t">En ligne</span></span>
+      <button class="imp" id="tb_imp" onclick="prnOpen()">🖨 <span id="tb_imp_t">Imprimante</span></button>
     </div>
     <!-- keypad -->
     <div class="sheet-mask" id="kp_mask"><div class="sheet">
@@ -3026,6 +3071,7 @@ function exportCsv(){const rows=cRel(CID);let csv='Date,Heure,Equipement,Valeur,
 let tbStack=[],tbUser=null;
 let TB_PIN_OK=false;
 function tbInit(){tbStack=[];tbUser=null;tickClock();
+  try{prnBadge();offBar();}catch(e){}
   if(state.tabletActive===false){tbRender('inactive');return;}
   if(state.tabletPin&&!TB_PIN_OK){tbRender('pin');return;}
   tbRender('modules');}
@@ -3672,12 +3718,175 @@ function badgePoint(name){
     toast(name.split(' ')[0]+' — arrivée enregistrée à '+fmtTime(now));}
   setTimeout(()=>{tbStack=[];tbRender('modules');},700);}
 function tbToggleClean(id){const t=state.postes.find(p=>p.id===id);t.done=!t.done;t.by=t.done?(state.employees.find(e=>e.id===tbUser)||{}).name||'—':null;t.at=t.done?new Date():null;tbRender('clean');toast(t.done?'✓ Nettoyage signé : '+t.name:'Décoché');}
-function tbPrintLabel(){const sel=document.getElementById('dl_prod');if(!sel){toast('Aucun produit');return;}
+/* ============ IMPRIMANTE D'ÉTIQUETTES — BLUETOOTH ============ */
+const PRN_SERVICES=['000018f0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb','0000fee7-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455','e7810a71-73ae-499d-8c15-faa9aef0c3f2','0000ff80-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb'];
+const PRN_FORMATS=[
+ {k:'std',n:'Standard Vigie — 57 × 25 mm',w:57,h:25,gap:2},
+ {k:'f57x40',n:'57 × 40 mm',w:57,h:40,gap:2},
+ {k:'f50x30',n:'50 × 30 mm',w:50,h:30,gap:2},
+ {k:'f40x30',n:'40 × 30 mm',w:40,h:30,gap:2},
+ {k:'f60x40',n:'60 × 40 mm',w:60,h:40,gap:2},
+ {k:'f80x50',n:'80 × 50 mm',w:80,h:50,gap:3},
+ {k:'custom',n:'Personnalisé',w:57,h:25,gap:2}
+];
+const PRN_LANGS=[['auto','Automatique (détecté à la connexion)'],['tspl','TSPL — Gprinter, Gainscha, TSC, Xprinter'],['escpos','ESC/POS — imprimantes tickets'],['cpcl','CPCL — Zebra, Honeywell']];
+let PRN={name:'',lang:'auto',detected:'tspl',fmt:'std',w:57,h:25,gap:2,dark:8,speed:4};
+let PRN_DEV=null,PRN_CH=null,PRN_VIEW='home',PRN_BUSY=false;
+function prnLoad(){try{const s=JSON.parse(localStorage.getItem('vg_prn')||'null');if(s&&typeof s==='object')Object.assign(PRN,s);}catch(e){}}
+function prnStore(){try{localStorage.setItem('vg_prn',JSON.stringify(PRN));}catch(e){}}
+function prnSupported(){return typeof navigator!=='undefined'&&!!navigator.bluetooth;}
+function prnConnected(){return !!(PRN_CH&&PRN_DEV&&PRN_DEV.gatt&&PRN_DEV.gatt.connected);}
+function prnLangUsed(){return PRN.lang==='auto'?(PRN.detected||'tspl'):PRN.lang;}
+function prnLangLabel(k){const f=PRN_LANGS.find(function(x){return x[0]===k;});return f?f[1]:k;}
+function prnFmt(){return PRN_FORMATS.find(function(f){return f.k===PRN.fmt;})||PRN_FORMATS[0];}
+function prnDims(){if(PRN.fmt==='custom')return {w:Number(PRN.w)||57,h:Number(PRN.h)||25,gap:Number(PRN.gap)||2};const f=prnFmt();return {w:f.w,h:f.h,gap:f.gap};}
+function prnGuessLang(name){const n=(name||'').toLowerCase();
+  if(/zebra|zq|qln|cpcl|honeywell|zd\d/.test(n))return 'cpcl';
+  if(/gprinter|gainscha|tsc|xprinter|godex|zj|gp-|munbyn|phomemo|niimbot|itpp|dp23|label/.test(n))return 'tspl';
+  if(/pos|rpp|mtp|mpt|thermal|58|80mm|printer00/.test(n))return 'escpos';
+  return 'tspl';}
+/* --- connexion --- */
+async function prnConnect(){
+  if(!prnSupported()){prnRender();return;}
+  try{
+    PRN_BUSY=true;prnRender();
+    const dev=await navigator.bluetooth.requestDevice({acceptAllDevices:true,optionalServices:PRN_SERVICES});
+    const srv=await dev.gatt.connect();
+    const services=await srv.getPrimaryServices();
+    let ch=null;
+    for(let i=0;i<services.length&&!ch;i++){
+      let chars=[];try{chars=await services[i].getCharacteristics();}catch(e){continue;}
+      for(let j=0;j<chars.length;j++){const p=chars[j].properties;
+        if(p&&(p.write||p.writeWithoutResponse)){ch=chars[j];break;}}}
+    if(!ch)throw new Error('no_write');
+    PRN_DEV=dev;PRN_CH=ch;PRN.name=dev.name||'Imprimante Bluetooth';
+    PRN.detected=prnGuessLang(PRN.name);prnStore();
+    dev.addEventListener('gattserverdisconnected',function(){PRN_CH=null;prnBadge();if(document.getElementById('prn_mask').classList.contains('on'))prnRender();toast('Imprimante déconnectée');});
+    PRN_BUSY=false;prnBadge();prnRender();toast('✓ '+PRN.name+' connectée');
+  }catch(e){PRN_BUSY=false;prnRender();
+    const m=String(e&&e.message||e);
+    if(/cancel|User cancelled|chooser/i.test(m))return;
+    toast(m==='no_write'?"Cet appareil n'accepte pas d'impression":'Connexion impossible : '+m);}}
+function prnDisconnect(){try{if(PRN_DEV&&PRN_DEV.gatt&&PRN_DEV.gatt.connected)PRN_DEV.gatt.disconnect();}catch(e){}
+  PRN_CH=null;PRN_DEV=null;prnBadge();prnRender();}
+/* --- envoi --- */
+function prnBytes(s){const out=[];for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);out.push(c>255?63:c);}return out;}
+async function prnSend(bytes){
+  if(!prnConnected())throw new Error('offline_printer');
+  const arr=new Uint8Array(bytes);const size=100;
+  for(let i=0;i<arr.length;i+=size){
+    const chunk=arr.slice(i,i+size);
+    if(PRN_CH.writeValueWithoutResponse)await PRN_CH.writeValueWithoutResponse(chunk);
+    else await PRN_CH.writeValue(chunk);
+    await new Promise(function(r){setTimeout(r,18);});}}
+/* --- construction des étiquettes --- */
+function prnBuild(lines){
+  const d=prnDims(),lang=prnLangUsed(),DPM=8;
+  const L=lines.filter(function(x){return x&&x.t;});
+  if(lang==='tspl'){
+    let s='SIZE '+d.w+' mm,'+d.h+' mm\r\nGAP '+d.gap+' mm,0\r\nDIRECTION 1\r\nREFERENCE 0,0\r\nCODEPAGE 1252\r\nDENSITY '+(PRN.dark||8)+'\r\nSPEED '+(PRN.speed||4)+'\r\nCLS\r\n';
+    let y=Math.round(1.2*DPM);
+    L.forEach(function(l){
+      const f=l.big?'3':(l.small?'1':'2');const mul=l.big?1:1;
+      s+='TEXT '+Math.round(1.5*DPM)+','+y+',"'+f+'",0,'+mul+','+mul+',"'+String(l.t).replace(/"/g,"'")+'"\r\n';
+      y+=Math.round((l.big?5.2:(l.small?3.1:4.0))*DPM);});
+    s+='PRINT 1,1\r\n';
+    return prnBytes(s);}
+  if(lang==='cpcl'){
+    const hd=Math.round(d.h*DPM);
+    let s='! 0 200 200 '+hd+' 1\r\nPAGE-WIDTH '+Math.round(d.w*DPM)+'\r\n';
+    let y=10;
+    L.forEach(function(l){const f=l.big?'4':(l.small?'5':'7');
+      s+='TEXT '+f+' 0 12 '+y+' '+String(l.t)+'\r\n';y+=l.big?42:(l.small?24:32);});
+    s+='FORM\r\nPRINT\r\n';
+    return prnBytes(s);}
+  /* escpos */
+  let b=[27,64, 27,116,16, 27,97,1];
+  L.forEach(function(l){
+    b=b.concat([29,33,(l.big?17:(l.small?0:1))]);
+    b=b.concat(prnBytes(String(l.t)));b.push(10);});
+  b=b.concat([29,33,0,10,10,29,86,66,0]);
+  return b;}
+/* --- impressions --- */
+async function prnTest(){
+  if(!prnConnected()){toast('Connectez une imprimante d’abord');return;}
+  try{const est=(state.clients&&state.clients[0])?state.clients[0].name:(CUR||'Vigie');
+    await prnSend(prnBuild([{t:'TEST D IMPRESSION',big:true},{t:est},{t:new Date().toLocaleString('fr-FR')},{t:prnLangLabel(prnLangUsed()).split(' —')[0]+' - '+prnDims().w+'x'+prnDims().h+' mm',small:true}]));
+    toast('✓ Étiquette test envoyée');}
+  catch(e){toast('Échec : '+(e.message||e));}}
+async function prnLabel(lines){
+  if(!prnConnected())return false;
+  try{await prnSend(prnBuild(lines));return true;}catch(e){toast('Impression échouée : '+(e.message||e));return false;}}
+/* --- interface --- */
+function prnBadge(){const b=document.getElementById('tb_imp'),t=document.getElementById('tb_imp_t');if(!b||!t)return;
+  if(prnConnected()){b.classList.add('ok');t.textContent=(PRN.name||'Imprimante').slice(0,18);}
+  else{b.classList.remove('ok');t.textContent='Imprimante';}}
+function prnOpen(){PRN_VIEW='home';
+  if(!document.getElementById('prn_mask'))document.body.insertAdjacentHTML('beforeend','<div class="prn-mask" id="prn_mask" onclick="if(event.target===this)prnClose()"><div class="prn" id="prn_box"></div></div>');
+  document.getElementById('prn_mask').classList.add('on');prnRender();}
+function prnClose(){const m=document.getElementById('prn_mask');if(m)m.classList.remove('on');}
+function prnGo(v){PRN_VIEW=v;prnRender();}
+function prnRender(){const b=document.getElementById('prn_box');if(!b)return;
+  b.innerHTML=(PRN_VIEW==='cfg')?prnViewCfg():prnViewHome();}
+function prnViewHome(){
+  const on=prnConnected();
+  let h='<div style="display:flex;align-items:center;gap:9px"><h3>🖨 Imprimante</h3><button class="px" onclick="prnClose()">✕</button></div>'
+   +'<div class="psub">Connectez et réglez votre imprimante d’étiquettes</div>';
+  h+='<div class="prn-card'+(on?' ok':'')+'"><span class="ic">'+(on?'✓':'○')+'</span><span><div class="nm">'+(on?escH(PRN.name):'Aucune imprimante')+'</div>'
+    +'<div class="sb">'+(on?('Connectée · '+prnLangLabel(prnLangUsed()).split(' —')[0]+' · '+prnDims().w+' × '+prnDims().h+' mm'):'Lancez une recherche Bluetooth')+'</div></span></div>';
+  if(!prnSupported()){
+    h+='<div class="warn"><b>Bluetooth indisponible sur cet appareil.</b><br>Safari sur iPad et iPhone n’autorise pas une page web à piloter le Bluetooth. Utilisez une tablette Android (Chrome), ou un ordinateur sous Chrome ou Edge. Les réglages ci-dessous restent enregistrés pour cette tablette.</div>'
+     +'<button class="prn-btn row" style="margin-top:10px" onclick="prnGo(\'cfg\')"><span style="font-size:17px">⚙️</span><span><div class="nm">Configuration imprimante</div><div class="sb">'+prnLangLabel(prnLangUsed()).split(' —')[0]+' · '+prnDims().w+' × '+prnDims().h+' mm</div></span></button>';
+    return h;}
+  h+='<button class="prn-btn main" onclick="prnConnect()"'+(PRN_BUSY?' disabled':'')+'>'+(PRN_BUSY?'Recherche en cours…':'⌁ '+(on?'Changer d’imprimante':'Connecter via Bluetooth'))+'</button>';
+  if(on)h+='<button class="prn-btn" onclick="prnDisconnect()">Déconnecter</button>';
+  h+='<button class="prn-btn row" onclick="prnGo(\'cfg\')"><span style="font-size:17px">⚙️</span><span><div class="nm">Configuration imprimante</div><div class="sb">'+prnLangLabel(prnLangUsed()).split(' —')[0]+' · '+prnDims().w+' × '+prnDims().h+' mm</div></span></button>';
+  return h;}
+function prnViewCfg(){
+  const on=prnConnected(),d=prnDims();
+  let h='<div style="display:flex;align-items:center;gap:9px"><button class="pback" onclick="prnGo(\'home\')">‹</button><h3>Configuration imprimante</h3><button class="px" onclick="prnClose()">✕</button></div>'
+   +'<div class="psub">1. Choisissez le format · 2. Testez · 3. Ajustez si besoin</div>';
+  h+='<div class="prn-card'+(on?' ok':'')+'"><span class="ic">'+(on?'✓':'💡')+'</span><span><div class="nm">'+(on?escH(PRN.name):'Réglage conseillé')+'</div>'
+    +'<div class="sb">'+(on?('Langage détecté : '+prnLangLabel(PRN.detected).split(' —')[0]):'Aucune imprimante détectée — Vigie propose le réglage standard 57 × 25 mm, langage TSPL.')+'</div></span></div>';
+  h+='<div class="prn-lab">Vérifier le rendu</div>'
+   +'<button class="prn-btn main" onclick="prnTest()"'+(on?'':' disabled')+'>🖨 Imprimer une étiquette test</button>'
+   +(on?'':'<div class="hint">Connectez une imprimante pour lancer un test.</div>');
+  h+='<div class="prn-lab">Format d’étiquettes</div>'
+   +'<select onchange="prnSet(\'fmt\',this.value)">'+PRN_FORMATS.map(function(f){return '<option value="'+f.k+'"'+(f.k===PRN.fmt?' selected':'')+'>'+f.n+'</option>';}).join('')+'</select>'
+   +'<div class="hint" style="margin-top:7px">Actuel : '+d.w+' × '+d.h+' mm · '+prnLangLabel(prnLangUsed()).split(' —')[0]+'</div>';
+  h+='<details class="adv"'+(PRN.fmt==='custom'?' open':'')+'><summary>▸ Réglages avancés (techniciens)</summary>'
+   +'<div class="prn-lab">Langage d’impression</div>'
+   +'<select onchange="prnSet(\'lang\',this.value)">'+PRN_LANGS.map(function(l){return '<option value="'+l[0]+'"'+(l[0]===PRN.lang?' selected':'')+'>'+l[1]+'</option>';}).join('')+'</select>'
+   +'<div class="prn-lab">Dimensions (mm)</div><div class="g3">'
+   +'<div><label>Largeur</label><input type="number" min="20" max="110" value="'+d.w+'" onchange="prnSet(\'w\',this.value)"></div>'
+   +'<div><label>Hauteur</label><input type="number" min="10" max="200" value="'+d.h+'" onchange="prnSet(\'h\',this.value)"></div>'
+   +'<div><label>Gap</label><input type="number" min="0" max="10" value="'+d.gap+'" onchange="prnSet(\'gap\',this.value)"></div></div>'
+   +'<div class="hint" style="margin-top:9px">Modifier une dimension bascule le format sur « Personnalisé ». Réglage propre à cette tablette, sécurisé entre 20 et 110 mm de large.</div>'
+   +'</details>';
+  return h;}
+function prnSet(k,v){
+  if(k==='fmt'){PRN.fmt=v;const f=prnFmt();if(v!=='custom'){PRN.w=f.w;PRN.h=f.h;PRN.gap=f.gap;}}
+  else if(k==='lang'){PRN.lang=v;}
+  else{const n=Number(v)||0;const cur=prnDims();
+    if(PRN.fmt!=='custom'){PRN.w=cur.w;PRN.h=cur.h;PRN.gap=cur.gap;}
+    if(k==='w')PRN.w=Math.min(110,Math.max(20,n));
+    else if(k==='h')PRN.h=Math.min(200,Math.max(10,n));
+    else if(k==='gap')PRN.gap=Math.min(10,Math.max(0,n));
+    PRN.fmt='custom';}
+  prnStore();prnRender();prnBadge();}
+prnLoad();
+
+async function tbPrintLabel(){const sel=document.getElementById('dl_prod');if(!sel){toast('Aucun produit');return;}
   const prod=state.dlcProducts.find(p=>p.id===sel.value);if(!prod){toast('Aucun produit');return;}
   const type=document.getElementById('dl_type').value;const days=prod[type]||1;
-  const labelType={ouvert:'Ouvert',decongele:'Décongelé',fabrique:'Fabriqué'}[type];
-  state.dlc.unshift({id:'d'+Date.now(),clientId:CID,produit:prod.name+' ('+labelType+')',ouvertAt:new Date(),dlcAt:new Date(Date.now()+days*864e5),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
-  toast(' Étiquette imprimée — DLC dans '+days+' j');tbBack();}
+  const labelType={ouvert:'Ouvert le',decongele:'Décongelé le',fabrique:'Fabriqué le'}[type];
+  const by=(state.employees.find(e=>e.id===tbUser)||{}).name||'—';
+  const now=new Date(),dlcAt=new Date(Date.now()+days*864e5);
+  state.dlc.unshift({id:'d'+Date.now(),clientId:CID,produit:prod.name+' ('+labelType.replace(' le','')+')',ouvertAt:now,dlcAt:dlcAt,by:by});
+  const est=(state.clients&&state.clients[0])?state.clients[0].name:(CUR||'');
+  const ok=await prnLabel([{t:prod.name,big:true},{t:labelType+' '+now.toLocaleDateString('fr-FR')+' '+fmtTime(now)},{t:'A CONSOMMER AVANT LE '+dlcAt.toLocaleDateString('fr-FR')},{t:by+' - '+est,small:true}]);
+  toast(ok?'🖨 Étiquette imprimée — DLC dans '+days+' j':'✓ Étiquette enregistrée — DLC dans '+days+' j'+(prnSupported()?' (imprimante non connectée)':''));
+  tbBack();}
 function tbTestOil(id){const f=state.friteuses.find(x=>x.id===id);if(!f)return;
   const val=Math.round((10+Math.random()*20));const bad=val>=24;f.polarity=val;f.status=bad?'alerte':'ok';
   state.huileTests.unshift({id:'ht'+Date.now(),clientId:CID,friteuse:f.name,polarity:val,at:new Date(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—',status:bad?'alerte':'ok'});
@@ -4717,15 +4926,105 @@ async function switchEst(code){
   SYNCTIMER=setInterval(()=>{if(!SYNC.ready||SYNC.applying)return;const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
 }
 async function estSave(){if(!CUR)return;try{
-  if(TBLINK){await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'save',code:TBLINK,data:serializeState()})});return;}
+  if(TBLINK){
+    if(!navigator.onLine||OFF.pending){offSetPending(true);offStash();offFlush();return;}
+    try{
+      const r=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'save',code:TBLINK,data:serializeState()})});
+      if(!r.ok)throw new Error('http');
+      OFF.base=JSON.parse(JSON.stringify(serializeState()));offCacheOk(OFF.base,state.modules);offBar();
+    }catch(e){offSetPending(true);offStash();}
+    return;}
   if(!SB)return;
   await SB.from('app_state').upsert({est_code:CUR,data:serializeState(),client_id:SYNC.cid,updated_at:new Date().toISOString()});}catch(e){console.warn('save',e);}}
+/* ============ MODE HORS LIGNE + FILE DE SYNCHRONISATION ============ */
+let OFF={pending:false,base:null,code:null,last:0,flushing:false};
+function offKey(k){return 'vg_off_'+k+'_'+(OFF.code||'x');}
+function offStash(){try{
+  localStorage.setItem(offKey('data'),JSON.stringify(serializeState()));
+  if(OFF.base)localStorage.setItem(offKey('base'),JSON.stringify(OFF.base));
+  localStorage.setItem(offKey('pending'),OFF.pending?'1':'0');
+  localStorage.setItem(offKey('at'),String(Date.now()));}catch(e){}}
+function offCacheOk(data,modules){try{
+  localStorage.setItem(offKey('data'),JSON.stringify(data));
+  localStorage.setItem(offKey('mods'),JSON.stringify(modules||[]));
+  localStorage.setItem(offKey('base'),JSON.stringify(data));
+  localStorage.setItem(offKey('pending'),'0');
+  localStorage.setItem(offKey('at'),String(Date.now()));}catch(e){}}
+function offRead(){try{
+  const d=JSON.parse(localStorage.getItem(offKey('data'))||'null');if(!d)return null;
+  return {data:d,mods:JSON.parse(localStorage.getItem(offKey('mods'))||'null'),
+    base:JSON.parse(localStorage.getItem(offKey('base'))||'null'),
+    pending:localStorage.getItem(offKey('pending'))==='1',
+    at:Number(localStorage.getItem(offKey('at'))||0)};}catch(e){return null;}}
+/* fusion à 3 points : base (dernier état connu du serveur) / local (tablette) / remote (serveur actuel) */
+function offMerge(base,local,remote){
+  const out=JSON.parse(JSON.stringify(remote||{}));
+  Object.keys(local||{}).forEach(function(k){
+    const lv=local[k],bv=(base||{})[k],rv=out[k];
+    const idArr=function(a){return Array.isArray(a)&&a.every(function(x){return x&&typeof x==='object'&&x.id!=null;});};
+    if(idArr(lv)&&idArr(rv)&&idArr(bv||[])){
+      const bIds={},rIdx={};(bv||[]).forEach(function(x){bIds[x.id]=JSON.stringify(x);});
+      const res=rv.slice();res.forEach(function(x,i){rIdx[x.id]=i;});
+      lv.forEach(function(x){
+        const bs=bIds[x.id];
+        if(bs===undefined){ if(rIdx[x.id]===undefined){res.unshift(x);rIdx[x.id]=0;} }
+        else if(JSON.stringify(x)!==bs){ if(rIdx[x.id]!==undefined)res[rIdx[x.id]]=x; else res.push(x); }});
+      const lIds={};lv.forEach(function(x){lIds[x.id]=1;});
+      const kept=res.filter(function(x){return !(bIds[x.id]!==undefined&&!lIds[x.id]);});
+      out[k]=kept;
+    } else if(JSON.stringify(lv)!==JSON.stringify(bv)){ out[k]=lv; }
+  });
+  return out;}
+function offSetPending(v){
+  if(OFF.pending===v)return;OFF.pending=v;offStash();offBar();}
+function offBar(){
+  const bar=document.getElementById('tb_offbar'),n=document.getElementById('tb_offbar_n');
+  const pill=document.getElementById('tb_net'),pt=document.getElementById('tb_net_t');
+  const bad=!navigator.onLine||OFF.pending;
+  if(bar)bar.classList.toggle('on',bad);
+  if(n)n.textContent=OFF.pending?'à synchroniser':'';
+  if(pill){pill.classList.toggle('off',bad);}
+  if(pt)pt.textContent=!navigator.onLine?'Hors ligne':(OFF.pending?'À synchroniser':'Synchronisé');}
+async function offFlush(){
+  if(OFF.flushing||!OFF.pending||!OFF.code||!navigator.onLine)return;
+  OFF.flushing=true;
+  try{
+    const res=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'load',code:OFF.code})});
+    const j=await res.json().catch(function(){return {};});
+    const remote=(j&&j.data)?j.data:{};
+    const merged=offMerge(OFF.base||remote,serializeState(),remote);
+    const r2=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'save',code:OFF.code,data:merged})});
+    if(!r2.ok)throw new Error('save');
+    SYNC.applying=true;applyState(merged);SYNC.applying=false;
+    SYNC.lastStr=JSON.stringify(serializeState());
+    OFF.base=JSON.parse(JSON.stringify(merged));
+    offSetPending(false);offCacheOk(merged,state.modules);
+    try{tbRender(tbCurrent);}catch(e){}
+    toast('✓ Tout est synchronisé');
+  }catch(e){offSetPending(true);}
+  OFF.flushing=false;}
+function offInit(code){
+  OFF.code=code;
+  window.addEventListener('online',function(){offBar();offFlush();});
+  window.addEventListener('offline',function(){offBar();});
+  setInterval(function(){offBar();if(OFF.pending)offFlush();},20000);
+  offBar();}
+/* service worker : l'application reste ouvrable sans réseau */
+function offRegisterSW(){
+  if(!('serviceWorker' in navigator))return;
+  if(location.protocol!=='https:'&&location.hostname!=='localhost')return;
+  try{navigator.serviceWorker.register('sw.js').catch(function(){});}catch(e){}}
+
 let TBLINK=null;
 async function startTabletLink(code){
   code=String(code||'').trim().toLowerCase();
+  OFF.code=code;offRegisterSW();
+  const cached=offRead();
   try{
+    if(!navigator.onLine&&cached)throw new Error('offline');
     const res=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'load',code:code})});
     const j=await res.json().catch(function(){return {};});
+    if((!res.ok||!j||!j.data)&&cached&&j&&j.error!=='blocked'){throw new Error('offline');}
     if(!res.ok||!j||!j.data){document.body.innerHTML='<div style="padding:80px 20px;text-align:center;font-family:inherit"><div style="font-size:46px">📱</div><h2 style="margin:12px 0 8px">Lien tablette invalide</h2><p style="color:#64748b">'+(j&&j.error==='blocked'?'Ce compte est suspendu — contactez le support.':'Vérifiez le lien dans votre back-office, onglet Tablette.')+'</p></div>';return;}
     TBLINK=code;CUR=code;
     applyState(j.data);
@@ -4736,8 +5035,23 @@ async function startTabletLink(code){
     document.body.style.background='#0b1220';
     document.body.classList.add('tblink');
     go('app_terrain');tbInit();
+    OFF.base=JSON.parse(JSON.stringify(j.data));offCacheOk(j.data,state.modules);offInit(code);
     SYNCTIMER=setInterval(function(){const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
-  }catch(e){document.body.innerHTML='<div style="padding:80px 20px;text-align:center">Connexion impossible — vérifiez votre réseau puis rechargez la page.</div>';}
+  }catch(e){
+    const c=offRead();
+    if(!c){document.body.innerHTML='<div style="padding:80px 20px;text-align:center;font-family:inherit"><div style="font-size:46px">📴</div><h2 style="margin:12px 0 8px">Première ouverture impossible sans réseau</h2><p style="color:#64748b">Ouvrez ce lien une fois connecté au wifi ; ensuite la tablette fonctionnera hors ligne.</p></div>';return;}
+    TBLINK=code;CUR=code;
+    applyState(c.data);
+    CID=(state.clients&&state.clients[0])?state.clients[0].id:'c1';
+    state.modules=Array.isArray(c.mods)&&c.mods.length?c.mods.slice():ALL_MODULES.slice();
+    SYNC.lastStr=JSON.stringify(serializeState());
+    OFF.base=c.base||JSON.parse(JSON.stringify(c.data));OFF.pending=!!c.pending;
+    const intro=document.getElementById('tb_intro');if(intro)intro.style.display='none';
+    document.body.style.background='#0b1220';document.body.classList.add('tblink');
+    go('app_terrain');tbInit();offInit(code);
+    toast('📴 Mode hors ligne — vos saisies seront envoyées au retour du réseau');
+    SYNCTIMER=setInterval(function(){const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
+  }
 }
 
 /* admin : ouvrir un établissement précis en back-office */
