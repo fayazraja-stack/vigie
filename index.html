@@ -568,7 +568,8 @@
 .playcard .pv-est{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#0e7c58;font-weight:800}
 .playcard h2{font-size:23px;margin:6px 0 2px}
 .playcard .pv-sub{color:#64748b;font-size:14px;margin-bottom:16px}
-.wheelwrap{position:relative;width:326px;height:326px;margin:12px auto 10px}
+.wheelwrap{position:relative;width:380px;height:380px;max-width:92vw;margin:12px auto 10px}
+.wheelwrap canvas{width:100%;height:100%}
 .wheelwrap canvas{display:block;border-radius:50%;transition:transform 5s cubic-bezier(.12,.62,.2,1);filter:drop-shadow(0 14px 28px rgba(0,0,0,.28))}
 .wheel-ptr{position:absolute;top:-3px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:16px solid transparent;border-right:16px solid transparent;border-top:32px solid #e11d48;z-index:3;filter:drop-shadow(0 3px 3px rgba(0,0,0,.35))}
 .wheel-ptr::after{content:'';position:absolute;top:-40px;left:-8px;width:16px;height:16px;border-radius:50%;background:#e11d48;box-shadow:0 2px 4px rgba(0,0,0,.3)}
@@ -1515,6 +1516,77 @@ function qrImg(text,size){size=size||180;try{if(window.qrcode){const qr=qrcode(0
 function openInfoHTML(title,html){let mask=document.getElementById('info_mask');if(!mask){document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="info_mask"><div class="modal" style="width:440px;max-width:96vw"><div class="mh"><h3 id="info_title"></h3><button class="x" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">✕</button></div><div class="mb" id="info_body"></div></div></div>');mask=document.getElementById('info_mask');}document.getElementById('info_title').textContent=title;document.getElementById('info_body').innerHTML=html;mask.classList.add('on');}
 function fidWinsFor(gid){return FID_WINS.filter(w=>w.game_id===gid&&w.status!=='lost');}
 let FID_LOTS_PERIOD='month';
+let FID_ST={days:30,game:''};
+function fidSetStat(k,v){FID_ST[k]=(k==='days')?Number(v):v;fidRenderBody();}
+function fidStatRows(){
+  const now=Date.now();const lim=FID_ST.days>0?now-FID_ST.days*86400000:0;
+  return FID_WINS.filter(function(w){
+    if(FID_ST.game&&w.game_id!==FID_ST.game)return false;
+    if(lim&&(!w.created_at||new Date(w.created_at).getTime()<lim))return false;
+    return true;});
+}
+function fidDrawCharts(){
+  const rows=fidStatRows();
+  /* --- Évolution des participations (courbes lissées, 1 axe) --- */
+  const cv1=document.getElementById('fid_ch1');
+  if(cv1&&cv1.getContext){
+    const ctx=cv1.getContext('2d');const W=cv1.width,H=cv1.height;ctx.clearRect(0,0,W,H);
+    const nDays=FID_ST.days>0?FID_ST.days:Math.max(7,Math.min(120,Math.ceil((Date.now()-rows.reduce(function(m,w){return Math.min(m,new Date(w.created_at).getTime());},Date.now()))/86400000)+1));
+    const days=[];const t0=new Date();t0.setHours(0,0,0,0);
+    for(let i=nDays-1;i>=0;i--){const d=new Date(t0.getTime()-i*86400000);days.push(d);}
+    const keyOf=function(d){return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
+    const pMap={},gMap={};
+    rows.forEach(function(w){const d=new Date(w.created_at);const k=keyOf(d);pMap[k]=(pMap[k]||0)+1;if(w.status!=='lost')gMap[k]=(gMap[k]||0)+1;});
+    const sP=days.map(function(d){return pMap[keyOf(d)]||0;}),sG=days.map(function(d){return gMap[keyOf(d)]||0;});
+    const mx=Math.max(4,Math.max.apply(null,sP));const yMax=Math.ceil(mx/4)*4;
+    const padL=34,padR=10,padT=12,padB=26;const iw=W-padL-padR,ih=H-padT-padB;
+    const X=function(i){return padL+(days.length<2?iw/2:i*(iw/(days.length-1)));};
+    const Y=function(v){return padT+ih-(v/yMax)*ih;};
+    ctx.strokeStyle='#e2e8f0';ctx.fillStyle='#94a3b8';ctx.font='10.5px system-ui,sans-serif';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+    for(let g=0;g<=4;g++){const v=yMax*g/4;ctx.beginPath();ctx.moveTo(padL,Y(v));ctx.lineTo(W-padR,Y(v));ctx.stroke();ctx.textAlign='right';ctx.fillText(String(Math.round(v)),padL-6,Y(v)+3);}
+    ctx.setLineDash([]);
+    const step=Math.max(1,Math.ceil(days.length/8));ctx.textAlign='center';
+    days.forEach(function(d,i){const isLast=i===days.length-1;const onStep=i%step===0;
+      if(onStep&&isLast||onStep&&(days.length-1-i)>=Math.ceil(step/2)||(!onStep&&isLast&&(days.length-1)%step>=Math.ceil(step/2)))
+        ctx.fillText(('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2),X(i),H-8);});
+    const drawSerie=function(s,stroke,fillTop){
+      if(days.length<2)return;
+      ctx.beginPath();
+      s.forEach(function(v,i){const x=X(i),y=Y(v);if(i===0)ctx.moveTo(x,y);else{const px=X(i-1),py=Y(s[i-1]);const cx=(px+x)/2;ctx.bezierCurveTo(cx,py,cx,y,x,y);}});
+      ctx.lineWidth=2;ctx.strokeStyle=stroke;ctx.stroke();
+      ctx.lineTo(X(days.length-1),Y(0));ctx.lineTo(X(0),Y(0));ctx.closePath();
+      const gr=ctx.createLinearGradient(0,padT,0,padT+ih);gr.addColorStop(0,fillTop);gr.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=gr;ctx.fill();
+    };
+    drawSerie(sP,'#0b1220','rgba(11,18,32,.22)');
+    drawSerie(sG,'#16a34a','rgba(22,163,74,.20)');
+  }
+  /* --- Distribution des lots (donut) --- */
+  const cv2=document.getElementById('fid_ch2');
+  if(cv2&&cv2.getContext){
+    const ctx=cv2.getContext('2d');const W=cv2.width,H=cv2.height;ctx.clearRect(0,0,W,H);
+    const byP={};rows.filter(function(w){return w.status!=='lost';}).forEach(function(w){const k=w.prize||'Lot';byP[k]=(byP[k]||0)+1;});
+    const keys=Object.keys(byP).sort(function(a,b){return byP[b]-byP[a];});
+    if(!keys.length){ctx.fillStyle='#94a3b8';ctx.font='13px system-ui,sans-serif';ctx.textAlign='center';ctx.fillText('Aucun lot gagné sur la période',W/2,H/2);return;}
+    const shown=keys.slice(0,7);const other=keys.slice(7).reduce(function(s,k){return s+byP[k];},0);
+    const data=shown.map(function(k){return {label:k,v:byP[k]};});if(other)data.push({label:'Autres',v:other});
+    const total=data.reduce(function(s,d){return s+d.v;},0);
+    const cx=W/2,cy=H/2,R=Math.min(W,H)*0.30,r=R*0.55;
+    let a=-Math.PI/2;
+    data.forEach(function(d,i){
+      const ang=d.v/total*2*Math.PI;const col=(i===data.length-1&&d.label==='Autres')?'#94a3b8':FID_PALETTE[i%FID_PALETTE.length];
+      ctx.beginPath();ctx.moveTo(cx+Math.cos(a)*r,cy+Math.sin(a)*r);
+      ctx.arc(cx,cy,R,a,a+ang);ctx.arc(cx,cy,r,a+ang,a,true);ctx.closePath();
+      ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+      const mid=a+ang/2;const lx=cx+Math.cos(mid)*(R+16),ly=cy+Math.sin(mid)*(R+16);
+      ctx.fillStyle=col;ctx.font='700 12px system-ui,sans-serif';
+      ctx.textAlign=Math.cos(mid)<-0.2?'right':(Math.cos(mid)>0.2?'left':'center');
+      const pct=Math.round(d.v/total*100);
+      ctx.fillText((d.label.length>12?d.label.slice(0,11)+'…':d.label)+' '+pct+'%',lx,ly+4);
+      a+=ang;
+    });
+  }
+}
 function fidSetLotsPeriod(v){FID_LOTS_PERIOD=v;fidRenderBody();}
 function fidLotsRows(){const now=new Date();
   return FID_WINS.filter(function(w){return w.status==='redeemed'&&w.redeemed_at;}).filter(function(w){
@@ -1861,7 +1933,7 @@ async function fidLoad(){
   try{
     const {data:gs}=await SB.from('fid_games').select('*').eq('est_code',CUR).order('created_at',{ascending:false});
     FID_GAMES=gs||[];
-    const {data:ws}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(300);
+    const {data:ws}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(2000);
     FID_WINS=ws||[];
     fidRenderBody();
   }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Erreur de chargement : '+escH(e.message||e)+'</div>';}
@@ -1873,9 +1945,31 @@ function fidRenderBody(){
   const totalWins=FID_WINS.filter(w=>w.status!=='lost').length, redeemed=FID_WINS.filter(w=>w.status==='redeemed').length, pending=totalWins-redeemed, actifs=FID_GAMES.filter(g=>g.active).length;
   let html='';
   if(clientView==='fid_stats'){
-    const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});
-    html='<div class="kpis">'+kpi('Total participations',FID_WINS.length,'parties enregistrées','up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots récupérés',redeemed,'validés en caisse','up')+kpi('En attente',pending,'à remettre','up')+'</div>';
-    html+='<div class="kpis">'+kpi('Jeux actifs',actifs,'sur '+FID_GAMES.length,'up')+kpi('Contacts collectés',leads.length,'dans la base clients','up')+'</div>';
+    const rows=fidStatRows();
+    const parts=rows.length;
+    const gagnes=rows.filter(function(w){return w.status!=='lost';}).length;
+    const uniq=new Set(rows.map(function(w){return ((w.customer_phone||'')+(w.customer_email||'')).toLowerCase();}).filter(Boolean)).size;
+    const taux=parts?Math.round(gagnes/parts*1000)/10:0;
+    const recupP=rows.filter(function(w){return w.status==='redeemed';}).length;
+    const tauxRec=gagnes?Math.round(recupP/gagnes*1000)/10:0;
+    html='<div class="panel" style="margin-bottom:16px"><div class="pb"><div style="display:flex;gap:14px;flex-wrap:wrap">'
+     +'<div><label style="font-size:11px;color:#94a3b8;font-weight:700">PÉRIODE</label><br><select onchange="fidSetStat(\'days\',this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px">'+[['7','7 derniers jours'],['30','30 derniers jours'],['90','90 derniers jours'],['0','Tout l\'historique']].map(function(o){return '<option value="'+o[0]+'"'+(String(FID_ST.days)===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>'
+     +'<div><label style="font-size:11px;color:#94a3b8;font-weight:700">JEU</label><br><select onchange="fidSetStat(\'game\',this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les jeux</option>'+FID_GAMES.map(function(g){return '<option value="'+g.id+'"'+(FID_ST.game===g.id?' selected':'')+'>'+escH(g.name)+'</option>';}).join('')+'</select></div>'
+     +'</div></div></div>';
+    const tile=function(bg,ic,label,val){return '<div style="flex:1;min-width:170px;background:'+bg+';border:1px solid #eef2f7;border-radius:16px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px"><div><div style="font-size:12.5px;color:#475569;font-weight:600">'+label+'</div><div style="font-size:26px;font-weight:900;margin-top:2px">'+val+'</div></div><div style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.75);display:grid;place-items:center;font-size:17px">'+ic+'</div></div>';};
+    const sv=function(p,c){return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+c+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';};
+    html+='<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">'
+     +tile('#f1f5f9',sv('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>','#475569'),'Participations',parts)
+     +tile('#eaf3ff',sv('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.4 3.4-5 6.5-5s5.7 1.6 6.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M16 15.3c2.6.2 4.6 1.6 5.4 4.7"/>','#2563eb'),'Joueurs uniques',uniq)
+     +tile('#e9fbf1',sv('<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 5H4v2a3 3 0 0 0 3 3M17 5h3v2a3 3 0 0 1-3 3"/>','#16a34a'),'Lots gagnés',gagnes)
+     +tile('#fdf1e6',sv('<line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.2"/><circle cx="17.5" cy="17.5" r="2.2"/>','#ea580c'),'Taux de gain',taux.toFixed(1)+'%')
+     +tile('#f0e9fd',sv('<path d="M20 6L9 17l-5-5"/>','#7c3aed'),'Taux de récupération',tauxRec.toFixed(1)+'%')
+     +'</div>';
+    html+='<div class="grid2" style="margin-bottom:16px">'
+     +'<div class="panel"><div class="ph"><h3>Évolution des participations</h3><div class="sub">Participations et gains par jour</div></div><div class="pb"><canvas id="fid_ch1" width="620" height="270" style="width:100%;max-width:640px"></canvas><div style="text-align:center;font-size:12.5px;margin-top:6px"><span style="font-weight:700;color:#0b1220">— Participations</span> &nbsp; <span style="font-weight:700;color:#16a34a">— Gains</span></div></div></div>'
+     +'<div class="panel"><div class="ph"><h3>Distribution des lots</h3><div class="sub">Répartition des lots gagnés</div></div><div class="pb" style="text-align:center"><canvas id="fid_ch2" width="520" height="290" style="width:100%;max-width:520px"></canvas></div></div>'
+     +'</div>';
+    setTimeout(fidDrawCharts,30);
     html+='<div class="panel"><div class="ph"><h3>Détail par jeu</h3></div><div class="pb" style="padding:0">'+(FID_GAMES.length?('<table><thead><tr><th>Jeu</th><th>Type</th><th>Lots gagnés</th><th>Remis</th><th>En attente</th><th>Taux de remise</th></tr></thead><tbody>'
       +FID_GAMES.map(function(g){const ws=fidWinsFor(g.id);const rd=ws.filter(function(w){return w.status==='redeemed';}).length;const pd=ws.length-rd;const tx=ws.length?Math.round(rd/ws.length*100):0;const cfg=g.config||{};
         return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+fidTypeName(cfg.gameType)+'</span></td><td>'+ws.length+'</td><td>'+rd+'</td><td>'+(pd?'<span class="chip warn">'+pd+'</span>':'0')+'</td><td><span class="chip '+(tx>=50?'ok':'muted')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:30px">Aucun jeu pour le moment.</div>')+'</div></div>';
@@ -1912,7 +2006,7 @@ let FID_TAB='general';
 function fidNewGame(){FID_TAB='general';FID_EDIT={id:null,name:'',active:true,gameType:'wheel',brand:fidBrandDefault(),
   lots:[{label:'Café offert',type:'lot',percent:20,cases:2,photo:'',photoPath:''},{label:'-10% sur l\'addition',type:'reduction',percent:20,cases:2,photo:'',photoPath:''},{label:'Dessert offert',type:'lot',percent:10,cases:1,photo:'',photoPath:''}],
   hundredWin:false,perduCases:3,
-  actions:[],minOrderOn:false,minOrder:'',delayOn:false,delayHours:''};fidOpenModal();}
+  actions:[],minOrderOn:false,minOrder:'',delayOn:false,delayHours:'',maxOn:false,maxHours:''};fidOpenModal();}
 function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const c=g.config||{};const cond=c.conditions||{};FID_TAB='general';
   let lots,hundredWin,perduCases;
   if(c.lots&&c.lots.length){lots=c.lots.map(function(l){return {label:l.label||'',type:l.type||'lot',percent:Number(l.percent)||0,cases:Math.max(1,Number(l.cases)||1),photo:l.photo||'',photoPath:l.photoPath||''};});hundredWin=!!c.hundredWin;perduCases=Math.max(1,Number(c.perduCases)||3);}
@@ -1926,7 +2020,8 @@ function fidEditGame(id){const g=FID_GAMES.find(x=>x.id===id);if(!g)return;const
     lots:lots,hundredWin:hundredWin,perduCases:perduCases,
     actions:(c.actions||[]).map(a=>({label:a.label||'',url:a.url||''})),
     minOrderOn:(cond.minOrder!=null&&cond.minOrder>0),minOrder:(cond.minOrder!=null?cond.minOrder:''),
-    delayOn:(cond.delayHours!=null&&cond.delayHours>0),delayHours:(cond.delayHours||'')};
+    delayOn:(cond.delayHours!=null&&cond.delayHours>0),delayHours:(cond.delayHours||''),
+    maxOn:(cond.maxHours!=null&&cond.maxHours>0),maxHours:(cond.maxHours||'')};
   fidOpenModal();}
 function fidSumLots(e){return (e.lots||[]).reduce(function(s,l){return s+(Number(l.percent)||0);},0);}
 function fidPerduPct(e){return e.hundredWin?0:Math.max(0,+(100-fidSumLots(e)).toFixed(2));}
@@ -2051,17 +2146,20 @@ function fidRenderModalBody(){
     h+='<div style="'+card+';background:#f8fafc"><div style="font-weight:800;font-size:15px">ⓘ Conditions de récupération des lots</div><div style="font-size:12.5px;color:#64748b;margin-top:4px;line-height:1.55">Définissez les conditions que les gagnants devront respecter pour récupérer leurs lots. Ces conditions s\'appliqueront à tous les lots de ce jeu et seront affichées lors de la validation du lot.</div></div>';
     h+='<div style="'+card+'"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:19px;font-weight:800">€</div><div style="flex:1"><div style="font-weight:900;font-size:16px">Montant minimum de commande</div><div style="font-size:12.5px;color:#64748b">Le lot sera récupérable uniquement sur présentation d\'une commande</div></div><span class="switch '+(e.minOrderOn?'on':'')+'" onclick="fidCondToggle(\'min\')"><span class="tk"></span></span></div>'
      +(e.minOrderOn?'<div style="margin-top:14px"><label style="'+lab+'">Montant minimum (€)</label><div style="display:flex;align-items:center;gap:8px"><input id="fidm_minorder" type="number" min="0" step="0.5" value="'+escH(e.minOrder)+'" style="'+inp+';max-width:220px"><b>€</b></div><div style="'+hint+'">Le gagnant devra présenter une commande d\'au moins ce montant pour récupérer son lot</div></div>':'')+'</div>';
-    h+='<div style="'+card+'"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:19px">🕐</div><div style="flex:1"><div style="font-weight:900;font-size:16px">Délai avant récupération</div><div style="font-size:12.5px;color:#64748b">Le lot ne sera récupérable qu\'après un certain temps</div></div><span class="switch '+(e.delayOn?'on':'')+'" onclick="fidCondToggle(\'delay\')"><span class="tk"></span></span></div>'
+    h+='<div style="'+card+'"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:19px">🕐</div><div style="flex:1"><div style="font-weight:900;font-size:16px">Délai minimum avant récupération</div><div style="font-size:12.5px;color:#64748b">Le lot ne sera récupérable qu\'après un certain temps</div></div><span class="switch '+(e.delayOn?'on':'')+'" onclick="fidCondToggle(\'delay\')"><span class="tk"></span></span></div>'
      +(e.delayOn?'<div style="margin-top:14px"><label style="'+lab+'">Délai (en heures)</label><div style="display:flex;align-items:center;gap:8px"><input id="fidm_delay" type="number" min="0" step="1" value="'+escH(e.delayHours)+'" style="'+inp+';max-width:220px"><b>heures</b></div><div style="'+hint+'">24 heures = 1 jour, 48 heures = 2 jours, etc.</div></div>':'')+'</div>';
+    h+='<div style="'+card+'"><div style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#f1f5f9;display:grid;place-items:center;font-size:19px">⏳</div><div style="flex:1"><div style="font-weight:900;font-size:16px">Délai maximum de récupération</div><div style="font-size:12.5px;color:#64748b">Passé ce délai, le lot expire et ne peut plus être récupéré</div></div><span class="switch '+(e.maxOn?'on':'')+'" onclick="fidCondToggle(\'max\')"><span class="tk"></span></span></div>'
+     +(e.maxOn?'<div style="margin-top:14px"><label style="'+lab+'">Validité du lot (en heures)</label><div style="display:flex;align-items:center;gap:8px"><input id="fidm_maxdelay" type="number" min="1" step="1" value="'+escH(e.maxHours)+'" style="'+inp+';max-width:220px"><b>heures</b></div><div style="'+hint+'">168 heures = 7 jours, 720 heures = 30 jours. Le décompte démarre au moment du gain.</div></div>':'')+'</div>';
     const parts=[];if(e.minOrderOn&&Number(e.minOrder)>0)parts.push('sur présentation d\'une commande d\'un montant minimum de '+Number(e.minOrder)+'€');
     if(e.delayOn&&Number(e.delayHours)>0)parts.push('à partir de '+Number(e.delayHours)+' heures après le gain');
+    if(e.maxOn&&Number(e.maxHours)>0)parts.push('dans un délai maximum de '+Number(e.maxHours)+' heures après le gain');
     const preview=parts.length?('"Ce lot est récupérable '+parts.join(' et ')+' chez "'+title+'"."'):'"Ce lot est récupérable immédiatement chez "'+title+'", sans condition particulière."';
     h+='<div style="border:2px dashed #cbd5e1;border-radius:16px;padding:16px 18px;background:#f8fafc"><div style="font-weight:800;font-size:15px;margin-bottom:10px">Aperçu du message affiché au gagnant</div><div style="background:#fff;border-radius:12px;padding:14px 16px;font-style:italic;color:#64748b;font-size:14px;line-height:1.6">'+escH(preview)+'</div></div>';
     h+=fidSaveBtn('Enregistrer les conditions');
   }
   b.innerHTML=h;
 }
-function fidCondToggle(k){fidCollect();if(k==='min')FID_EDIT.minOrderOn=!FID_EDIT.minOrderOn;else FID_EDIT.delayOn=!FID_EDIT.delayOn;fidRenderModalBody();}
+function fidCondToggle(k){fidCollect();if(k==='min')FID_EDIT.minOrderOn=!FID_EDIT.minOrderOn;else if(k==='max')FID_EDIT.maxOn=!FID_EDIT.maxOn;else FID_EDIT.delayOn=!FID_EDIT.delayOn;fidRenderModalBody();}
 function fidHundredToggle(){fidCollect();FID_EDIT.hundredWin=!FID_EDIT.hundredWin;fidRenderModalBody();}
 function fidActAdd(){fidCollect();const t=(document.getElementById('fidm_acttype')||{}).value||'Autre';const cu=(document.getElementById('fidm_actcustom')||{}).value||'';const url=((document.getElementById('fidm_acturl')||{}).value||'').trim();
   if(!url){toast('Renseignez l\'URL de l\'action');return;}
@@ -2109,6 +2207,7 @@ function fidCollect(){const e=FID_EDIT;if(!e)return;
   const bc=document.getElementById('fidm_bcolor');if(bc){e.brand=e.brand||fidBrandDefault();e.brand.color=bc.value||'#0e7c58';e.brand.color2=(document.getElementById('fidm_bcolor2')||{}).value||e.brand.color;e.brand.segA=(document.getElementById('fidm_sega')||{}).value||'#111827';e.brand.segB=(document.getElementById('fidm_segb')||{}).value||'#ffffff';}
   const mo=document.getElementById('fidm_minorder');if(mo)e.minOrder=mo.value;
   const dl=document.getElementById('fidm_delay');if(dl)e.delayHours=dl.value;
+  const mx=document.getElementById('fidm_maxdelay');if(mx)e.maxHours=mx.value;
   const pc=document.getElementById('fidm_perducases');if(pc)e.perduCases=Math.max(1,Number(pc.value)||1);
   const labels=document.querySelectorAll('.fid-lot-label');
   if(labels.length){const pcts=document.querySelectorAll('.fid-lot-pct'),cases=document.querySelectorAll('.fid-lot-cases');const prev=(e.lots||[]).slice();
@@ -2119,9 +2218,10 @@ async function fidSaveGame(){fidCollect();const e=FID_EDIT;
   const lots=(e.lots||[]).filter(function(l){return l.label;});
   if(!lots.length){toast('Ajoutez au moins un lot');return;}
   const actions=(e.actions||[]).filter(function(a){return a.label&&a.url;});
-  const cName=(state.clients.find(function(x){return x.est_code===CUR;})||{}).name||'';
+  const cli=state.clients.find(function(x){return x.est_code===CUR;})||{};
+  const cName=cli.commercial||cli.name||'';
   const brand=Object.assign(fidBrandDefault(),e.brand||{});if(!brand.title)brand.title=cName;
-  const conditions={minOrder:(e.minOrderOn&&Number(e.minOrder)>0)?Number(e.minOrder):null,delayHours:(e.delayOn&&Number(e.delayHours)>0)?Number(e.delayHours):0};
+  const conditions={minOrder:(e.minOrderOn&&Number(e.minOrder)>0)?Number(e.minOrder):null,delayHours:(e.delayOn&&Number(e.delayHours)>0)?Number(e.delayHours):0,maxHours:(e.maxOn&&Number(e.maxHours)>0)?Number(e.maxHours):0};
   const config={estName:brand.title||cName,gameType:e.gameType||'wheel',brand:brand,conditions:conditions,
     lots:lots,hundredWin:!!e.hundredWin,perduCases:Math.max(1,Number(e.perduCases)||3),
     segments:fidBuildSegments(Object.assign({},e,{lots:lots})),
@@ -2152,6 +2252,8 @@ async function fidValidateToken(){const el=document.getElementById('fid_token');
     if(w.status==='lost'){msg.style.color='#b91c1c';msg.innerHTML='Ce code ne correspond pas à un lot gagné.';return;}
     if(w.status==='redeemed'){msg.style.color='#b91c1c';msg.innerHTML='Lot déjà récupéré le '+veFmtDate(w.redeemed_at)+'. Ce code est invalide.';return;}
     const g=FID_GAMES.find(function(x){return x.id===w.game_id;});const cond=(g&&g.config&&g.config.conditions)||{};
+    if(cond.maxHours&&Number(cond.maxHours)>0&&w.created_at){const exp=new Date(new Date(w.created_at).getTime()+Number(cond.maxHours)*3600000);
+      if(exp<new Date()){msg.style.color='#b91c1c';msg.innerHTML='Lot expiré : il devait être récupéré avant le '+exp.toLocaleDateString('fr-FR')+' à '+exp.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' (validité '+cond.maxHours+' h). Ce code est invalide.';return;}}
     if(cond.delayHours&&w.created_at){const avail=new Date(new Date(w.created_at).getTime()+cond.delayHours*3600000);
       if(avail>new Date()){msg.style.color='#b45309';msg.innerHTML='Lot pas encore récupérable : disponible à partir du '+avail.toLocaleDateString('fr-FR')+' à '+avail.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' (délai de '+cond.delayHours+' h).';return;}}
     let condTxt='';if(cond.minOrder!=null&&cond.minOrder>0)condTxt=' <span class="tsub">(commande minimum '+Number(cond.minOrder).toFixed(0)+' €)</span>';
@@ -2160,7 +2262,7 @@ async function fidValidateToken(){const el=document.getElementById('fid_token');
 }
 async function fidRedeemConfirm(token){
   try{const {data,error}=await SB.from('fid_wins').update({status:'redeemed',redeemed_at:new Date().toISOString()}).eq('token',token).eq('status','pending').select();if(error)throw error;
-    const {data:ws}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(300);FID_WINS=ws||[];fidRenderBody();
+    const {data:ws}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(2000);FID_WINS=ws||[];fidRenderBody();
     const msg=document.getElementById('fid_valmsg');if(msg){if(!data||!data.length){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé.';}else{msg.style.color='#0b7d57';msg.textContent='Lot remis et validé. Le code est désormais invalide.';}}
   }catch(e){const msg=document.getElementById('fid_valmsg');if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
 }
@@ -2179,7 +2281,9 @@ async function startRedeem(token){
     if(j.error==='not_found'){card.innerHTML=pvMsg('Lot introuvable','Ce code de lot est introuvable ou a été supprimé.');return;}
     if(j.error){card.innerHTML=pvMsg('Erreur',j.error);return;}
     if(j.status==='redeemed'){card.innerHTML=pvMsg('Lot déjà utilisé','Ce lot a déjà été récupéré le '+veFmtDate(j.redeemed_at)+'. Le code est définitivement invalide.');return;}
+    if(j.expired){const ex=new Date(j.expires_at);card.innerHTML=pvMsg('Lot expiré','Ce lot devait être récupéré avant le '+ex.toLocaleDateString('fr-FR')+' à '+ex.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+' (validité '+j.max_hours+' h). Il n\'est plus valable.');return;}
     let condHtml='';
+    if(j.expires_at&&!j.expired){const ex=new Date(j.expires_at);condHtml+='<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:10px 13px;font-size:13px;color:#c2410c;margin-top:8px;text-align:left">⏳&nbsp; À récupérer avant le <b>'+ex.toLocaleDateString('fr-FR')+' à '+ex.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b> (validité '+j.max_hours+' h).</div>';}
     if(j.min_order!=null&&j.min_order>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:10px 13px;font-size:13px;color:#92400e;margin-top:8px;text-align:left">€&nbsp; Récupérable sur présentation d\'une commande d\'un montant minimum de <b>'+Number(j.min_order).toFixed(0)+'€</b>'+(j.est_name?' chez "'+escH((j.est_name||'').toUpperCase())+'"':'')+'.</div>';
     if(j.available_at){const av=new Date(j.available_at);const late=av>new Date();
       condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:10px 13px;font-size:13px;color:#1d4ed8;margin-top:8px;text-align:left">🕐&nbsp; '+(late?'Récupérable à partir du <b>'+av.toLocaleDateString('fr-FR')+' à '+av.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b> (délai de '+j.delay_hours+' h).':'Le délai de '+j.delay_hours+' h est écoulé : le lot est récupérable.')+'</div>';}
@@ -2202,6 +2306,7 @@ async function rdmDo(token){
     if(j.ok){if(btn){btn.textContent='✓ Lot validé';btn.style.background='#16a34a';}if(msg){msg.style.color='#0b7d57';msg.textContent='Lot remis. Le code est désormais définitivement invalide.';}return;}
     if(j.error==='already_redeemed'){if(btn)btn.textContent='Déjà validé';if(msg){msg.style.color='#b91c1c';msg.textContent='Ce lot a déjà été validé'+(j.redeemed_at?' le '+veFmtDate(j.redeemed_at):'')+'.';}return;}
     if(j.error==='not_yet'){const av=new Date(j.available_at);if(btn){btn.disabled=true;btn.textContent='Lot pas encore récupérable';}if(msg){msg.style.color='#b45309';msg.textContent='Récupérable à partir du '+av.toLocaleDateString('fr-FR')+' à '+av.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'.';}return;}
+    if(j.error==='expired'){if(btn){btn.disabled=true;btn.textContent='Lot expiré';}if(msg){msg.style.color='#b91c1c';msg.textContent='Ce lot a expiré : le délai maximum de récupération est dépassé.';}return;}
     throw new Error(j.error||'Erreur');
   }catch(e){if(btn){btn.disabled=false;btn.textContent='Valider la remise du lot';}if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
 }
@@ -2216,7 +2321,8 @@ async function startPlay(param){
     const {data:g}=await SB.from('fid_games').select('*').eq('id',gid).eq('est_code',est).maybeSingle();
     if(!g){card.innerHTML=pvMsg('Jeu introuvable','Ce jeu n\'existe pas ou a été supprimé.');return;}
     if(!g.active){card.innerHTML=pvMsg('Jeu indisponible','Ce jeu est actuellement désactivé. Revenez bientôt !');return;}
-    const cfg=g.config||{};const brand=Object.assign({title:cfg.estName||'Jeu concours',subtitle:'Tentez votre chance !',color:'#0e7c58',bg:'#0b1220'},cfg.brand||{});
+    const cfg=g.config||{};const brand=Object.assign({title:'',subtitle:'Tentez votre chance !',color:'#0e7c58',bg:'#0b1220'},cfg.brand||{});
+    if(!brand.title)brand.title=cfg.estName||'Jeu concours';
     const hasActions=(cfg.actions||[]).length>0;
     PV_STATE={est:est,gid:gid,game:g,brand:brand,credits:hasActions?0:1,usedActions:{},pending:null,lead:null,lastWin:null,_rot:0,spinning:false,played:0};
     pvApplyBrand(brand);pvRender();
@@ -2248,7 +2354,7 @@ function pvRender(){
   else if(gt==='boxes')gameArea='<div id="pv_boxzone" style="margin:16px auto 6px;max-width:340px;display:flex;gap:12px;justify-content:center">'
     +[0,1,2].map(function(i){return '<div class="pv-box" id="pv_box'+i+'" style="width:92px;height:92px;border-radius:16px;background:#fff;border:3px solid '+pvHexA(b.color,0.35)+';display:grid;place-items:center;font-size:40px;box-shadow:0 8px 20px rgba(15,23,42,.12);transition:transform .3s,border-color .3s">🎁</div>';}).join('')
     +'</div>';
-  else gameArea='<div class="wheelwrap"><div class="wheel-ptr" style="border-top-color:'+escH(b.color)+'"></div><canvas id="pv_canvas" width="326" height="326"></canvas><div class="wheel-hub" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';border-color:#fff;font-size:13px">Lancer</div></div>';
+  else gameArea='<div class="wheelwrap"><div class="wheel-ptr" style="border-top-color:'+escH(b.color)+'"></div><canvas id="pv_canvas" width="380" height="380"></canvas><div class="wheel-hub" style="background:'+escH(b.color)+';color:'+pvContrast(b.color)+';border-color:#fff;font-size:13px">Lancer</div></div>';
   const lotsAll=segs.filter(function(s){return s.type!=='perdu';});
   const seenLots={};const lots=lotsAll.filter(function(s){const k=(s.label||'').toLowerCase();if(seenLots[k])return false;seenLots[k]=1;return true;});
   const lotsHtml=lots.length?('<div style="margin-top:18px"><div style="display:inline-block;background:'+pvHexA(b.color,0.12)+';color:'+escH(b.color)+';font-weight:800;padding:7px 16px;border-radius:999px;font-size:14px">Lots à gagner</div>'
@@ -2277,14 +2383,22 @@ function pvDrawWheel(segs){
     ctx.fillStyle=base;ctx.fill();
     ctx.strokeStyle=pvHexA(b.color||'#0e7c58',0.55);ctx.lineWidth=1.5;ctx.stroke();
     const mid=a0+seg/2;const txtCol=pvContrast(base);
-    ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=txtCol;ctx.font='700 12px system-ui,-apple-system,sans-serif';ctx.textBaseline='middle';const lab=(segs[i].label||'').slice(0,16);
-    if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='left';ctx.fillText(lab,-(r-12),0);}else{ctx.textAlign='right';ctx.fillText(lab,r-12,0);}
+    // Texte côté centre (du moyeu vers la photo), photo côté bord : pas de chevauchement
+    const hubR=40;const hasPhoto=!!segs[i].photo;
+    const phD=Math.min(46,r*0.28);           // diamètre photo
+    const phR=r-phD/2-8;                      // photo près du bord
+    const txtMax=(hasPhoto?(phR-phD/2-6):(r-10))-(hubR+8); // largeur max du texte
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(mid);ctx.fillStyle=txtCol;ctx.font='700 12.5px system-ui,-apple-system,sans-serif';ctx.textBaseline='middle';
+    const lab=(segs[i].label||'').slice(0,18);
+    if(Math.cos(mid)<0){ctx.rotate(Math.PI);ctx.textAlign='right';ctx.fillText(lab,-(hubR+8),0,Math.max(30,txtMax));}
+    else{ctx.textAlign='left';ctx.fillText(lab,hubR+8,0,Math.max(30,txtMax));}
     ctx.restore();
-    // Photo du lot au centre de la case
-    if(segs[i].photo){(function(idx,midA){const img=new Image();img.crossOrigin='anonymous';
-      img.onload=function(){try{const d=Math.min(46,r*0.32);const px=cx+Math.cos(midA)*r*0.52,py=cy+Math.sin(midA)*r*0.52;
-        ctx.save();ctx.beginPath();ctx.arc(px,py,d/2,0,2*Math.PI);ctx.clip();ctx.drawImage(img,px-d/2,py-d/2,d,d);ctx.restore();}catch(e){}};
-      img.src=segs[idx].photo;})(i,mid);}
+    // Photo du lot près du bord de la case
+    if(hasPhoto){(function(idx,midA,dd,rr){const img=new Image();img.crossOrigin='anonymous';
+      img.onload=function(){try{const px=cx+Math.cos(midA)*rr,py=cy+Math.sin(midA)*rr;
+        ctx.save();ctx.beginPath();ctx.arc(px,py,dd/2,0,2*Math.PI);ctx.clip();ctx.drawImage(img,px-dd/2,py-dd/2,dd,dd);ctx.restore();
+        ctx.save();ctx.beginPath();ctx.arc(px,py,dd/2,0,2*Math.PI);ctx.strokeStyle='#ffffff';ctx.lineWidth=2;ctx.stroke();ctx.restore();}catch(e){}};
+      img.src=segs[idx].photo;})(i,mid,phD,phR);}
   }
   // Liseré intérieur
   ctx.beginPath();ctx.arc(cx,cy,r,0,2*Math.PI);ctx.strokeStyle=b.color||'#0e7c58';ctx.lineWidth=3;ctx.stroke();
@@ -2538,6 +2652,8 @@ function pvPrizeHTML(token,prize){
   let condHtml='';
   if(cond.minOrder!=null&&cond.minOrder>0)condHtml+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:14px;padding:11px 14px;font-size:13px;color:#92400e;margin-top:10px;text-align:left"><b>€</b>&nbsp; Récupérable sur présentation d\'une commande d\'un montant minimum de <b>'+Number(cond.minOrder).toFixed(0)+'€</b> chez "'+escH((b.title||'l\'établissement').toUpperCase())+'".</div>';
   if(cond.delayHours&&cond.delayHours>0)condHtml+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:14px;padding:11px 14px;font-size:13px;color:#1d4ed8;margin-top:10px;text-align:left">🕐&nbsp; Ce lot sera récupérable <b>'+cond.delayHours+'h</b> après son obtention.</div>';
+  if(cond.maxHours&&cond.maxHours>0){const lim=new Date(Date.now()+Number(cond.maxHours)*3600000);
+    condHtml+='<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:14px;padding:11px 14px;font-size:13px;color:#c2410c;margin-top:10px;text-align:left">⏳&nbsp; À récupérer avant le <b>'+lim.toLocaleDateString('fr-FR')+' à '+lim.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b> (validité '+cond.maxHours+' h). Passé ce délai, le lot expire.</div>';}
   condHtml+='<div style="background:#fef2f2;border-left:4px solid #dc2626;border-radius:14px;padding:11px 14px;font-size:13px;color:#991b1b;margin-top:10px;text-align:left">⚠️&nbsp; Attention à valider le lot bien en caisse et bien avant, car une fois le QR code scanné il ne sera plus utilisable.</div>';
   return '<div style="font-size:44px;line-height:1">🎉</div>'
    +'<h3 style="color:'+escH(b.color)+';font-size:26px;margin:10px 0 4px;font-weight:900">Félicitations !</h3>'
@@ -2865,8 +2981,10 @@ async function tbFidCheck(){
     if(j.error==='wrong_estab'){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Ce lot appartient à un autre établissement.</div>';return;}
     if(j.error){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Erreur : '+escH(j.error)+'</div>';return;}
     if(j.status==='redeemed'){out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Lot déjà récupéré le '+veFmtDate(j.redeemed_at)+'. Code invalide.</div>';return;}
+    if(j.expired){const ex=new Date(j.expires_at);out.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:14px;color:#be123c;font-weight:700;text-align:center">Lot expiré : il devait être récupéré avant le '+ex.toLocaleDateString('fr-FR')+' '+ex.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'. Code invalide.</div>';return;}
     const notYet=j.available_at&&new Date(j.available_at)>new Date();
     let cond='';
+    if(j.expires_at){const ex=new Date(j.expires_at);cond+='<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:9px 12px;font-size:13px;color:#c2410c;margin-top:8px;text-align:left">À récupérer avant le <b>'+ex.toLocaleDateString('fr-FR')+' '+ex.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b></div>';}
     if(j.min_order!=null&&j.min_order>0)cond+='<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:9px 12px;font-size:13px;color:#92400e;margin-top:8px;text-align:left">Commande minimum : <b>'+Number(j.min_order).toFixed(0)+' €</b></div>';
     if(notYet){const av=new Date(j.available_at);cond+='<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:9px 12px;font-size:13px;color:#1d4ed8;margin-top:8px;text-align:left">Récupérable à partir du <b>'+av.toLocaleDateString('fr-FR')+' '+av.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</b></div>';}
     out.innerHTML='<div style="background:#e7f7f0;border-radius:14px;padding:16px;text-align:center"><div style="font-size:12px;font-weight:800;letter-spacing:2px;color:#0b7d57">LOT À REMETTRE</div><div style="font-size:21px;font-weight:900;margin:6px 0 2px">'+escH(j.prize||'')+'</div><div style="font-size:12px;color:var(--muted);font-family:ui-monospace,monospace;letter-spacing:2px">Code '+escH(t)+'</div>'+cond
@@ -2881,6 +2999,7 @@ async function tbFidRedeem(t){
     if(j.ok){toast('Lot validé et remis');const el=document.getElementById('tbf_code');if(el)el.value='';const out=document.getElementById('tbf_out');if(out)out.innerHTML='<div style="background:#e7f7f0;border-radius:12px;padding:14px;color:#0b7d57;font-weight:800;text-align:center">✓ Lot remis. Le code est désormais invalide.</div>';return;}
     if(j.error==='already_redeemed'){if(msg){msg.style.color='#be123c';msg.textContent='Ce lot a déjà été validé.';}return;}
     if(j.error==='not_yet'){if(msg){msg.style.color='#b45309';msg.textContent='Lot pas encore récupérable.';}return;}
+    if(j.error==='expired'){if(msg){msg.style.color='#be123c';msg.textContent='Lot expiré : délai maximum dépassé.';}return;}
     if(msg){msg.style.color='#be123c';msg.textContent='Erreur : '+(j.error||'?');}
   }catch(e){if(msg){msg.style.color='#be123c';msg.textContent='Erreur réseau.';}}
 }
