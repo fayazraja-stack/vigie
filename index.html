@@ -1560,11 +1560,12 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +(dates.length?dates.map(dk=>{const list=byDate[dk];const tot=list.reduce((t,s)=>t+(s.min||0),0);
         const dLbl=new Date(dk+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
         const cren=list.map(s=>'<div style="display:flex;align-items:center;gap:7px;margin:3px 0;flex-wrap:wrap">'
-          +(s.photoIn?'<img src="'+escH(s.photoIn)+'" onclick="rhPhotoZoom(\''+escH(s.photoIn)+'\',\''+escH(s.name)+' — arrivée '+fmtTime(s.inAt)+'\')" title="Photo à l\'arrivée" style="width:30px;height:30px;border-radius:8px;object-fit:cover;border:1.5px solid #16a34a;cursor:pointer">':'')
           +'<span class="chip" style="background:#dcfce7;color:#16a34a;font-family:ui-monospace,monospace">'+fmtTime(s.inAt)+'</span><span style="color:#94a3b8">→</span><span class="chip" style="background:#fee2e2;color:#dc2626;font-family:ui-monospace,monospace">'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'
-          +(s.photoOut?'<img src="'+escH(s.photoOut)+'" onclick="rhPhotoZoom(\''+escH(s.photoOut)+'\',\''+escH(s.name)+' — départ '+(s.outAt?fmtTime(s.outAt):'')+'\')" title="Photo au départ" style="width:30px;height:30px;border-radius:8px;object-fit:cover;border:1.5px solid #dc2626;cursor:pointer">':'')
           +'<span class="tsub">('+fmtDur(s.min)+(s.open?' · en cours':'')+')</span><button class="btn ghost sm" onclick="rhEditCreneau(\''+s.inId+'\',\''+s.outId+'\')">✎ Modifier</button><button class="btn ghost sm" style="color:#dc2626" onclick="rhDelCreneau(\''+s.inId+'\',\''+s.outId+'\')">🗑 Supprimer</button></div>').join('');
-        return '<tr><td class="tname" style="white-space:nowrap;text-transform:capitalize;vertical-align:top;padding-top:14px">'+dLbl+(list.length>1?' <span class="tsub">('+list.length+' créneaux)</span>':'')+'</td><td>'+cren+'</td><td class="tname" style="vertical-align:top;padding-top:14px">'+fmtDur(tot)+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">'+escH(list.map(s=>s.motif).filter(Boolean).join(', ')||'–')+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">–</td></tr>';}).join('')
+        const hasPh=list.some(function(s){return s.photoIn||s.photoOut;});
+        return '<tr><td class="tname" style="white-space:nowrap;text-transform:capitalize;vertical-align:top;padding-top:14px">'+dLbl+(list.length>1?' <span class="tsub">('+list.length+' créneaux)</span>':'')
+          +(hasPh?'<div style="margin-top:7px"><button class="btn ghost sm" style="text-transform:none;font-weight:700" onclick="rhDayPhotos(\''+e.id+'\',\''+dk+'\')">📷 Voir photos</button></div>':'<div class="tsub" style="margin-top:7px;font-size:11px;text-transform:none">Pas de photo</div>')
+          +'</td><td>'+cren+'</td><td class="tname" style="vertical-align:top;padding-top:14px">'+fmtDur(tot)+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">'+escH(list.map(s=>s.motif).filter(Boolean).join(', ')||'–')+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">–</td></tr>';}).join('')
        :'<tr><td colspan="5" class="empty" style="padding:28px;text-align:center">Aucun pointage ce mois-ci pour cet employé.</td></tr>')
       +'</tbody></table></div></div>';
     } else {
@@ -3362,6 +3363,25 @@ function rhDelCreneau(inId,outId){openConfirm('Supprimer ce créneau','Les point
 function rhBadgeChip(s){const ph=s.photoIn||s.photoOut;
   return '<div onclick="'+(ph?'event.stopPropagation();rhBadgeDetail(\''+s.inId+'\')':'')+'" style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:1px 6px;margin:1px auto 0;font-size:10px;color:#b45309;display:inline-block;white-space:nowrap'+(ph?';cursor:pointer':'')+'"'+(ph?' title="Voir les photos de pointage"':'')+'><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b> <span style="color:#c2681a">'+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'+(ph?' 📷':'')+'</div>';}
 function rhPhotoZoom(url,title){openInfoHTML(title||'Photo de pointage','<img src="'+escH(url)+'" style="width:100%;border-radius:14px;display:block">',460);}
+function rhDayPhotos(empId,dk){
+  const e=(state.employees||[]).find(function(x){return x.id===empId;})||{};
+  const list=rhBadgeSessions(CID).filter(function(s){return (s.empId===empId||s.name===e.name)&&s.date===dk;}).sort(function(a,b){return a.inAt-b.inAt;});
+  if(!list.length){toast('Aucun pointage ce jour-là');return;}
+  const dLbl=new Date(dk+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const shot=function(url,lbl,col,t){
+    return '<div style="flex:1;min-width:190px">'
+      +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px"><span style="width:9px;height:9px;border-radius:50%;background:'+col+';flex:none"></span><b style="font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:'+col+'">'+lbl+'</b><span style="margin-left:auto;font-family:ui-monospace,monospace;font-weight:800;font-size:16px">'+t+'</span></div>'
+      +(url?'<img src="'+escH(url)+'" onclick="window.open(\''+escH(url)+'\',\'_blank\')" title="Ouvrir en grand" style="width:100%;min-height:170px;object-fit:cover;border-radius:12px;border:2px solid '+col+';display:block;cursor:zoom-in;background:#f1f5f9">'
+           :'<div class="tsub" style="padding:44px 10px;text-align:center;border:1px dashed var(--line);border-radius:12px">Aucune photo</div>')
+      +'</div>';};
+  openInfoHTML('Pointages — '+escH(e.name||''),
+   '<div class="tsub" style="margin:-4px 0 14px;text-transform:capitalize;font-size:14px">'+dLbl+'</div>'
+   +list.map(function(s,i){
+     return '<div style="border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px">'
+       +(list.length>1?'<div class="tsub" style="font-weight:800;margin-bottom:10px">Créneau '+(i+1)+'</div>':'')
+       +'<div style="display:flex;gap:14px;flex-wrap:wrap">'+shot(s.photoIn,'Arrivée','#16a34a',fmtTime(s.inAt))+shot(s.photoOut,'Départ','#dc2626',s.outAt?fmtTime(s.outAt):'en cours')+'</div>'
+       +'<div style="text-align:center;margin-top:11px;font-weight:800;font-size:14.5px">Durée travaillée : '+fmtDur(s.min)+'</div></div>';}).join('')
+   +'<div class="tsub" style="font-size:11.5px;text-align:center">Cliquez une photo pour l\'ouvrir en taille réelle.</div>',640);}
 function rhBadgeDetail(inId){const s=rhBadgeSessions(CID).find(function(x){return x.inId===inId;});if(!s)return;
   const card=function(url,lbl,col,t){return '<div style="flex:1;min-width:150px;text-align:center"><div class="tsub" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:'+col+';font-weight:800">'+lbl+'</div><div style="font-family:ui-monospace,monospace;font-weight:800;font-size:17px;margin:2px 0 6px">'+t+'</div>'+(url?'<img src="'+escH(url)+'" style="width:100%;border-radius:12px;border:2px solid '+col+'">':'<div class="tsub" style="padding:26px 8px;border:1px dashed var(--line);border-radius:12px">Aucune photo</div>')+'</div>';};
   openInfoHTML('Pointage — '+escH(s.name),
@@ -3549,10 +3569,10 @@ function tbBadgeCapture(){return new Promise(function(resolve){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){resolve('');return;}
   let done=false,stream=null,timer=null,hard=null;
   const ov=document.createElement('div');ov.id='bdgcam';
-  ov.innerHTML='<video id="bdgcam_v" autoplay playsinline muted></video><div class="cd" id="bdgcam_cd">3</div><div class="msg" id="bdgcam_m">Regardez l\'écran — photo dans un instant</div><button class="btn ghost" id="bdgcam_skip" style="background:transparent;color:#cbd5e1;border-color:#3b4252">Passer sans photo</button>';
+  ov.innerHTML='<video id="bdgcam_v" autoplay playsinline muted></video><div class="msg" id="bdgcam_m">📷 Photo en cours…</div><button class="btn ghost" id="bdgcam_skip" style="background:transparent;color:#cbd5e1;border-color:#3b4252">Passer sans photo</button>';
   document.body.appendChild(ov);
   const finish=function(url){if(done)return;done=true;
-    if(timer)clearInterval(timer);if(hard)clearTimeout(hard);
+    if(timer){clearInterval(timer);clearTimeout(timer);}if(hard)clearTimeout(hard);
     if(stream){try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}}
     if(ov.parentNode)ov.parentNode.removeChild(ov);resolve(url||'');};
   document.getElementById('bdgcam_skip').onclick=function(){finish('');};
@@ -3560,17 +3580,14 @@ function tbBadgeCapture(){return new Promise(function(resolve){
   navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false})
   .then(function(st){stream=st;const v=document.getElementById('bdgcam_v');if(!v){finish('');return;}
     v.srcObject=st;
-    let n=3;const cd=document.getElementById('bdgcam_cd');
-    timer=setInterval(function(){n--;
-      if(cd)cd.textContent=n>0?String(n):'📷';
-      if(n<=0){clearInterval(timer);
-        setTimeout(function(){try{
-          const w=480,h=Math.round(w*(v.videoHeight||480)/(v.videoWidth||640));
-          const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-          cv.getContext('2d').drawImage(v,0,0,w,h);
-          finish(cv.toDataURL('image/jpeg',0.72));
-        }catch(e){finish('');}},220);}
-    },700);})
+    const snap=function(){try{
+      const w=560,h=Math.round(w*(v.videoHeight||480)/(v.videoWidth||640));
+      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+      cv.getContext('2d').drawImage(v,0,0,w,h);
+      finish(cv.toDataURL('image/jpeg',0.78));
+    }catch(e){finish('');}};
+    const go=function(){timer=setTimeout(snap,450);};
+    if(v.readyState>=2)go();else v.onloadeddata=go;})
   .catch(function(){const m=document.getElementById('bdgcam_m');if(m)m.textContent='Caméra indisponible — le pointage est enregistré sans photo.';setTimeout(function(){finish('');},1400);});
 });}
 async function tbUploadBadgePhoto(dataUrl){if(!dataUrl)return '';
