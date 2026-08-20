@@ -189,14 +189,30 @@
   .tb-foot .imp{margin-left:auto;color:var(--brand-d)}
   .tb-title-k{text-align:center;color:var(--muted);font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase}
   .tb-title{text-align:center;font-size:26px;font-weight:800;margin:4px 0 16px;letter-spacing:-.6px}
-  .modgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:860px;margin:0 auto}
-  .modcard{border:1px solid #eee;border-radius:20px;padding:22px;background:#fff;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
+  .modgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;margin:0 auto}
+  @media(max-width:620px){.modgrid{grid-template-columns:1fr;gap:12px}}
+  .modcard{border:1px solid #eee;border-radius:22px;padding:26px 28px;background:#fff;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
   .modcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .modcard .k{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--brand);text-transform:uppercase}
   .modcard .ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px;margin:8px 0 14px}
-  .modcard h3{font-size:22px;margin-bottom:8px}.modcard p{font-size:13px;color:var(--muted);line-height:1.5}
-  .modcard .arr{margin-top:16px;color:var(--brand);font-weight:800;font-size:13px}
+  .modcard h3{font-size:25px;margin-bottom:9px}.modcard p{font-size:14px;color:var(--muted);line-height:1.5}
+  .modcard .arr{margin-top:18px;color:var(--brand);font-weight:800;font-size:14px}
   .modcard .cnt{position:absolute;top:16px;right:16px;background:#fde7ec;color:var(--bad);font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
+  .bdg-choice{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:720px;margin:0 auto}
+  .bdg-card{border-radius:120px/70px;padding:34px 20px 30px;cursor:pointer;color:#0b1220;transition:.15s;user-select:none}
+  .bdg-card.in{background:linear-gradient(160deg,#4ec277,#22a75b)}
+  .bdg-card.out{background:linear-gradient(160deg,#e2564c,#d13c31)}
+  .bdg-card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(0,0,0,.18)}
+  .bdg-card:active{transform:scale(.985)}
+  .bdg-card.off{opacity:.42;filter:saturate(.6)}
+  .bdg-card .ic{width:74px;height:74px;border-radius:20px;background:rgba(0,0,0,.10);display:grid;place-items:center;margin:0 auto 14px}
+  .bdg-card .t{font-size:28px;font-weight:800;letter-spacing:-.4px}
+  .bdg-card .s{font-size:14px;opacity:.82;margin-top:4px}
+  @media(max-width:620px){.bdg-choice{grid-template-columns:1fr;gap:14px}.bdg-card{border-radius:40px;padding:22px}}
+  #bdgcam{position:fixed;inset:0;background:#08090c;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
+  #bdgcam video{width:min(78vw,420px);aspect-ratio:3/4;object-fit:cover;border-radius:22px;background:#000;transform:scaleX(-1)}
+  #bdgcam .cd{font-size:56px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1}
+  #bdgcam .msg{color:#cbd5e1;font-size:15px;text-align:center;max-width:320px}
   .haccp6{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;max-width:980px;margin:0 auto}
   @media(max-width:860px){.haccp6{grid-template-columns:1fr 1fr;gap:10px}}
   .h6{border-radius:16px;padding:13px 15px;cursor:pointer;position:relative;transition:.15s;border:1px solid transparent}
@@ -1513,7 +1529,11 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'<div class="panel"><div class="ph"><div><h3>Détail des heures – '+monthLabel+'</h3><div class="sub">Cliquez sur « Modifier » pour rectifier les heures d\'un créneau</div></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Date</th><th>Créneaux</th><th>Total journée</th><th>Justification</th><th>Notes</th></tr></thead><tbody>'
       +(dates.length?dates.map(dk=>{const list=byDate[dk];const tot=list.reduce((t,s)=>t+(s.min||0),0);
         const dLbl=new Date(dk+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-        const cren=list.map(s=>'<div style="display:flex;align-items:center;gap:7px;margin:3px 0;flex-wrap:wrap"><span class="chip" style="background:#dcfce7;color:#16a34a;font-family:ui-monospace,monospace">'+fmtTime(s.inAt)+'</span><span style="color:#94a3b8">→</span><span class="chip" style="background:#fee2e2;color:#dc2626;font-family:ui-monospace,monospace">'+(s.outAt?fmtTime(s.outAt):'…')+'</span><span class="tsub">('+fmtDur(s.min)+(s.open?' · en cours':'')+')</span><button class="btn ghost sm" onclick="rhEditCreneau(\''+s.inId+'\',\''+s.outId+'\')">✎ Modifier</button><button class="btn ghost sm" style="color:#dc2626" onclick="rhDelCreneau(\''+s.inId+'\',\''+s.outId+'\')">🗑 Supprimer</button></div>').join('');
+        const cren=list.map(s=>'<div style="display:flex;align-items:center;gap:7px;margin:3px 0;flex-wrap:wrap">'
+          +(s.photoIn?'<img src="'+escH(s.photoIn)+'" onclick="rhPhotoZoom(\''+escH(s.photoIn)+'\',\''+escH(s.name)+' — arrivée '+fmtTime(s.inAt)+'\')" title="Photo à l\'arrivée" style="width:30px;height:30px;border-radius:8px;object-fit:cover;border:1.5px solid #16a34a;cursor:pointer">':'')
+          +'<span class="chip" style="background:#dcfce7;color:#16a34a;font-family:ui-monospace,monospace">'+fmtTime(s.inAt)+'</span><span style="color:#94a3b8">→</span><span class="chip" style="background:#fee2e2;color:#dc2626;font-family:ui-monospace,monospace">'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'
+          +(s.photoOut?'<img src="'+escH(s.photoOut)+'" onclick="rhPhotoZoom(\''+escH(s.photoOut)+'\',\''+escH(s.name)+' — départ '+(s.outAt?fmtTime(s.outAt):'')+'\')" title="Photo au départ" style="width:30px;height:30px;border-radius:8px;object-fit:cover;border:1.5px solid #dc2626;cursor:pointer">':'')
+          +'<span class="tsub">('+fmtDur(s.min)+(s.open?' · en cours':'')+')</span><button class="btn ghost sm" onclick="rhEditCreneau(\''+s.inId+'\',\''+s.outId+'\')">✎ Modifier</button><button class="btn ghost sm" style="color:#dc2626" onclick="rhDelCreneau(\''+s.inId+'\',\''+s.outId+'\')">🗑 Supprimer</button></div>').join('');
         return '<tr><td class="tname" style="white-space:nowrap;text-transform:capitalize;vertical-align:top;padding-top:14px">'+dLbl+(list.length>1?' <span class="tsub">('+list.length+' créneaux)</span>':'')+'</td><td>'+cren+'</td><td class="tname" style="vertical-align:top;padding-top:14px">'+fmtDur(tot)+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">'+escH(list.map(s=>s.motif).filter(Boolean).join(', ')||'–')+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">–</td></tr>';}).join('')
        :'<tr><td colspan="5" class="empty" style="padding:28px;text-align:center">Aucun pointage ce mois-ci pour cet employé.</td></tr>')
       +'</tbody></table></div></div>';
@@ -1614,6 +1634,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'<div class="field"><label>Code PIN (optionnel)</label><input id="tbcfg_pin" value="'+escH(state.tabletPin||'')+'" placeholder="Ex. 1234" maxlength="6" inputmode="numeric" onchange="tbCfgSet(\'tabletPin\',this.value.replace(/\\D/g,\'\'))"><div class="tsub" style="font-size:11.5px;margin-top:4px">Laissez vide pour un accès sans code</div></div>'
       +'<div style="font-weight:800;font-size:13.5px;margin:16px 0 10px">Modules disponibles sur la tablette</div>'
       +modRow('badge','Badgeuse','Pointage arrivée / départ')
+      +'<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;margin:-4px 0 10px;background:#fffdf7"><div style="flex:1"><div class="tname">📷 Photo au pointage</div><div class="tsub">Une photo est prise à chaque arrivée et chaque départ, visible dans l\'historique des heures</div></div><span class="switch '+(state.tabletBadgePhoto!==false?'on':'')+'" onclick="state.tabletBadgePhoto=(state.tabletBadgePhoto===false);renderClient(\'tablet\')"><span class="tk"></span></span></div>'
       +modRow('haccp','HACCP','Hygiène & sécurité alimentaire')
       +(modOn('fid')?modRow('fid','Fidélité','Validation des lots gagnés (scan QR)'):'')
       +(modOn('stock')?modRow('stock','Stock','Inventaires, réceptions et sorties de stock'):'')
@@ -3022,8 +3043,26 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
   } else if(s==='badge'){
     b.innerHTML='<div class="tb-title-k">Badgeuse</div><div class="tb-title">Qui pointe ?</div><div class="emp-grid">'
     +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>{const open=rhOpenBadge(cid,e.id||e.name);
-      return '<div class="emp" onclick="badgePoint(\''+e.name+'\')"><div class="av"'+(open?' style="box-shadow:0 0 0 3px #34d399"':'')+'>'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl">'+(open?'<span class="chip ok">présent · '+fmtTime(new Date(open.at))+'</span>':'<span class="chip muted">'+e.role+'</span>')+'</div></div>';}).join('')+'</div>'
-    +'<div class="tsub" style="text-align:center;margin-top:14px">Touchez votre nom pour badger : 1er badge = arrivée, 2e badge = départ. Les heures remontent automatiquement dans le planning et l\'historique.</div>';
+      return '<div class="emp" onclick="tbBadgeWho(\''+e.id+'\')"><div class="av"'+(open?' style="box-shadow:0 0 0 3px #34d399"':'')+'>'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl">'+(open?'<span class="chip ok">présent · '+fmtTime(new Date(open.at))+'</span>':'<span class="chip muted">'+e.role+'</span>')+'</div></div>';}).join('')+'</div>'
+    +'<div class="tsub" style="text-align:center;margin-top:14px">Touchez votre nom, puis choisissez Arrivée ou Départ. Les heures remontent automatiquement dans le planning et l\'historique.</div>';
+  } else if(s==='badgeact'){
+    const e=state.employees.find(x=>x.id===tbBadgeUser)||{};
+    const open=rhOpenBadge(cid,e.id||e.name);
+    const photoOn=state.tabletBadgePhoto!==false;
+    b.innerHTML='<div style="text-align:center;padding:6px 0 0">'
+    +'<div class="tb-title-k">Bonjour</div>'
+    +'<div style="font-size:34px;font-weight:800;letter-spacing:-.5px;margin:2px 0 2px">'+escH(e.name||'')+'</div>'
+    +'<div class="tsub" style="font-size:15px;margin-bottom:20px">Que souhaitez-vous faire ?</div>'
+    +'<div class="bdg-choice">'
+    +'<div class="bdg-card in'+(open?' off':'')+'" onclick="'+(open?'toast(\'Vous êtes déjà pointé en arrivée à '+fmtTime(new Date(open.at))+'\')':'badgeDo(\'in\')')+'"><div class="ic">'
+      +'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0b1220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>'
+      +'</div><div class="t">Arrivée</div><div class="s">'+(open?'Déjà pointé à '+fmtTime(new Date(open.at)):'Pointer mon entrée')+'</div></div>'
+    +'<div class="bdg-card out'+(open?'':' off')+'" onclick="'+(open?'badgeDo(\'out\')':'toast(\'Aucune arrivée enregistrée — pointez d\\\'abord votre entrée\')')+'"><div class="ic">'
+      +'<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0b1220" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>'
+      +'</div><div class="t">Départ</div><div class="s">'+(open?'Pointer ma sortie':'Aucune arrivée en cours')+'</div></div>'
+    +'</div>'
+    +(photoOn?'<div class="tsub" style="margin-top:18px;font-size:12.5px">📷 Une photo est prise au moment du pointage</div>':'')
+    +'</div>';
   } else if(s==='identify'){
     b.innerHTML='<div class="tb-title-k">Module HACCP</div><div class="tb-title">Identification</div><div class="emp-grid">'
     +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>'<div class="emp" onclick="tbLogin(\''+e.id+'\')"><div class="av">'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl"><span class="chip muted">'+e.role+'</span></div></div>').join('')+'</div>';
@@ -3262,8 +3301,8 @@ function rhBadgeSessions(cid){
   const out=[];
   Object.keys(byEmp).forEach(function(k){let cur=null;
     byEmp[k].forEach(function(b){
-      if(b.type==='in'){if(cur)out.push(cur);cur={empId:b.empId||'',name:b.name,inAt:new Date(b.at),outAt:null,min:null,inId:b.id||'',outId:'',motif:b.motif||''};}
-      else if(cur){cur.outAt=new Date(b.at);cur.outId=b.id||'';cur.motif=cur.motif||b.motif||'';cur.min=Math.max(0,Math.round((cur.outAt-cur.inAt)/60000));out.push(cur);cur=null;}
+      if(b.type==='in'){if(cur)out.push(cur);cur={empId:b.empId||'',name:b.name,inAt:new Date(b.at),outAt:null,min:null,inId:b.id||'',outId:'',motif:b.motif||'',photoIn:b.photo||'',photoOut:''};}
+      else if(cur){cur.outAt=new Date(b.at);cur.outId=b.id||'';cur.motif=cur.motif||b.motif||'';cur.photoOut=b.photo||'';cur.min=Math.max(0,Math.round((cur.outAt-cur.inAt)/60000));out.push(cur);cur=null;}
     });
     if(cur){const age=Date.now()-cur.inAt.getTime();cur.min=age<16*3600000?Math.round(age/60000):null;cur.open=true;out.push(cur);}
   });
@@ -3290,7 +3329,15 @@ function rhEditCreneau(inId,outId){const bi=(state.badges||[]).find(b=>b.id===in
     renderClient('rh_heures');toast('✓ Créneau modifié');});}
 function rhDelCreneau(inId,outId){openConfirm('Supprimer ce créneau','Les pointages arrivée et départ de ce créneau seront définitivement supprimés.',function(){
   state.badges=(state.badges||[]).filter(b=>b.id!==inId&&b.id!==outId);renderClient('rh_heures');toast('Créneau supprimé');});}
-function rhBadgeChip(s){return '<div style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:1px 6px;margin:1px auto 0;font-size:10px;color:#b45309;display:inline-block;white-space:nowrap"><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b> <span style="color:#c2681a">'+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+'</span></div>';}
+function rhBadgeChip(s){const ph=s.photoIn||s.photoOut;
+  return '<div onclick="'+(ph?'event.stopPropagation();rhBadgeDetail(\''+s.inId+'\')':'')+'" style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:1px 6px;margin:1px auto 0;font-size:10px;color:#b45309;display:inline-block;white-space:nowrap'+(ph?';cursor:pointer':'')+'"'+(ph?' title="Voir les photos de pointage"':'')+'><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b> <span style="color:#c2681a">'+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'+(ph?' 📷':'')+'</div>';}
+function rhPhotoZoom(url,title){openInfoHTML(title||'Photo de pointage','<img src="'+escH(url)+'" style="width:100%;border-radius:14px;display:block">',460);}
+function rhBadgeDetail(inId){const s=rhBadgeSessions(CID).find(function(x){return x.inId===inId;});if(!s)return;
+  const card=function(url,lbl,col,t){return '<div style="flex:1;min-width:150px;text-align:center"><div class="tsub" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:'+col+';font-weight:800">'+lbl+'</div><div style="font-family:ui-monospace,monospace;font-weight:800;font-size:17px;margin:2px 0 6px">'+t+'</div>'+(url?'<img src="'+escH(url)+'" style="width:100%;border-radius:12px;border:2px solid '+col+'">':'<div class="tsub" style="padding:26px 8px;border:1px dashed var(--line);border-radius:12px">Aucune photo</div>')+'</div>';};
+  openInfoHTML('Pointage — '+escH(s.name),
+   '<div style="display:flex;gap:12px;flex-wrap:wrap">'+card(s.photoIn,'Arrivée','#16a34a',fmtTime(s.inAt))+card(s.photoOut,'Départ','#dc2626',s.outAt?fmtTime(s.outAt):'en cours')+'</div>'
+   +'<div style="text-align:center;margin-top:12px;font-weight:800">Durée : '+fmtDur(s.min)+'</div>'
+   +'<div class="tsub" style="text-align:center;font-size:12px;margin-top:3px">'+s.inAt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div>',540);}
 function rhMonday(d){const x=new Date(d);const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);x.setHours(0,0,0,0);return x;}
 function rhDayIdxOf(d){return (d.getDay()+6)%7;}
 function rhSetPlanView(v){planView=v;renderClient('rh_planning');}
@@ -3466,6 +3513,52 @@ async function tbFidRedeem(t){
   }catch(e){if(msg){msg.style.color='#be123c';msg.textContent='Erreur réseau.';}}
 }
 function tbLogin(id){tbUser=id;tbStack=[];tbRender('haccp');}
+let tbBadgeUser=null;
+function tbBadgeWho(id){tbBadgeUser=id;tbGo('badgeact');}
+function tbBadgeCapture(){return new Promise(function(resolve){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){resolve('');return;}
+  let done=false,stream=null,timer=null,hard=null;
+  const ov=document.createElement('div');ov.id='bdgcam';
+  ov.innerHTML='<video id="bdgcam_v" autoplay playsinline muted></video><div class="cd" id="bdgcam_cd">3</div><div class="msg" id="bdgcam_m">Regardez l\'écran — photo dans un instant</div><button class="btn ghost" id="bdgcam_skip" style="background:transparent;color:#cbd5e1;border-color:#3b4252">Passer sans photo</button>';
+  document.body.appendChild(ov);
+  const finish=function(url){if(done)return;done=true;
+    if(timer)clearInterval(timer);if(hard)clearTimeout(hard);
+    if(stream){try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}}
+    if(ov.parentNode)ov.parentNode.removeChild(ov);resolve(url||'');};
+  document.getElementById('bdgcam_skip').onclick=function(){finish('');};
+  hard=setTimeout(function(){finish('');},15000);
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false})
+  .then(function(st){stream=st;const v=document.getElementById('bdgcam_v');if(!v){finish('');return;}
+    v.srcObject=st;
+    let n=3;const cd=document.getElementById('bdgcam_cd');
+    timer=setInterval(function(){n--;
+      if(cd)cd.textContent=n>0?String(n):'📷';
+      if(n<=0){clearInterval(timer);
+        setTimeout(function(){try{
+          const w=480,h=Math.round(w*(v.videoHeight||480)/(v.videoWidth||640));
+          const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+          cv.getContext('2d').drawImage(v,0,0,w,h);
+          finish(cv.toDataURL('image/jpeg',0.72));
+        }catch(e){finish('');}},220);}
+    },700);})
+  .catch(function(){const m=document.getElementById('bdgcam_m');if(m)m.textContent='Caméra indisponible — le pointage est enregistré sans photo.';setTimeout(function(){finish('');},1400);});
+});}
+async function tbUploadBadgePhoto(dataUrl){if(!dataUrl)return '';
+  try{const res=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'badge_photo',code:(typeof TBLINK!=='undefined'&&TBLINK)?TBLINK:CUR,data:dataUrl})});
+    const j=await res.json().catch(function(){return {};});
+    return (res.ok&&j&&j.url)?j.url:'';}catch(e){return '';}}
+async function badgeDo(type){
+  const e=state.employees.find(function(x){return x.id===tbBadgeUser;});if(!e){toast('Employé introuvable');return;}
+  const open=rhOpenBadge(CID,e.id||e.name);
+  if(type==='in'&&open){toast('Déjà pointé en arrivée à '+fmtTime(new Date(open.at)));return;}
+  if(type==='out'&&!open){toast('Aucune arrivée enregistrée');return;}
+  let photo='';
+  if(state.tabletBadgePhoto!==false){const d=await tbBadgeCapture();if(d)photo=await tbUploadBadgePhoto(d);}
+  state.badges=state.badges||[];
+  const now=new Date();
+  state.badges.push({id:'bg'+Date.now(),clientId:CID,empId:e.id||'',name:e.name,at:now.toISOString(),type:type,photo:photo});
+  toast(e.name.split(' ')[0]+(type==='in'?' — arrivée enregistrée à ':' — départ enregistré à ')+fmtTime(now)+(photo?' 📷':''));
+  tbStack=[];tbRender('modules');}
 function badgePoint(name){
   state.badges=state.badges||[];
   const emp=state.employees.find(function(e){return e.clientId===CID&&e.name===name;})||{};
