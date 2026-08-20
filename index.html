@@ -935,13 +935,23 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +list.map(p=>'<div class="imgchoice" style="cursor:default"><img src="'+p.url+'"><span>'+p.label+'</span><button class="btn ghost sm" style="margin-top:6px" onclick="adminPhotoDel(\''+p.id+'\')">Suppr.</button></div>').join('')
     +'</div></div></div>';
   } else if(adminView==='catalog'){
-    const tabs=[['equip',' Équipements',EQUIP_CATALOG],['friteuse',' Friteuses',FRITEUSE_CATALOG],['product',' Produits DLC',PRODUCT_CATALOG]];
+    const tabs=[['equip',' Équipements',EQUIP_CATALOG],['friteuse',' Friteuses',FRITEUSE_CATALOG],['product',' Produits DLC',PRODUCT_CATALOG],['zone','🧽 Zones & tâches',ZONE_LIB]];
     const cur=tabs.find(t=>t[0]===catTab)||tabs[0];const arr=cur[2]||[];
     const groupOf=cur[0]==='equip'?(it=>catLabel(it.cat)||'Autres'):(cur[0]==='product'?(it=>it.sub||'Sans sous-catégorie'):(it=>'Toutes'));
     const groups={};arr.forEach(it=>{const g=groupOf(it);(groups[g]=groups[g]||[]).push(it);});
     let cards='';
     if(!arr.length){cards='<div class="empty" style="padding:40px 20px">Aucun élément ici. Cliquez « ＋ Ajouter » pour en créer un.</div>';}
     else{cards=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+' <span style="color:#94a3b8;font-weight:600">('+groups[g].length+')</span></div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(cur[0]==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+it.min+'→'+it.max+'°C</div>':'<div class="tsub">'+escH(it.sub||'—')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')" title="Modifier">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')" title="Supprimer">Suppr.</button></div></div>').join('')+'</div></div>').join('');}
+    if(cur[0]==='zone'){
+      m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Bibliothèque de plans de nettoyage proposée aux restaurateurs en un clic</div></div><div class="actions"><button class="btn ghost" onclick="catNew(\'zone\')">＋ Zone</button><button class="btn" onclick="catNew(\'task\')">＋ Tâche</button></div></div>'
+      +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
+      +'<div class="panel"><div class="pb">'
+      +(ZONE_LIB.length?ZONE_LIB.map(function(z){return '<div style="border:1px solid var(--line);border-radius:14px;margin-bottom:10px;padding:13px 15px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:20px">'+(z.icon||'🧽')+'</span><b style="font-size:15.5px">'+escH(z.name)+'</b><span class="chip muted">'+z.tasks.length+' tâches</span><div style="margin-left:auto;display:flex;gap:6px"><button class="btn ghost sm" onclick="catEditZone(\''+z.key+'\')">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+z.key+'\')">Suppr.</button></div></div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">'+z.tasks.map(function(t){return '<span class="chip" style="background:#f1f5f9">'+escH(t.name)+' <span style="opacity:.6;font-size:10px">'+escH(t.freq)+'</span></span>';}).join('')+'</div></div>';}).join('')
+       :'<div class="empty" style="padding:34px 20px;text-align:center">La bibliothèque intégrée est utilisée. Ajoutez une zone ici pour la remplacer par votre propre base.</div>')
+      +'</div></div>';
+      return;
+    }
     m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Votre base d\'équipements, friteuses et produits — sert à déployer chez les clients sans ressaisie</div></div><div class="actions"><button class="btn" onclick="catNew(\''+cur[0]+'\')">＋ Ajouter dans '+escH(cur[1].replace(/^\S+\s/,''))+'</button></div></div>'
     +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
     +'<div class="panel"><div class="pb"><input class="dp-search" id="cat_search" placeholder="Rechercher…" oninput="catFilter()" style="margin-bottom:16px">'+cards+'</div></div>';
@@ -1340,6 +1350,26 @@ let EQUIP_CATALOG=[
   {key:'labo',name:'Labo réfrigéré',cat:'froidpos',min:0,max:4,icon:''},
   {key:'bainmarie',name:'Bain-marie',cat:'chaud',min:63,max:90,icon:''},
 ];
+/* ===== Bibliothèque de plans de nettoyage (zones & tâches types) ===== */
+const _T=(n,f)=>({name:n,freq:f||'Quotidien'});
+let ZONE_LIB=[
+ {key:'cuisine',name:'Cuisine',icon:'🍳',tasks:[_T('Plans de travail'),_T('Sol de la cuisine'),_T('Plaques de cuisson / fourneaux'),_T('Salamandre / grill'),_T('Extérieur des friteuses'),_T('Micro-ondes'),_T('Four','Hebdomadaire'),_T('Filtres de la hotte','Hebdomadaire'),_T('Dégraissage complet de la hotte','Mensuel'),_T('Trancheuse','Après usage'),_T('Robot / mixeur','Après usage'),_T('Étagères et rangements','Hebdomadaire'),_T('Poubelles de cuisine'),_T('Siphons et grilles d\'évacuation','Hebdomadaire'),_T('Murs et carrelage','Hebdomadaire'),_T('Plafond et luminaires','Mensuel')]},
+ {key:'labo',name:'Laboratoire / préparation',icon:'🔪',tasks:[_T('Plans de travail du labo'),_T('Planches à découper','Après usage'),_T('Couteaux et petit matériel','Après usage'),_T('Cellule de refroidissement'),_T('Machine sous vide','Après usage'),_T('Balances'),_T('Sol du laboratoire'),_T('Bacs gastronormes','Après usage')]},
+ {key:'cfpos',name:'Chambre froide positive',icon:'❄️',tasks:[_T('Sol de la chambre froide','Hebdomadaire'),_T('Étagères et clayettes','Hebdomadaire'),_T('Joints de porte','Hebdomadaire'),_T('Poignée et contact de porte'),_T('Évaporateur / ventilateur','Mensuel'),_T('Dégivrage','Mensuel')]},
+ {key:'cfneg',name:'Congélateur / chambre froide négative',icon:'🧊',tasks:[_T('Sol du congélateur','Mensuel'),_T('Étagères et bacs','Mensuel'),_T('Joints de porte','Mensuel'),_T('Dégivrage complet','Trimestriel')]},
+ {key:'reserve',name:'Réserve sèche',icon:'📦',tasks:[_T('Sol de la réserve','Hebdomadaire'),_T('Étagères de stockage','Hebdomadaire'),_T('Contrôle des DLC et rotation','Hebdomadaire'),_T('Bacs et contenants','Hebdomadaire'),_T('Contrôle anti-nuisibles','Mensuel')]},
+ {key:'plonge',name:'Plonge',icon:'🚿',tasks:[_T('Bacs de plonge'),_T('Extérieur du lave-vaisselle'),_T('Filtres du lave-vaisselle'),_T('Détartrage du lave-vaisselle','Mensuel'),_T('Égouttoirs et paniers'),_T('Sol de la plonge'),_T('Poubelles de plonge')]},
+ {key:'salle',name:'Salle',icon:'🍽️',tasks:[_T('Tables et chaises','2x / jour'),_T('Sol de la salle'),_T('Comptoir et caisse'),_T('Menus et supports'),_T('Banquettes','Hebdomadaire'),_T('Vitres et baies','Hebdomadaire'),_T('Décoration et étagères','Mensuel'),_T('Bouches de ventilation','Mensuel'),_T('Luminaires','Mensuel')]},
+ {key:'bar',name:'Bar',icon:'🍸',tasks:[_T('Plan de bar','2x / jour'),_T('Becs de tireuse à bière'),_T('Lignes de tireuse à bière','Hebdomadaire'),_T('Machine à café'),_T('Broyeur à café','Hebdomadaire'),_T('Machine à glaçons','Hebdomadaire'),_T('Bacs à glace'),_T('Verrerie et rinceur'),_T('Frigos à boissons','Hebdomadaire'),_T('Sol du bar')]},
+ {key:'sanit',name:'Sanitaires',icon:'🚻',tasks:[_T('WC clients','2x / jour'),_T('Lavabos','2x / jour'),_T('Miroirs'),_T('Distributeurs savon et papier'),_T('Sol des sanitaires'),_T('Poubelles'),_T('Désinfection complète','Hebdomadaire')]},
+ {key:'vestiaire',name:'Vestiaires / personnel',icon:'👕',tasks:[_T('Lavabo du personnel'),_T('Casiers et vestiaires','Hebdomadaire'),_T('Sol des vestiaires','Hebdomadaire'),_T('Tenues de travail','Hebdomadaire')]},
+ {key:'poubelles',name:'Local poubelles',icon:'🗑️',tasks:[_T('Sortie des poubelles'),_T('Nettoyage des bacs','Hebdomadaire'),_T('Désinfection du local','Hebdomadaire'),_T('Sol du local','Hebdomadaire')]},
+ {key:'recep',name:'Zone de réception',icon:'🚚',tasks:[_T('Sol de la zone de réception'),_T('Table de déballage'),_T('Transpalette et chariots','Hebdomadaire')]},
+ {key:'pizza',name:'Pizzeria',icon:'🍕',tasks:[_T('Four à pizza'),_T('Pierre réfractaire','Hebdomadaire'),_T('Tour à pizza réfrigérée'),_T('Pelles à pizza'),_T('Pétrin','Après usage'),_T('Bacs à pâtons','Après usage')]},
+ {key:'snack',name:'Snack / fast-food',icon:'🍔',tasks:[_T('Grill / plancha','2x / jour'),_T('Toaster'),_T('Machine à sodas'),_T('Distributeurs de sauces'),_T('Bacs à frites'),_T('Comptoir de service','2x / jour')]},
+ {key:'boul',name:'Boulangerie / pâtisserie',icon:'🥐',tasks:[_T('Pétrin','Après usage'),_T('Façonneuse / diviseuse'),_T('Chambre de pousse','Hebdomadaire'),_T('Four à sole','Hebdomadaire'),_T('Plaques et moules','Après usage'),_T('Vitrine réfrigérée'),_T('Plan de tour')]},
+ {key:'terrasse',name:'Terrasse',icon:'⛱️',tasks:[_T('Tables et chaises de terrasse'),_T('Sol de la terrasse'),_T('Cendriers'),_T('Parasols et stores','Mensuel')]},
+];
 let PRODUCT_CATALOG=[
   {key:'sauce',name:'Sauce tomate maison',sub:'Sauces & bases'},{key:'pate',name:'Pâte à pizza',sub:'Sauces & bases'},
   {key:'mozza',name:'Mozzarella',sub:'Produits laitiers'},{key:'creme',name:'Crème pâtissière',sub:'Pâtisserie'},
@@ -1395,10 +1425,10 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'<div class="grid2"><div class="panel"><div class="ph"><h3>Températures — 5 derniers jours</h3><span class="chip muted">moyenne / relevé</span></div><div class="pb">'+tempChart(cid)+'</div></div><div class="panel"><div class="ph"><h3>Alertes à traiter</h3></div><div class="pb">'+clientAlerts(cid)+'</div></div></div>';
   } else if(clientView==='h_zones'){
     const tasks=state.postes.filter(p=>p.clientId===cid);const zones=state.zones.filter(z=>z.clientId===cid);
-    m.innerHTML=topbar('Zones & Tâches','Plan de nettoyage — zones & tâches synchronisées avec la tablette','<button class="btn ghost" onclick="formZone()">＋ Nouvelle zone</button><button class="btn" onclick="formTask()">＋ Nouvelle tâche</button>')
+    m.innerHTML=topbar('Zones & Tâches','Plan de nettoyage — zones & tâches synchronisées avec la tablette','<button class="btn ghost" onclick="zlibOpen()">📚 Bibliothèque</button><button class="btn ghost" onclick="formZone()">＋ Nouvelle zone</button><button class="btn" onclick="formTask()">＋ Nouvelle tâche</button>')
     +syncedNote('Zones et tâches créées ici apparaissent immédiatement sur la tablette (module Nettoyage).')
     +(zones.length?zones.map(z=>{const zt=tasks.filter(t=>t.zone===z.name);return '<div class="panel" style="margin-bottom:14px"><div class="ph"><h3> '+z.name+'</h3><span class="chip muted">'+zt.length+' tâches</span><div class="actions"><button class="btn ghost sm" onclick="formZone(\''+z.id+'\')">Modifier</button><button class="btn ghost sm" onclick="crudDel(\'zones\',\''+z.id+'\',\'h_zones\')">Suppr.</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Tâche</th><th>Fréquence</th><th>Dernière fois</th><th>État</th><th></th></tr></thead><tbody>'
-      +(zt.length?zt.map(t=>'<tr><td class="tname">'+t.name+'</td><td><span class="chip muted">'+t.freq+'</span></td><td class="tsub">'+(t.at?t.at.toLocaleDateString('fr-FR')+' · '+t.by:'—')+'</td><td>'+(t.done?'<span class="chip ok">✓ fait</span>':'<span class="chip warn">à faire</span>')+'</td><td style="text-align:right">'+rowActions('formTask','postes',t.id,'h_zones')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Aucune tâche dans cette zone.</td></tr>')+'</tbody></table></div></div>';}).join(''):'<div class="empty">Aucune zone. Créez-en une avec « ＋ Nouvelle zone ».</div>');
+      +(zt.length?zt.map(t=>'<tr><td class="tname">'+t.name+'</td><td><span class="chip muted">'+t.freq+'</span></td><td class="tsub">'+(t.at?t.at.toLocaleDateString('fr-FR')+' · '+t.by:'—')+'</td><td>'+(t.done?'<span class="chip ok">✓ fait</span>':'<span class="chip warn">à faire</span>')+'</td><td style="text-align:right">'+rowActions('formTask','postes',t.id,'h_zones')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Aucune tâche dans cette zone.</td></tr>')+'</tbody></table></div></div>';}).join(''):'<div class="empty" style="padding:44px 20px;text-align:center"><div style="font-size:38px">🧽</div><div style="font-weight:800;margin:8px 0 4px">Aucune zone pour le moment</div><div class="tsub" style="margin-bottom:14px">Partez de notre bibliothèque : cochez vos zones et vos tâches, tout est créé d\'un coup.</div><button class="btn" onclick="zlibOpen()">📚 Ouvrir la bibliothèque</button></div>');
   } else if(clientView==='h_equip'){
     m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette','<button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>')
     +syncedNote('Un équipement ajouté ici apparaît aussitôt sur la tablette. L\'interrupteur « Actif » l\'active ou le masque sur la tablette.')
@@ -3635,6 +3665,65 @@ function applyPickedImage(url){const h=document.getElementById(_imgTargetVal);if
 function imgUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>applyPickedImage(rd.result);rd.readAsDataURL(f);}
 
 function zoneNames(){const z=state.zones.filter(x=>x.clientId===CID).map(x=>x.name);return z.length?z:['Cuisine'];}
+/* --- Bibliothèque : sélection de zones & tâches types --- */
+let ZLIB_SEL={},ZLIB_Q='';
+function zlibOpen(){ZLIB_SEL={};ZLIB_Q='';
+  openInfoHTML('Bibliothèque de plans de nettoyage','<div id="zlib_body"></div>',780);
+  zlibRender();}
+function zlibHas(zone,task){return (state.postes||[]).some(function(p){return p.clientId===CID&&(p.zone||'').toLowerCase()===zone.toLowerCase()&&(p.name||'').toLowerCase()===task.toLowerCase();});}
+function zlibZoneExists(n){return (state.zones||[]).some(function(z){return z.clientId===CID&&(z.name||'').toLowerCase()===n.toLowerCase();});}
+function zlibCount(){let z=0,t=0;Object.keys(ZLIB_SEL).forEach(function(k){const a=ZLIB_SEL[k]||[];if(a.length){z++;t+=a.length;}});return {z:z,t:t};}
+function zlibRender(){const b=document.getElementById('zlib_body');if(!b)return;
+  const q=(ZLIB_Q||'').toLowerCase().trim();
+  const zones=ZONE_LIB.map(function(z){
+    const tasks=z.tasks.filter(function(t){return !q||t.name.toLowerCase().indexOf(q)>-1||z.name.toLowerCase().indexOf(q)>-1;});
+    return {z:z,tasks:tasks};}).filter(function(x){return x.tasks.length;});
+  const c=zlibCount();
+  b.innerHTML='<div class="tsub" style="margin:-4px 0 12px;font-size:13.5px">Cochez les zones et les tâches à ajouter à votre plan de nettoyage. Vous pourrez toujours les modifier ou en créer d\'autres à la main.</div>'
+  +'<input placeholder="🔍 Rechercher une zone ou une tâche…" value="'+escH(ZLIB_Q)+'" oninput="ZLIB_Q=this.value;zlibRender()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">'
+  +'<div style="max-height:52vh;overflow:auto;padding-right:4px">'
+  +(zones.length?zones.map(function(x){
+    const z=x.z;const sel=ZLIB_SEL[z.key]||[];const all=sel.length===z.tasks.length&&z.tasks.length>0;
+    const already=zlibZoneExists(z.name);
+    return '<div style="border:1px solid '+(sel.length?'#0e9f6e':'var(--line)')+';border-radius:14px;margin-bottom:10px;overflow:hidden;background:'+(sel.length?'#f6fdfa':'#fff')+'">'
+    +'<div onclick="zlibToggleZone(\''+z.key+'\')" style="display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;user-select:none">'
+      +'<span style="width:20px;height:20px;border-radius:6px;border:2px solid '+((all||sel.length)?'#0e9f6e':'#cbd5e1')+';background:'+(all?'#0e9f6e':'#fff')+';display:grid;place-items:center;color:'+(all?'#fff':'#0e9f6e')+';font-size:14px;font-weight:900;line-height:1;flex:none">'+(all?'✓':(sel.length?'−':''))+'</span>'
+      +'<span style="font-size:19px">'+z.icon+'</span>'
+      +'<span style="font-weight:800;font-size:15px">'+escH(z.name)+'</span>'
+      +(already?'<span class="chip muted" style="font-size:9.5px">zone existante</span>':'')
+      +'<span class="tsub" style="margin-left:auto;font-size:12px">'+(sel.length?sel.length+' / '+z.tasks.length+' sélectionnée(s)':z.tasks.length+' tâches')+'</span></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px">'
+      +x.tasks.map(function(t){const i=z.tasks.indexOf(t);const on=sel.indexOf(i)>=0;const dup=zlibHas(z.name,t.name);
+        return '<span onclick="zlibToggleTask(\''+z.key+'\','+i+')" title="'+escH(t.freq)+'" style="cursor:pointer;user-select:none;font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid '+(on?'#0e9f6e':'var(--line)')+';background:'+(on?'#0e9f6e':'#fff')+';color:'+(on?'#fff':(dup?'#94a3b8':'#334155'))+'">'+(on?'✓ ':'')+escH(t.name)+' <span style="opacity:.7;font-size:10.5px">'+escH(t.freq)+'</span>'+(dup?' <span style="font-size:10px">déjà là</span>':'')+'</span>';}).join('')
+    +'</div></div>';}).join('')
+   :'<div class="empty" style="padding:30px;text-align:center">Aucun résultat pour « '+escH(ZLIB_Q)+' ».</div>')
+  +'</div>'
+  +'<div style="display:flex;gap:8px;align-items:center;margin-top:14px;border-top:1px solid var(--line);padding-top:12px">'
+  +'<span class="tsub" style="font-size:13px">'+(c.t?('<b>'+c.z+'</b> zone(s) · <b>'+c.t+'</b> tâche(s) sélectionnée(s)'):'Rien de sélectionné pour l\'instant')+'</span>'
+  +'<button class="btn ghost sm" style="margin-left:auto" onclick="zlibSelectAll()">Tout cocher</button>'
+  +'<button class="btn" onclick="zlibApply()"'+(c.t?'':' style="opacity:.5;pointer-events:none"')+'>＋ Ajouter au plan de nettoyage</button></div>';}
+function zlibToggleZone(k){const z=ZONE_LIB.find(function(x){return x.key===k;});if(!z)return;
+  const sel=ZLIB_SEL[k]||[];
+  ZLIB_SEL[k]=(sel.length===z.tasks.length)?[]:z.tasks.map(function(_,i){return i;});
+  zlibRender();}
+function zlibToggleTask(k,i){const sel=ZLIB_SEL[k]||[];const j=sel.indexOf(i);
+  if(j>=0)sel.splice(j,1);else sel.push(i);
+  ZLIB_SEL[k]=sel;zlibRender();}
+function zlibSelectAll(){const any=zlibCount().t>0;ZLIB_SEL={};
+  if(!any)ZONE_LIB.forEach(function(z){ZLIB_SEL[z.key]=z.tasks.map(function(_,i){return i;});});
+  zlibRender();}
+function zlibApply(){let nz=0,nt=0,skip=0;
+  Object.keys(ZLIB_SEL).forEach(function(k){
+    const sel=ZLIB_SEL[k]||[];if(!sel.length)return;
+    const z=ZONE_LIB.find(function(x){return x.key===k;});if(!z)return;
+    if(!zlibZoneExists(z.name)){state.zones.push({id:'z'+Date.now()+Math.random().toString(36).slice(2,5),clientId:CID,name:z.name});nz++;}
+    sel.forEach(function(i){const t=z.tasks[i];if(!t)return;
+      if(zlibHas(z.name,t.name)){skip++;return;}
+      state.postes.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,6),clientId:CID,zone:z.name,name:t.name,freq:t.freq,done:false});nt++;});
+  });
+  const mask=document.getElementById('info_mask');if(mask)mask.classList.remove('on');
+  renderClient('h_zones');
+  toast('✓ '+nt+' tâche(s) ajoutée(s)'+(nz?' · '+nz+' zone(s) créée(s)':'')+(skip?' · '+skip+' déjà présente(s)':''));}
 function formZone(id){const z=id?state.zones.find(x=>x.id===id):null;
   openForm(id?'Modifier la zone':'Nouvelle zone',[
     {key:'name',label:'Nom de la zone / local',value:z?z.name:'',ph:'Ex. Cuisine, Salle, Réserve…'}
@@ -4257,11 +4346,13 @@ function catFilter(){const q=((document.getElementById('cat_search')||{}).value|
   document.querySelectorAll('#admin_main .cat-card').forEach(c=>{const n=c.getAttribute('data-name')||'';c.style.display=(!q||n.indexOf(q)>=0)?'':'none';});
   document.querySelectorAll('#admin_main .dp-grp').forEach(g=>{const any=Array.from(g.querySelectorAll('.cat-card')).some(c=>c.style.display!=='none');g.style.display=any?'':'none';});}
 function catNew(kind){catEditId=null;catEditKind=kind||'equip';catPhoto=null;catFillForm({kind:catEditKind});catOpen('Nouvel élément du catalogue');}
+function catEditZone(key){const z=ZONE_LIB.find(function(x){return x.key===key;});if(!z)return;
+  catEditId=key;catEditKind='zone';catPhoto=null;catFillForm({kind:'zone',name:z.name,icon:z.icon});catOpen('Modifier la zone');}
 function catEdit(key){let it=null,kind=null;[['equip',EQUIP_CATALOG],['friteuse',FRITEUSE_CATALOG],['product',PRODUCT_CATALOG]].forEach(kk=>{const f=(kk[1]||[]).find(x=>x.key===key);if(f){it=f;kind=kk[0];}});if(!it)return;catEditId=key;catEditKind=kind;catPhoto=it.photo||null;catFillForm({kind:kind,name:it.name,sub:it.sub,cat:it.cat,min:it.min,max:it.max,icon:it.icon});catOpen('Modifier l\'élément');}
 function catOpen(title){document.getElementById('cat_title').textContent=title;document.getElementById('cat_mask').classList.add('on');}
 function catClose(){document.getElementById('cat_mask').classList.remove('on');const l=document.getElementById('cat_lib');if(l)l.style.display='none';}
-function catFillForm(o){const g=id=>document.getElementById(id);g('cat_name').value=o.name||'';g('cat_kind').value=o.kind||'equip';g('cat_sub').value=o.sub||'';g('cat_cat').value=o.cat||'froidpos';g('cat_min').value=(o.min!=null?o.min:'');g('cat_max').value=(o.max!=null?o.max:'');g('cat_icon').value=o.icon||'';catPhotoPrev();catKindChange();const msg=g('cat_msg');if(msg)msg.style.display='none';}
-function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');document.querySelectorAll('#cat_mask .cat-sub-field').forEach(e=>e.style.display=(k==='product')?'':'none');}
+function catFillForm(o){const g=id=>document.getElementById(id);g('cat_name').value=o.name||'';g('cat_kind').value=o.kind||'equip';g('cat_sub').value=o.sub||'';g('cat_cat').value=o.cat||'froidpos';g('cat_min').value=(o.min!=null?o.min:'');g('cat_max').value=(o.max!=null?o.max:'');g('cat_icon').value=o.icon||'';const cz=g('cat_zone');if(cz)cz.value=o.zone||'';const cf=g('cat_freq');if(cf)cf.value=o.freq||'Quotidien';catPhotoPrev();catKindChange();const msg=g('cat_msg');if(msg)msg.style.display='none';}
+function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');document.querySelectorAll('#cat_mask .cat-sub-field').forEach(e=>e.style.display=(k==='product')?'':'none');document.querySelectorAll('#cat_mask .cat-task-field').forEach(e=>e.style.display=(k==='task')?'':'none');}
 function catPhotoPrev(){const im=document.getElementById('cat_photo_prev');if(!im)return;if(catPhoto){im.src=catPhoto;im.style.display='';}else{im.style.display='none';}}
 function catPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{catPhoto=rd.result;catPhotoPrev();};rd.readAsDataURL(f);}
 function catPhotoClear(){catPhoto=null;catPhotoPrev();}
@@ -4272,12 +4363,12 @@ async function catSave(){const g=id=>document.getElementById(id);const name=g('c
   const show=(bg,fg,tx)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.textContent=tx;};
   if(!name){show('#fef2f2','#b91c1c','Le nom est obligatoire.');return;}
   const id=catEditId||(slugCode(name)+'-'+Math.floor(Math.random()*10000));
-  const row={id:id,kind:kind,name:name,sub:kind==='equip'?null:(g('cat_sub').value.trim()||null),cat:kind==='equip'?g('cat_cat').value:null,tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true};
+  const row={id:id,kind:kind,name:name,sub:kind==='task'?(g('cat_zone').value.trim()||null):(kind==='equip'?null:(g('cat_sub').value.trim()||null)),cat:kind==='equip'?g('cat_cat').value:(kind==='task'?g('cat_freq').value:null),tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true};
   show('#f1f5f9','#334155','Enregistrement…');
   try{const {error}=await SB.from('catalog').upsert(row);if(error)throw error;await loadCatalog();catClose();renderAdmin('catalog');toast('Catalogue mis à jour');}catch(e){show('#fef2f2','#b91c1c','Erreur : '+(e.message||e));}
 }
 function catDelete(key){openConfirm('Supprimer l\'élément','Retirer cet élément du catalogue ? (les clients déjà déployés ne sont pas affectés)',async()=>{try{const {error}=await SB.from('catalog').delete().eq('id',key);if(error)throw error;await loadCatalog();renderAdmin('catalog');toast('Élément supprimé du catalogue');}catch(e){toast('Erreur : '+(e.message||e));}});}
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option></select></div><div class="field cat-sub-field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Viandes, Poissons…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder=""></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#f1f5f9;display:none"><label class="btn ghost sm" style="cursor:pointer">↑ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()"> Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option><option value="zone">Zone de nettoyage</option><option value="task">Tâche de nettoyage</option></select></div><div class="field cat-sub-field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Viandes, Poissons…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field cat-task-field"><label>Zone de rattachement</label><input id="cat_zone" placeholder="Ex. Cuisine, Bar, Sanitaires…"></div><div class="field cat-task-field"><label>Fréquence</label><select id="cat_freq"><option>Quotidien</option><option>2x / jour</option><option>Après usage</option><option>Hebdomadaire</option><option>Mensuel</option><option>Trimestriel</option></select></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder=""></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#f1f5f9;display:none"><label class="btn ghost sm" style="cursor:pointer">↑ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()"> Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
 
 /* rapport imprimable */
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
@@ -4421,6 +4512,9 @@ async function loadCatalog(){
       EQUIP_CATALOG=data.filter(r=>r.kind==='equip').map(map);
       FRITEUSE_CATALOG=data.filter(r=>r.kind==='friteuse').map(map);
       PRODUCT_CATALOG=data.filter(r=>r.kind==='product').map(map);
+      const zr=data.filter(r=>r.kind==='zone'),tr=data.filter(r=>r.kind==='task');
+      if(zr.length){ZONE_LIB=zr.map(function(z){return {key:z.id,name:z.name,icon:z.icon||'🧽',
+        tasks:tr.filter(function(t){return (t.sub||'')===z.name;}).map(function(t){return {name:t.name,freq:t.cat||'Quotidien'};})};});}
     }
   }catch(e){console.warn('loadCatalog',e);}
 }
