@@ -1404,7 +1404,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
   } else if(clientView==='rh_planning'){
     const emps=state.employees.filter(e=>e.clientId===cid&&e.active!==false);const tpls=state.shiftTemplates.filter(t=>t.clientId===cid);const days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     if(!planDate)planDate=new Date();const view=planView||'semaine';
-    let ph=topbar('Planning','Vue jour, semaine ou mois — cliquez un favori puis une case pour l\'assigner','<button class="btn ghost" onclick="rhPlanExport()">↓ Exporter PDF</button>')
+    let ph=topbar('Planning','Vue jour, semaine ou mois — cliquez une case vide pour créer un shift','<button class="btn ghost" onclick="formEmp()">＋ Employé</button> <button class="btn ghost" onclick="rhPlanExport()">↓ Exporter PDF</button>')
     +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px"><span class="seg-mini">'+[['jour','Jour'],['semaine','Semaine'],['mois','Mois']].map(v=>'<button class="'+(view===v[0]?'active':'')+'" onclick="rhSetPlanView(\''+v[0]+'\')">'+v[1]+'</button>').join('')+'</span>'
      +'<div style="display:flex;align-items:center;gap:6px;margin-left:auto"><button class="btn ghost sm" onclick="rhPlanNav(-1)">←</button><span style="font-weight:800;min-width:210px;text-align:center">'+rhPlanLabel()+'</span><button class="btn ghost sm" onclick="rhPlanNav(1)">→</button><button class="btn ghost sm" onclick="rhPlanToday()">Aujourd\'hui</button></div></div>'
     +'<div class="panel" style="margin-bottom:14px"><div class="pb"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="tsub" style="font-weight:800">Shifts favoris :</span>'
@@ -1412,10 +1412,6 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
      +'<button class="btn ghost sm" onclick="formShiftTpl()">＋ Nouveau favori</button>'
      +(planSelTpl?'<button class="btn ghost sm" onclick="formShiftTpl(\''+planSelTpl+'\')">Modifier</button><button class="btn ghost sm" onclick="rhDelTpl(\''+planSelTpl+'\')">Suppr.</button>':'')
      +'</div><div class="tsub" style="margin-top:8px">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez une case vide pour créer un shift, ou sélectionnez un favori puis une case pour le poser en 1 clic.')+'</div></div></div>';
-    if(!emps.length){
-      ph+='<div class="panel"><div class="pb" style="text-align:center;padding:48px 20px"><h2 style="margin:0 0 8px">Aucun employé pour le moment</h2><p class="lead" style="max-width:460px;margin:0 auto 18px">Ajoutez vos employés pour créer votre planning : chaque employé aura sa ligne, et vous pourrez poser des shifts en cliquant sur les cases.</p><button class="btn" onclick="formEmp()">＋ Ajouter un employé</button> <button class="btn ghost" onclick="renderClient(\'rh_etab\')">Ouvrir Établissement</button></div></div>';
-      m.innerHTML=ph;return;
-    }
     if(view==='semaine'){
       const wk=rhWeekKey(planDate);const mon=rhMonday(planDate);const today=new Date();
       const wShifts=rhShiftsOf(cid,wk);
@@ -1446,6 +1442,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
         return '<tr><td class="tname">'+e.name+'<div class="tsub">'+(j.name||'')+'</div></td>'+cells
          +'<td style="text-align:center"><div class="tsub">Contrat '+e.contract+'h</div><b>'+(Math.round(tot*10)/10)+'h</b> <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span>'
          +(badgeMin?'<div style="color:#b45309;font-weight:800;font-size:12px;margin-top:4px">⏱ '+fmtDur(badgeMin)+' badgé</div>':'<div class="tsub" style="font-size:11px;margin-top:4px">— badgé</div>')+'</td></tr>';}).join('')
+      +(shown.length?'':'<tr><td colspan="9" style="text-align:center;padding:34px 16px"><div style="font-weight:800;margin-bottom:6px">Aucun employé'+(emps.length?' ne correspond aux filtres':' pour le moment')+'</div>'+(emps.length?'':'<div class="tsub" style="margin-bottom:12px">Ajoutez vos employés : chaque employé aura sa ligne dans cette grille.</div><button class="btn" onclick="formEmp()">＋ Ajouter un employé</button>')+'</td></tr>')
       +'</tbody></table></div></div>';
     } else if(view==='jour'){ ph+=rhDayView(emps,tpls,cid); }
     else { ph+=rhMonthView(emps,tpls,cid); }
