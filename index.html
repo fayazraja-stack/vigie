@@ -1262,6 +1262,7 @@ const CLIENT_NAV=[
   {v:'fid_stats',ic:'',t:'Statistiques',sub:1,mod:'fid'},
   {v:'crm',ic:'',t:'Données clients',sub:1},
   {cat:'Configuration'},
+  {v:'config_est',ic:'',t:'Paramètres du compte'},
   {v:'tablet',ic:'',t:'Tablette'},
   {v:'wiki',ic:'',t:'Wiki & Aide'},
 ];
@@ -1495,18 +1496,159 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'<div id="crm_body"><div class="empty" style="padding:24px">Chargement…</div></div>'
     +helpBox([['Collecte automatique','chaque joueur renseigne nom, téléphone et email — qu\'il gagne ou qu\'il perde.'],['QR du lot','le bouton QR de chaque ligne en attente réaffiche le QR code du gagnant pour valider sa remise.'],['Exploitez la base','exportez en Excel pour vos campagnes SMS / emailing, ou en PDF pour vos archives.']]);
     crmLoad();
+  } else if(clientView==='config_est'){
+    m.innerHTML=topbar('Paramètres du compte','Gérez vos informations de connexion et votre sécurité','')
+    +'<div id="cfga_body"></div>';
+    cfgaRender();
   } else if(clientView==='tablet'){
-    m.innerHTML=topbar('Tablette','Lien & paramètres de la tablette terrain','<button class="btn" onclick="go(\'app_terrain\')"> Ouvrir la tablette</button>')
-    +'<div class="grid2"><div class="panel"><div class="ph"><h3>Modules activés sur la tablette</h3></div><div class="pb">'
-      +[['','Badgeuse','Pointage arrivée / départ',true],['','HACCP','Hygiène & sécurité alimentaire',true],['','Food Cost','Saisie des productions',false]].map(x=>'<div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)"><div style="width:40px;height:40px;border-radius:11px;background:var(--brand-l);display:grid;place-items:center;font-size:18px">'+x[0]+'</div><div><div class="tname">'+x[1]+'</div><div class="tsub">'+x[2]+'</div></div><span class="chip '+(x[3]?'ok':'muted')+'" style="margin-left:auto">'+(x[3]?'activé':'désactivé')+'</span></div>').join('')
+    const tm=state.tabletMods||{};const tOn=function(k){return tm[k]!==false;};
+    const sw=function(k,on){return '<span class="switch '+(on?'on':'')+'" onclick="tbCfgToggle(\''+k+'\')"><span class="tk"></span></span>';};
+    const modRow=function(k,title,sub,extra){return '<div style="display:flex;align-items:center;gap:12px;padding:13px 14px;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;'+(extra||'')+'"><div style="flex:1"><div class="tname">'+title+'</div><div class="tsub">'+sub+'</div></div>'+sw(k,tOn(k))+'</div>';};
+    m.innerHTML=topbar('Tablette','Paramètres et accès de la tablette terrain','<button class="btn" onclick="go(\'app_terrain\')">Ouvrir la tablette</button>')
+    +'<div class="grid2">'
+    +'<div class="panel"><div class="ph"><h3>Paramètres</h3><div class="sub">Personnalisez l\'affichage de votre tablette</div></div><div class="pb">'
+      +'<div class="field"><label>Nom de l\'établissement</label><input id="tbcfg_name" value="'+escH(state.tabletName||(state.clients.find(c=>c.id===CID)||{}).name||'')+'" onchange="tbCfgSet(\'tabletName\',this.value)"><div class="tsub" style="font-size:11.5px;margin-top:4px">Affiché sur l\'écran d\'accueil de la tablette</div></div>'
+      +'<div class="field"><label>Code PIN (optionnel)</label><input id="tbcfg_pin" value="'+escH(state.tabletPin||'')+'" placeholder="Ex. 1234" maxlength="6" inputmode="numeric" onchange="tbCfgSet(\'tabletPin\',this.value.replace(/\\D/g,\'\'))"><div class="tsub" style="font-size:11.5px;margin-top:4px">Laissez vide pour un accès sans code</div></div>'
+      +'<div style="font-weight:800;font-size:13.5px;margin:16px 0 10px">Modules disponibles sur la tablette</div>'
+      +modRow('badge','Badgeuse','Pointage arrivée / départ')
+      +modRow('haccp','HACCP','Hygiène & sécurité alimentaire')
+      +(modOn('fid')?modRow('fid','Fidélité','Validation des lots gagnés (scan QR)'):'')
+      +modRow('active','Tablette active','La tablette est accessible','background:#f8fafc')
       +'</div></div>'
-    +'<div class="panel"><div class="ph"><h3>Accès tablette</h3></div><div class="pb"><div style="text-align:center;padding:10px"><div class="tsub" style="letter-spacing:1px">CODE ÉTABLISSEMENT</div><div style="font-size:34px;font-weight:800;letter-spacing:6px;margin:8px 0">'+state.estCode+'</div><div class="tsub">À entrer au 1er lancement de l\'application</div></div><button class="btn block" style="margin-top:10px" onclick="go(\'app_terrain\')"> Lancer la tablette</button><div class="minicard" style="margin-top:14px"><div class="mt"> Application Android</div><div class="ms">Application native — recommandée. Installable sur toute tablette Android.</div></div></div></div></div>';
+    +'<div class="panel"><div class="ph"><h3>Accès tablette</h3></div><div class="pb">'
+      +'<div style="text-align:center;padding:10px;border:1px solid var(--line);border-radius:14px"><div class="tsub" style="letter-spacing:2px;font-size:11px">CODE ÉTABLISSEMENT</div><div style="font-size:32px;font-weight:800;letter-spacing:5px;margin:8px 0;font-family:ui-monospace,monospace">'+escH(state.estCode||CUR||'')+'</div><button class="btn ghost sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+escH(state.estCode||CUR||'')+'\');toast(\'Code copié\')">Copier</button><div class="tsub" style="margin-top:6px">À entrer au 1er lancement de l\'application</div></div>'
+      +'<button class="btn block" style="margin-top:14px" onclick="go(\'app_terrain\')">Lancer la tablette sur cet appareil</button>'
+      +'<div class="minicard" style="margin-top:14px"><div class="mt">Application Android</div><div class="ms">Application native installable sur toute tablette Android — disponible prochainement. En attendant, utilisez la tablette depuis le navigateur avec le bouton ci-dessus.</div></div>'
+      +'</div></div></div>'
+    +helpBox([['Code PIN','si défini, la tablette demande ce code à l\'ouverture — utile en salle.'],['Modules','désactivez un module pour le masquer de la tablette sans toucher à votre abonnement.'],['Tablette active','désactivez pour bloquer complètement l\'accès à la tablette.']]);
   } else if(clientView==='wiki'){
     m.innerHTML=topbar('Wiki & Aide','Tutoriels & support','')
     +'<div class="cardgrid">'+[['','Guide HACCP','Bonnes pratiques & obligations'],['','Relevés de température','Comment bien relever'],['','Plan de nettoyage','Configurer zones & tâches'],['','Utiliser la tablette','Prise en main terrain'],['','Contacter le support','Réponse sous 2h'],['','Tutoriels vidéo','Tous les modules']].map(x=>'<div class="minicard" style="cursor:pointer" onclick="toast(\''+x[1]+' (démo)\')"><div class="mt">'+x[0]+' '+x[1]+'</div><div class="ms">'+x[2]+'</div></div>').join('')+'</div>';
   }
 }
 function topbar(t,s,a){return '<div class="topbar"><div><h1>'+t+'</h1><div class="sub">'+s+'</div></div><div class="actions">'+(a||'')+'</div></div>';}
+
+/* ===== Paramètres du compte (BO restaurateur) ===== */
+let CFGA_TAB='param';
+function cfgaSet(t){CFGA_TAB=t;cfgaRender();}
+function cfgaEye(id,btn){const el=document.getElementById(id);if(!el)return;el.type=el.type==='password'?'text':'password';}
+function cfgaRender(){
+  const b=document.getElementById('cfga_body');if(!b)return;
+  const tabs=[['param','Paramétrage'],['pwd','Mot de passe'],['email','Email'],['notif','Notifications'],['sessions','Sessions']];
+  let h='<div style="display:flex;gap:4px;background:#f1f5f9;border-radius:999px;padding:4px;margin-bottom:18px;max-width:640px">'
+   +tabs.map(function(t){const on=CFGA_TAB===t[0];return '<button onclick="cfgaSet(\''+t[0]+'\')" style="flex:1;border:none;cursor:pointer;padding:10px 8px;border-radius:999px;font-weight:700;font-size:13px;background:'+(on?'#0b1220':'transparent')+';color:'+(on?'#fff':'#334155')+'">'+t[1]+'</button>';}).join('')+'</div>';
+  const inp='width:100%;box-sizing:border-box;padding:11px 13px;border:1.5px solid #e2e8f0;border-radius:12px;font-size:14px';
+  const lab='display:block;font-weight:700;font-size:14px;margin:0 0 6px';
+  const dark='width:100%;margin-top:16px;border-radius:999px;padding:13px;background:#0b1220;border:none;color:#fff;font-weight:800;font-size:14.5px;cursor:pointer';
+  const card='background:#fff;border:1px solid #eef2f7;border-radius:16px;padding:20px;max-width:640px';
+  const eye=function(id){return '<button onclick="cfgaEye(\''+id+'\')" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#94a3b8" title="Afficher"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg></button>';};
+  const pwField=function(id,label,hint){return '<label style="'+lab+'">'+label+'</label><div style="position:relative;margin-bottom:'+(hint?'4px':'14px')+'"><input id="'+id+'" type="password" autocomplete="new-password" style="'+inp+';padding-right:42px">'+eye(id)+'</div>'+(hint?'<div class="tsub" style="font-size:11.5px;margin-bottom:14px">'+hint+'</div>':'');};
+  if(CFGA_TAB==='param'){
+    const br=state.branding||{};
+    h+='<div style="'+card+'"><div style="font-weight:900;font-size:16px;margin-bottom:4px">Logo de l\'établissement</div><div class="tsub" style="font-size:12.5px;margin-bottom:14px">Affiché automatiquement en tête de vos jeux de fidélité et sur la tablette</div>'
+     +'<div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">'
+     +(br.logo?'<img src="'+br.logo+'" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:1px solid var(--line)">':'<div style="width:84px;height:84px;border-radius:50%;border:2px dashed #cbd5e1;display:grid;place-items:center;color:#94a3b8;font-size:11px;text-align:center">Aucun<br>logo</div>')
+     +'<div><label class="btn" style="cursor:pointer">'+(br.logo?'Changer le logo':'Choisir un logo')+'<input type="file" accept="image/*" hidden onchange="estLogoPick(event)"></label> '
+     +(br.logo?'<button class="btn ghost" onclick="estLogoRemove()">Retirer</button>':'')
+     +'<div class="tsub" style="font-size:12px;margin-top:8px">PNG ou JPG. Si un jeu possède son propre logo (onglet Design), celui-ci reste prioritaire.</div></div></div>'
+     +'<div id="est_logomsg" class="tsub" style="margin-top:8px"></div></div>';
+  }
+  else if(CFGA_TAB==='pwd'){
+    h+='<div style="'+card+'">'
+     +pwField('cfg_pw_cur','Mot de passe actuel','')
+     +pwField('cfg_pw_new','Nouveau mot de passe','Minimum 6 caractères')
+     +pwField('cfg_pw_conf','Confirmer le mot de passe','')
+     +'<button style="'+dark+'" onclick="cfgaPwdChange()">Modifier le mot de passe</button>'
+     +'<div id="cfg_pw_msg" style="font-size:13px;margin-top:10px;font-weight:700"></div></div>';
+  }
+  else if(CFGA_TAB==='email'){
+    h+='<div style="'+card+'">'
+     +'<div style="background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:14px"><div class="tsub" style="font-size:11.5px">Email actuel</div><div style="font-weight:700">'+escH((window.ME&&ME.email)||'')+'</div></div>'
+     +'<label style="'+lab+'">Nouvelle adresse email</label><input id="cfg_em_new" type="email" placeholder="nouvelle@email.com" style="'+inp+'">'
+     +'<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:11px 13px;font-size:12.5px;color:#c2410c;margin-top:12px">Un email de confirmation sera envoyé à la nouvelle adresse. Le changement ne sera effectif qu\'après confirmation.</div>'
+     +'<button style="'+dark+'" onclick="cfgaEmailChange()">Modifier l\'email</button>'
+     +'<div id="cfg_em_msg" style="font-size:13px;margin-top:10px;font-weight:700"></div></div>';
+  }
+  else if(CFGA_TAB==='notif'){
+    const np=state.notifPrefs||(state.notifPrefs={enabled:true,recipients:[],temp:false,dlc:false,lots:false});
+    const nsw=function(k){return '<span class="switch '+(np[k]?'on':'')+'" onclick="cfgaNotifToggle(\''+k+'\')"><span class="tk"></span></span>';};
+    const row=function(k,t,s2){return '<div style="display:flex;align-items:center;gap:12px;background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:8px"><div style="flex:1"><div style="font-weight:700;font-size:14px">'+t+'</div><div class="tsub" style="font-size:12px">'+s2+'</div></div>'+nsw(k)+'</div>';};
+    h+='<div style="'+card+'">'
+     +'<div style="background:#f8fafc;border-radius:12px;padding:12px 14px;margin-bottom:8px"><div class="tsub" style="font-size:11.5px">Adresse principale</div><div style="font-weight:700">'+escH((window.ME&&ME.email)||'')+'</div></div>'
+     +'<div style="display:flex;gap:8px;margin-bottom:14px"><input id="cfg_nt_add" type="email" placeholder="Ajouter un email destinataire…" style="'+inp+'"><button class="btn ghost" onclick="cfgaNotifAdd()">＋</button></div>'
+     +(np.recipients&&np.recipients.length?np.recipients.map(function(r,i){return '<div style="display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 2px"><span style="flex:1">'+escH(r)+'</span><button class="btn ghost sm" onclick="cfgaNotifDel('+i+')">✕</button></div>';}).join(''):'')
+     +'<div style="display:flex;align-items:center;gap:12px;border:1.5px solid #e2e8f0;border-radius:14px;padding:13px 14px;margin:8px 0 16px"><div style="flex:1"><div style="font-weight:800">Activer les notifications</div><div class="tsub" style="font-size:12px">Vous recevrez des emails selon vos préférences</div></div>'+nsw('enabled')+'</div>'
+     +'<div style="font-weight:800;font-size:14px;margin:6px 0 8px">HACCP & Hygiène</div>'
+     +row('temp','Alertes températures','Relevés manquants ou hors normes')
+     +row('dlc','DLC expirantes','Produits arrivant à expiration')
+     +'<div style="font-weight:800;font-size:14px;margin:14px 0 8px">Jeux & Fidélisation</div>'
+     +row('lots','Lots gagnés','Quand un client gagne un lot')
+     +'<div class="tsub" style="font-size:11.5px;margin-top:10px">Vos préférences sont enregistrées — l\'envoi des emails sera actif dès la mise en service de la messagerie Vigie.</div></div>';
+  }
+  else{
+    const ua=navigator.userAgent;const bro=/Edg\//.test(ua)?'Edge':/Chrome\//.test(ua)?'Chrome':/Safari\//.test(ua)?'Safari':/Firefox\//.test(ua)?'Firefox':'Navigateur';
+    const os=/Windows/.test(ua)?'Windows':/Mac/.test(ua)?'macOS':/Android/.test(ua)?'Android':/iPhone|iPad/.test(ua)?'iOS':/Linux/.test(ua)?'Linux':'';
+    h+='<div style="'+card+'">'
+     +'<div style="border:2px solid #0b1220;border-radius:14px;padding:13px 14px;background:#f8fafc;margin-bottom:14px"><div style="display:flex;align-items:center;gap:8px"><b>'+bro+' • '+os+'</b><span style="background:#e2e8f0;border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:800;letter-spacing:.5px">ACTUEL</span></div><div class="tsub" style="font-size:12px;margin-top:4px">Connecté maintenant — '+escH((window.ME&&ME.email)||'')+'</div></div>'
+     +'<div style="font-weight:800;margin-bottom:4px">Déconnecter les autres sessions</div>'
+     +'<div class="tsub" style="font-size:12.5px;margin-bottom:4px">Déconnecte tous les autres appareils connectés à votre compte (autres navigateurs, téléphones, tablettes), sauf celui-ci.</div>'
+     +'<button style="'+dark+'" onclick="cfgaLogoutOthers()">Déconnecter toutes les autres sessions</button>'
+     +'<div id="cfg_ss_msg" style="font-size:13px;margin-top:10px;font-weight:700"></div></div>';
+  }
+  b.innerHTML=h;
+}
+async function cfgaPwdChange(){
+  const gv=function(id){return (document.getElementById(id)||{}).value||'';};
+  const cur=gv('cfg_pw_cur'),nw=gv('cfg_pw_new'),cf=gv('cfg_pw_conf');
+  const msg=document.getElementById('cfg_pw_msg');const say=function(t,ok){if(msg){msg.style.color=ok?'#0b7d57':'#b91c1c';msg.textContent=t;}};
+  if(!cur||!nw||!cf){say('Remplissez tous les champs.');return;}
+  if(nw.length<6){say('Le nouveau mot de passe doit faire au moins 6 caractères.');return;}
+  if(nw!==cf){say('La confirmation ne correspond pas.');return;}
+  say('Vérification…',true);
+  try{
+    const {error:e1}=await SB.auth.signInWithPassword({email:(window.ME&&ME.email)||'',password:cur});
+    if(e1){say('Mot de passe actuel incorrect.');return;}
+    const {error:e2}=await SB.auth.updateUser({password:nw});
+    if(e2)throw e2;
+    say('Mot de passe modifié.',true);['cfg_pw_cur','cfg_pw_new','cfg_pw_conf'].forEach(function(id){const el=document.getElementById(id);if(el)el.value='';});
+  }catch(e){say('Erreur : '+(e.message||e));}
+}
+async function cfgaEmailChange(){
+  const nv=((document.getElementById('cfg_em_new')||{}).value||'').trim();
+  const msg=document.getElementById('cfg_em_msg');const say=function(t,ok){if(msg){msg.style.color=ok?'#0b7d57':'#b91c1c';msg.textContent=t;}};
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(nv)){say('Adresse email invalide.');return;}
+  say('Envoi…',true);
+  try{const {error}=await SB.auth.updateUser({email:nv});if(error)throw error;
+    say('Email de confirmation envoyé à '+nv+'. Le changement sera effectif après confirmation.',true);
+  }catch(e){say('Erreur : '+(e.message||e));}
+}
+function cfgaNotifToggle(k){state.notifPrefs=state.notifPrefs||{enabled:true,recipients:[]};state.notifPrefs[k]=!state.notifPrefs[k];cfgaRender();}
+function cfgaNotifAdd(){const el=document.getElementById('cfg_nt_add');const v=((el||{}).value||'').trim();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)){toast('Adresse email invalide');return;}
+  state.notifPrefs=state.notifPrefs||{enabled:true,recipients:[]};state.notifPrefs.recipients=state.notifPrefs.recipients||[];
+  if(state.notifPrefs.recipients.indexOf(v)<0)state.notifPrefs.recipients.push(v);
+  if(el)el.value='';cfgaRender();toast('Destinataire ajouté');}
+function cfgaNotifDel(i){if(state.notifPrefs&&state.notifPrefs.recipients){state.notifPrefs.recipients.splice(i,1);cfgaRender();}}
+async function cfgaLogoutOthers(){
+  const msg=document.getElementById('cfg_ss_msg');
+  try{const {error}=await SB.auth.signOut({scope:'others'});if(error)throw error;
+    if(msg){msg.style.color='#0b7d57';msg.textContent='Toutes les autres sessions ont été déconnectées.';}}
+  catch(e){if(msg){msg.style.color='#b91c1c';msg.textContent='Erreur : '+(e.message||e);}}
+}
+async function estLogoPick(ev){const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
+  const msg=document.getElementById('est_logomsg');if(msg)msg.textContent='Envoi du logo…';
+  try{const up=await fidUploadImg(f,256);
+    state.branding=state.branding||{};
+    if(state.branding.logoPath){try{await SB.storage.from('docs').remove([state.branding.logoPath]);}catch(e){}}
+    state.branding.logo=up.url;state.branding.logoPath=up.path;
+    cfgaRender();toast('Logo enregistré');
+  }catch(e){if(msg)msg.textContent='';toast('Erreur logo : '+(e.message||e));}}
+function estLogoRemove(){const p=state.branding&&state.branding.logoPath;state.branding={logo:'',logoPath:''};if(p&&SB){try{SB.storage.from('docs').remove([p]);}catch(e){}}cfgaRender();toast('Logo retiré');}
+function tbCfgSet(k,v){state[k]=v;toast('Enregistré');}
+function tbCfgToggle(k){
+  if(k==='active'){state.tabletActive=state.tabletActive===false?true:false;}
+  else{state.tabletMods=state.tabletMods||{};state.tabletMods[k]=state.tabletMods[k]===false?true:false;}
+  renderClient('tablet');}
 
 /* ============ FIDÉLITÉ — Roue de la fortune ============ */
 let FID_GAMES=[], FID_WINS=[], FID_EDIT=null;
@@ -2221,6 +2363,7 @@ async function fidSaveGame(){fidCollect();const e=FID_EDIT;
   const cli=state.clients.find(function(x){return x.est_code===CUR;})||{};
   const cName=cli.commercial||cli.name||'';
   const brand=Object.assign(fidBrandDefault(),e.brand||{});if(!brand.title)brand.title=cName;
+  if(!brand.logo&&state.branding&&state.branding.logo){brand.logo=state.branding.logo;brand.logoPath='';}
   const conditions={minOrder:(e.minOrderOn&&Number(e.minOrder)>0)?Number(e.minOrder):null,delayHours:(e.delayOn&&Number(e.delayHours)>0)?Number(e.delayHours):0,maxHours:(e.maxOn&&Number(e.maxHours)>0)?Number(e.maxHours):0};
   const config={estName:brand.title||cName,gameType:e.gameType||'wheel',brand:brand,conditions:conditions,
     lots:lots,hundredWin:!!e.hundredWin,perduCases:Math.max(1,Number(e.perduCases)||3),
@@ -2685,7 +2828,14 @@ function exportCsv(){const rows=cRel(CID);let csv='Date,Heure,Equipement,Valeur,
 
 /* ============ TABLETTE TERRAIN ============ */
 let tbStack=[],tbUser=null;
-function tbInit(){tbStack=[];tbUser=null;tickClock();tbRender('modules');}
+let TB_PIN_OK=false;
+function tbInit(){tbStack=[];tbUser=null;tickClock();
+  if(state.tabletActive===false){tbRender('inactive');return;}
+  if(state.tabletPin&&!TB_PIN_OK){tbRender('pin');return;}
+  tbRender('modules');}
+function tbPinTry(){const v=((document.getElementById('tb_pin')||{}).value||'').trim();
+  if(v===String(state.tabletPin||'')){TB_PIN_OK=true;tbRender('modules');}
+  else{const m=document.getElementById('tb_pinmsg');if(m)m.textContent='Code incorrect.';}}
 function tickClock(){const c=document.getElementById('tb_clock');const d=new Date();c.innerHTML=d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'<br><small>'+d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+'</small>';}
 function tbGo(s){tbStack.push(tbCurrent);tbRender(s);}
 function tbBack(){const p=tbStack.pop();tbRender(p||'modules',true);}
@@ -2693,15 +2843,27 @@ function tbHome(){tbStack=[];tbRender(tbUser?'haccp':'modules');}
 let tbCurrent='modules',tbCat='froid';
 function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body');const back=document.getElementById('tb_back');const foot=document.getElementById('tb_foot');
   if(s!=='fidval'&&typeof tbFidScanStop==='function')tbFidScanStop(false);
-  document.getElementById('tb_est').textContent=state.clients.find(c=>c.id===CID).name;
-  back.style.display=(s==='modules')?'none':'inline-flex';
-  foot.style.display=(s==='modules'||s==='identify')?'none':'flex';
+  const tbName=state.tabletName||(state.clients.find(c=>c.id===CID)||{}).name||'';
+  const tbLogo=(state.branding&&state.branding.logo)||'';
+  document.getElementById('tb_est').innerHTML=(tbLogo?'<img src="'+tbLogo+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:-7px;margin-right:8px;border:1px solid var(--line)">':'')+escH(tbName);
+  back.style.display=(s==='modules'||s==='pin'||s==='inactive')?'none':'inline-flex';
+  foot.style.display=(s==='modules'||s==='identify'||s==='pin'||s==='inactive')?'none':'flex';
   const cid=CID;const eqs=cEquip(cid).filter(e=>e.active!==false);
-  if(s==='modules'){
+  const tm=state.tabletMods||{};
+  if(s==='inactive'){
+    b.innerHTML='<div style="max-width:460px;margin:60px auto;text-align:center"><h2>Tablette désactivée</h2><p style="color:var(--muted);margin-top:8px">L\'accès à la tablette a été désactivé depuis le back-office (Tablette > Tablette active).</p></div>';
+  } else if(s==='pin'){
+    b.innerHTML='<div style="max-width:380px;margin:50px auto;text-align:center">'
+    +(tbLogo?'<img src="'+tbLogo+'" style="width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--line);margin-bottom:12px">':'')
+    +'<h2 style="margin-bottom:4px">'+escH(tbName)+'</h2><p style="color:var(--muted);margin-bottom:18px">Entrez le code PIN de la tablette</p>'
+    +'<input id="tb_pin" type="password" inputmode="numeric" maxlength="6" style="width:100%;box-sizing:border-box;text-align:center;font-size:28px;letter-spacing:12px;padding:12px;border:1.5px solid #e2e8f0;border-radius:14px" onkeydown="if(event.key===\'Enter\')tbPinTry()">'
+    +'<button class="btn block" style="margin-top:14px" onclick="tbPinTry()">Déverrouiller</button>'
+    +'<div id="tb_pinmsg" style="color:#be123c;font-weight:700;font-size:13px;margin-top:10px"></div></div>';
+  } else if(s==='modules'){
     b.innerHTML='<div class="tb-title-k">Tablette opérationnelle</div><div class="tb-title">Choisissez un module</div><div class="modgrid">'
-    +'<div class="modcard" onclick="tbGo(\'badge\')"><div class="k">● Module</div><h3>Badgeuse</h3><p>Pointage arrivée / départ des employés.</p><div class="arr">Ouvrir →</div></div>'
-    +'<div class="modcard" onclick="tbGo(\'identify\')"><div class="k">● Module</div><h3>HACCP</h3><p>Hygiène & sécurité alimentaire.</p><div class="arr">Ouvrir →</div></div>'
-    +(modOn('fid')?'<div class="modcard" onclick="tbGo(\'fidval\')"><div class="k">● Module</div><h3>Fidélité</h3><p>Valider le lot gagné d\'un client (scan ou code).</p><div class="arr">Ouvrir →</div></div>':'')
+    +(tm.badge!==false?'<div class="modcard" onclick="tbGo(\'badge\')"><div class="k">● Module</div><h3>Badgeuse</h3><p>Pointage arrivée / départ des employés.</p><div class="arr">Ouvrir →</div></div>':'')
+    +(tm.haccp!==false?'<div class="modcard" onclick="tbGo(\'identify\')"><div class="k">● Module</div><h3>HACCP</h3><p>Hygiène & sécurité alimentaire.</p><div class="arr">Ouvrir →</div></div>':'')
+    +(modOn('fid')&&tm.fid!==false?'<div class="modcard" onclick="tbGo(\'fidval\')"><div class="k">● Module</div><h3>Fidélité</h3><p>Valider le lot gagné d\'un client (scan ou code).</p><div class="arr">Ouvrir →</div></div>':'')
     +'</div>';
   } else if(s==='fidval'){
     if(!modOn('fid')){b.innerHTML='<div class="empty" style="padding:40px 20px">Le module Fidélité n\'est pas activé pour cet établissement.</div>';return;}
