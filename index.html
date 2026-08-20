@@ -1577,7 +1577,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
        +'<span class="chip" style="cursor:pointer;'+(grp==='__none__'?'background:#0b1220;color:#fff':'background:#eef2f7')+'" onclick="foodIngFilter=\'__none__\';renderClient(\'food\')">Sans catégorie ('+ings.filter(function(g){return !g.group;}).length+')</span>'
        +state.foodIngCats.map(function(c){return '<span class="chip" style="cursor:pointer;'+(grp===c?'background:#0b1220;color:#fff':'background:#eef2f7')+'" onclick="foodIngFilter=\''+escH(c)+'\';renderClient(\'food\')">'+escH(c)+' ('+ings.filter(function(g){return g.group===c;}).length+')</span>';}).join('')+'</div>'
       +'<div style="margin-bottom:12px"><input class="dp-search" id="food_ing_search" placeholder="Rechercher un ingrédient…" oninput="foodTableFilter(\'food_ing_search\',\'food_ing_tbody\')"></div>'
-      +'<div class="panel"><div class="pb" style="padding:0">'+(shown.length?('<table><thead><tr><th>Ingrédient</th><th>Catégorie</th><th>Type</th><th>Prix d\'achat HT</th><th>Prix unitaire</th><th>Fournisseur</th><th>Utilisé dans</th><th></th></tr></thead><tbody id="food_ing_tbody">'+shown.map(function(g){const usedR=rs.filter(function(r){return (r.lines||[]).some(function(l){return (l.kind==='sub'?false:(l.refId||l.ingId)===g.id);});}).length;const usedS=subs.filter(function(sb){return (sb.lines||[]).some(function(l){return (l.refId||l.ingId)===g.id;});}).length;const up=foodIngUnitPrice(g);const achat=(g.priceHT!=null)?((Number(g.priceHT)||0).toFixed(2)+' € / '+(g.purchQty||1)+' '+escH(g.purchUnit||g.unit||''))+(g.tva?' · TVA '+String(g.tva).replace('.',',')+'%':''):'—';return '<tr data-s="'+escH(((g.name||'')+' '+(g.group||'')+' '+(g.fournisseur||'')).toLowerCase())+'"><td class="tname">'+escH(g.name)+'</td><td>'+(g.group?'<span class="chip muted">'+escH(g.group)+'</span>':'—')+'</td><td>'+(g.cat==='nonalim'?'<span class="chip warn">Non alim.</span>':'<span class="chip ok">Alim.</span>')+'</td><td class="tsub">'+achat+'</td><td>'+up.toFixed(3)+' € / '+escH(g.unit||'u')+'</td><td class="tsub">'+escH(g.fournisseur||'—')+'</td><td class="tsub">'+usedR+' rec. · '+usedS+' s-rec.</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="crudDel(\'foodIng\',\''+g.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucun ingrédient'+(grp?' dans cette catégorie':'')+'. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix unitaire se calcule automatiquement.</div>')+'</div></div>';
+      +'<div class="panel"><div class="pb" style="padding:0">'+(shown.length?('<table><thead><tr><th>Ingrédient</th><th>Catégorie</th><th>Type</th><th>Prix d\'achat HT</th><th>Prix unitaire</th><th>Fournisseur</th><th>Utilisé dans</th><th></th></tr></thead><tbody id="food_ing_tbody">'+shown.map(function(g){const usedR=rs.filter(function(r){return (r.lines||[]).some(function(l){return (l.kind==='sub'?false:(l.refId||l.ingId)===g.id);});}).length;const usedS=subs.filter(function(sb){return (sb.lines||[]).some(function(l){return (l.refId||l.ingId)===g.id;});}).length;const up=foodIngUnitPrice(g);const _sk=(typeof stkIngLink==='function')?stkIngLink(g):null;const _skp=_sk&&stkIngPrice(g)!=null;const achat=_skp?(_sk.cost.toFixed(2)+' € / '+escH(_sk.prod.unit)+' <span class="chip" style="background:#fdf6e3;color:#b45309;font-size:9.5px" title="Coût moyen pondéré issu de vos réceptions">CMP stock</span>'):(g.priceHT!=null)?((Number(g.priceHT)||0).toFixed(2)+' € / '+(g.purchQty||1)+' '+escH(g.purchUnit||g.unit||''))+(g.tva?' · TVA '+String(g.tva).replace('.',',')+'%':''):'—';return '<tr data-s="'+escH(((g.name||'')+' '+(g.group||'')+' '+(g.fournisseur||'')).toLowerCase())+'"><td class="tname">'+escH(g.name)+'</td><td>'+(g.group?'<span class="chip muted">'+escH(g.group)+'</span>':'—')+'</td><td>'+(g.cat==='nonalim'?'<span class="chip warn">Non alim.</span>':'<span class="chip ok">Alim.</span>')+'</td><td class="tsub">'+achat+'</td><td>'+up.toFixed(3)+' € / '+escH(g.unit||'u')+'</td><td class="tsub">'+escH(g.fournisseur||'—')+'</td><td class="tsub">'+usedR+' rec. · '+usedS+' s-rec.</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="crudDel(\'foodIng\',\''+g.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucun ingrédient'+(grp?' dans cette catégorie':'')+'. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix unitaire se calcule automatiquement.</div>')+'</div></div>';
     }
     m.innerHTML+=foodHelp;
   } else if(clientView==='fid'){
@@ -2007,6 +2007,8 @@ const FOOD_CAT_LABELS={alim:'Alimentaire',nonalim:'Non alimentaire (packaging)'}
 const FOOD_UNITS={kg:{f:'m',k:1000},g:{f:'m',k:1},L:{f:'v',k:1000},cl:{f:'v',k:10},ml:{f:'v',k:1},'pièce':{f:'u',k:1},portion:{f:'u',k:1}};
 function foodUnitFactor(from,to){const a=FOOD_UNITS[from],b=FOOD_UNITS[to];if(!a||!b||a.f!==b.f)return 1;return a.k/b.k;}
 function foodIngUnitPrice(g){if(!g)return 0;
+  const sp=(typeof stkIngPrice==='function')?stkIngPrice(g):null;
+  if(sp!=null&&sp>0)return sp;
   if(g.purchQty&&g.purchUnit&&g.priceHT!=null){const q=Number(g.purchQty)||0;if(q>0){const totalInRecipeUnits=q*foodUnitFactor(g.purchUnit,g.unit||g.purchUnit);if(totalInRecipeUnits>0)return (Number(g.priceHT)||0)/totalInRecipeUnits;}}
   return Number(g.price)||0;}
 function foodIngForm(id){state.foodIng=state.foodIng||[];state.foodIngCats=state.foodIngCats||[];const g=id?state.foodIng.find(function(x){return x.id===id;}):null;
@@ -3041,6 +3043,7 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     +'<div style="max-width:480px;margin:0 auto">'
     +(prods.length?('<div class="field"><label>Produit</label><select id="tbs_prod">'+prods.map(p=>'<option value="'+p.id+'">'+escH(p.name)+' — '+stkQty(p.id)+' '+p.unit+'</option>').join('')+'</select></div>'
     +'<div class="field"><label>Quantité</label><input id="tbs_qty" type="number" step="0.01" inputmode="decimal" style="font-size:24px;text-align:center;padding:14px"></div>'
+    +(isIn?'<div class="field"><label>Prix d\'achat HT par unité (€) — optionnel</label><input id="tbs_price" type="number" step="0.01" inputmode="decimal" placeholder="Laisser vide si inchangé" style="font-size:20px;text-align:center;padding:12px"></div>':'')
     +'<div class="field"><label>Motif</label><select id="tbs_motif">'+(isIn?STK_MOTIFS_IN:STK_MOTIFS_OUT).map(m=>'<option>'+m+'</option>').join('')+'</select></div>'
     +'<button class="btn block" style="'+(isIn?'':'background:#e11d48;border-color:#e11d48')+'" onclick="tbStockMove(\''+(isIn?'in':'out')+'\')">'+(isIn?'＋ Ajouter au stock':'− Retirer du stock')+'</button>')
     :'<div class="empty" style="padding:30px;text-align:center">Aucun produit de stock. Créez-les depuis le back-office (module Stock).</div>')+'</div>';
@@ -3623,12 +3626,44 @@ const STK_MOTIFS_IN=['Livraison','Retour','Correction','Autre'];
 const STK_MOTIFS_OUT=['Consommation','Casse','Offert','Transfert','Correction','Autre'];
 function stkProds(all){return (state.stockProducts||[]).filter(p=>p.clientId===CID&&(all||!p.archived));}
 function stkQty(pid){let q=0;(state.stockMoves||[]).forEach(m=>{if(m.clientId===CID&&m.prodId===pid){if(m.type==='out')q-=m.qty;else q+=m.qty;}});return Math.round(q*100)/100;}
-function stkVal(){let v=0;stkProds().forEach(p=>{v+=Math.max(0,stkQty(p.id))*(p.price||0);});return v;}
+/* --- Coût moyen pondéré (CMP) : recalculé depuis le registre des mouvements --- */
+function stkMovesOf(pid){return (state.stockMoves||[]).filter(m=>m.clientId===CID&&m.prodId===pid).slice().reverse();}
+function stkCost(pid){const p=(state.stockProducts||[]).find(x=>x.id===pid)||{};
+  let qty=0,cmp=Number(p.price)||0;
+  stkMovesOf(pid).forEach(function(m){
+    if(m.type==='in'){const c=(m.cost!=null&&m.cost!=='')?Number(m.cost):cmp;const base=Math.max(0,qty);const nq=base+m.qty;
+      if(nq>0)cmp=((base*cmp)+(m.qty*c))/nq;
+      qty+=m.qty;}
+    else if(m.type==='out')qty-=m.qty;else qty+=m.qty;});
+  return Math.round(cmp*10000)/10000;}
+function stkLastPrice(pid){const h=stkPriceHist(pid);return h.length?h[0].cost:((state.stockProducts||[]).find(x=>x.id===pid)||{}).price||0;}
+function stkPriceHist(pid){return (state.stockMoves||[]).filter(m=>m.clientId===CID&&m.prodId===pid&&m.type==='in'&&m.cost!=null&&m.cost!=='').map(m=>({at:m.at,cost:Number(m.cost),by:m.by,motif:m.motif}));}
+function stkPriceJump(pid){const h=stkPriceHist(pid);if(h.length<2)return null;
+  const a=h[0].cost,b=h[1].cost;if(!b)return null;const pc=Math.round((a-b)/b*1000)/10;
+  return Math.abs(pc)<0.1?null:{pct:pc,from:b,to:a,at:h[0].at};}
+function stkMoveVal(m){const c=(m.ucost!=null)?Number(m.ucost):stkCost(m.prodId);return m.qty*c;}
+function stkVal(){let v=0;stkProds().forEach(p=>{v+=Math.max(0,stkQty(p.id))*stkCost(p.id);});return v;}
+/* --- Lien Stock -> Food Cost : le CMP alimente le coût des recettes --- */
+function stkIngLink(g){if(!g||!modOn('stock'))return null;
+  const p=(state.stockProducts||[]).find(x=>x.clientId===CID&&x.foodIngId===g.id&&!x.archived);
+  if(!p)return null;const c=stkCost(p.id);if(!c)return null;return {prod:p,cost:c};}
+function stkIngPrice(g){const l=stkIngLink(g);if(!l)return null;
+  const from=l.prod.unit,to=g.unit||l.prod.unit;
+  if(from===to)return l.cost;
+  const a=FOOD_UNITS[from],b=FOOD_UNITS[to];
+  if(!a||!b||a.f!==b.f)return null;
+  const f=foodUnitFactor(from,to);return f?l.cost/f:null;}
 function stkUnder(){return stkProds().filter(p=>(p.minQty||0)>0&&stkQty(p.id)<p.minQty);}
 function stkBy(){if(typeof tbStockUser!=='undefined'&&tbStockUser){const e=state.employees.find(x=>x.id===tbStockUser);if(e)return e.name;}return 'Back-office';}
-function stkMove(prodId,type,qty,motif,origin,note,refId,by){state.stockMoves=state.stockMoves||[];
+function stkMove(prodId,type,qty,motif,origin,note,refId,by,cost){state.stockMoves=state.stockMoves||[];
   let q=Number(qty)||0;if(type!=='adjust')q=Math.abs(q);
-  state.stockMoves.unshift({id:'sm'+Date.now()+Math.random().toString(36).slice(2,5),clientId:CID,prodId:prodId,type:type,qty:Math.round(q*100)/100,motif:motif||'',origin:origin||'manuel',by:by||stkBy(),at:new Date().toISOString(),note:note||'',refId:refId||''});}
+  const hasCost=(type==='in'&&cost!=null&&cost!==''&&!isNaN(Number(cost)));
+  const prev=stkCost(prodId);
+  const ucost=hasCost?Number(cost):prev;
+  state.stockMoves.unshift({id:'sm'+Date.now()+Math.random().toString(36).slice(2,5),clientId:CID,prodId:prodId,type:type,qty:Math.round(q*100)/100,motif:motif||'',origin:origin||'manuel',by:by||stkBy(),at:new Date().toISOString(),note:note||'',refId:refId||'',cost:hasCost?Number(cost):null,ucost:Math.round(ucost*10000)/10000});
+  if(hasCost){const p=(state.stockProducts||[]).find(x=>x.id===prodId);if(p)p.price=Number(cost);
+    if(prev&&Math.abs(Number(cost)-prev)/prev>0.08){const pc=Math.round((Number(cost)-prev)/prev*1000)/10;
+      setTimeout(function(){toast((pc>0?'⚠ Prix en hausse de +':'Prix en baisse de ')+pc+'% vs le coût moyen');},900);}}}
 function stkEur(n){return (Math.round(n*100)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
 function stkCats(){const s={};stkProds(true).forEach(p=>{if(p.cat)s[p.cat]=1;});return Object.keys(s).sort();}
 function stkOriginChip(o){const map={manuel:['Manuel','#f1f5f9','#334155'],reception:['Réception','#e9fbf1','#0e9f6e'],perte:['Perte','#fde7ec','#e11d48'],dlc:['DLC','#fde7ec','#e11d48'],inventaire:['Inventaire','#eef2ff','#4f46e5']};const x=map[o]||map.manuel;return '<span class="chip" style="background:'+x[1]+';color:'+x[2]+';font-size:10.5px">'+x[0]+'</span>';}
@@ -3636,7 +3671,8 @@ function stkRenderTab(){const b=document.getElementById('stk_body');if(!b)return
   if(STK_TAB==='dash'){
     const under=stkUnder();const now=new Date();
     const pertesM=(state.stockMoves||[]).filter(m=>m.clientId===CID&&m.type==='out'&&(m.origin==='perte'||m.origin==='dlc')&&new Date(m.at).getMonth()===now.getMonth()&&new Date(m.at).getFullYear()===now.getFullYear());
-    const pertesVal=pertesM.reduce((s,m)=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};return s+m.qty*(p.price||0);},0);
+    const pertesVal=pertesM.reduce((s,m)=>s+stkMoveVal(m),0);
+    const hausses=stkProds().map(p=>({p:p,j:stkPriceJump(p.id)})).filter(x=>x.j&&x.j.pct>=5).sort((a,b)=>b.j.pct-a.j.pct);
     const lastInv=(state.stockInvs||[]).filter(i=>i.clientId===CID&&i.status==='done').sort((a,b)=>(b.closedAt||'').localeCompare(a.closedAt||''))[0];
     b.innerHTML='<div class="kpis" style="grid-template-columns:repeat(4,1fr)">'+kpi('Valeur du stock',stkEur(stkVal()),prods.length+' produits actifs','up')+kpi('Produits sous seuil',under.length,under.length?'à commander':'tout est au-dessus des seuils',under.length?'down':'up')+kpi('Pertes du mois',stkEur(pertesVal),pertesM.length+' sortie(s) perte/DLC','up')+kpi('Dernier inventaire',lastInv?new Date(lastInv.closedAt).toLocaleDateString('fr-FR'):'—',lastInv?('écart '+stkEur(lastInv.valEcart||0)):'aucun inventaire validé','up')+'</div>'
     +'<div class="grid2">'
@@ -3645,6 +3681,9 @@ function stkRenderTab(){const b=document.getElementById('stk_body');if(!b)return
     +'<div class="panel"><div class="ph"><h3>Derniers mouvements</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Date</th><th>Produit</th><th>Mvt</th><th>Origine</th></tr></thead><tbody>'
      +((state.stockMoves||[]).filter(m=>m.clientId===CID).slice(0,8).map(m=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};return '<tr><td class="tsub">'+new Date(m.at).toLocaleDateString('fr-FR')+'</td><td class="tname">'+escH(p.name||'?')+'</td><td><b style="color:'+(m.type==='out'?'#e11d48':m.type==='adjust'?'#4f46e5':'#0e9f6e')+'">'+(m.type==='out'?'−'+m.qty:m.type==='adjust'?(m.qty>0?'+':'')+m.qty:'+'+m.qty)+' '+(p.unit||'')+'</b></td><td>'+stkOriginChip(m.origin)+'</td></tr>';}).join('')||'<tr><td colspan="4" class="empty" style="padding:22px;text-align:center">Aucun mouvement pour le moment.</td></tr>')+'</tbody></table></div></div>'
     +'</div>'
+    +(hausses.length?('<div class="panel" style="margin-top:16px"><div class="ph"><h3>📈 Hausses de prix fournisseurs ('+hausses.length+')</h3><div class="sub">Comparaison entre vos deux derniers achats — impact direct sur le coût de vos recettes</div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Produit</th><th>Prix précédent</th><th>Dernier prix</th><th>Variation</th><th>Fournisseur</th><th style="text-align:right"></th></tr></thead><tbody>'
+      +hausses.map(function(x){return '<tr><td class="tname">'+escH(x.p.name)+'</td><td class="tsub">'+stkEur(x.j.from)+'</td><td><b>'+stkEur(x.j.to)+'</b></td><td><span class="chip bad">+'+x.j.pct+'%</span></td><td class="tsub">'+escH(x.p.supplier||'—')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="stkPriceModal(\''+x.p.id+'\')">Historique</button></td></tr>';}).join('')
+      +'</tbody></table></div></div>'):'')
     +helpBox([['Entrées automatiques','chaque réception fournisseur validée sur la tablette ou au BO propose l\'ajout des quantités au stock.'],['Sorties automatiques','les pertes déclarées et les DLC dépassées décrémentent le stock des produits liés.'],['Inventaire','lancez un inventaire (onglet Inventaires) pour recaler le stock théorique sur le comptage réel.']]);
   } else if(STK_TAB==='prods'){
     const cats=stkCats();const q=(STK_F.q||'').toLowerCase();
@@ -3652,12 +3691,14 @@ function stkRenderTab(){const b=document.getElementById('stk_body');if(!b)return
     b.innerHTML='<div class="panel"><div class="ph"><div><h3>Produits ('+stkProds().length+')</h3><div class="sub">'+stkProds(true).filter(p=>p.archived).length+' archivé(s)</div></div><div class="actions"><button class="btn ghost sm" onclick="stkImportFood()">⇩ Importer de Food Cost</button><button class="btn sm" onclick="stkProdForm()">＋ Nouveau produit</button></div></div>'
     +'<div class="pb" style="padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap"><input placeholder="🔍 Rechercher…" value="'+escH(STK_F.q)+'" oninput="STK_F.q=this.value;stkRenderTab()" style="flex:1;min-width:160px;padding:8px 11px;border:1px solid var(--line);border-radius:10px">'
     +'<select onchange="STK_F.cat=this.value;stkRenderTab()" style="padding:8px 11px;border:1px solid var(--line);border-radius:10px"><option value="">Toutes les catégories</option>'+cats.map(c=>'<option '+(STK_F.cat===c?'selected':'')+'>'+escH(c)+'</option>').join('')+'<option value="__arch"'+(STK_F.cat==='__arch'?' selected':'')+'>🗃 Archivés</option></select></div>'
-    +'<div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Valeur</th><th>Prix/unité</th><th>Seuil</th><th>Fournisseur</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
-    +(list.length?list.map(p=>{const qy=stkQty(p.id);const low=(p.minQty||0)>0&&qy<p.minQty;
-      return '<tr'+(p.archived?' style="opacity:.55"':'')+'><td class="tname">'+escH(p.name)+(p.foodIngId?' <span class="chip" style="background:#f0e9fd;color:#7c3aed;font-size:9.5px" title="Lié à Food Cost">FC</span>':'')+'</td><td class="tsub">'+escH(p.cat||'—')+'</td>'
+    +'<div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Valeur</th><th>Coût moyen</th><th>Seuil</th><th>Fournisseur</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
+    +(list.length?list.map(p=>{const qy=stkQty(p.id);const low=(p.minQty||0)>0&&qy<p.minQty;const cmp=stkCost(p.id);const j=stkPriceJump(p.id);
+      return '<tr'+(p.archived?' style="opacity:.55"':'')+'><td class="tname">'+escH(p.name)+(p.foodIngId?' <span class="chip" style="background:#f0e9fd;color:#7c3aed;font-size:9.5px" title="Le coût de vos recettes suit ce produit">Food Cost</span>':'')+'</td><td class="tsub">'+escH(p.cat||'—')+'</td>'
       +'<td><b style="color:'+(qy<0?'#e11d48':low?'#d97706':'#0b1220')+'">'+qy+' '+p.unit+'</b>'+(low?' <span class="chip warn" style="font-size:9.5px">sous seuil</span>':'')+(qy<0?' <span class="chip bad" style="font-size:9.5px">négatif</span>':'')+'</td>'
-      +'<td>'+stkEur(Math.max(0,qy)*(p.price||0))+'</td><td class="tsub">'+stkEur(p.price||0)+'</td><td class="tsub">'+(p.minQty||0)+' '+p.unit+'</td><td class="tsub">'+escH(p.supplier||'—')+'</td>'
-      +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="stkProdForm(\''+p.id+'\')">✎</button> <button class="btn ghost sm" onclick="stkArchive(\''+p.id+'\')">'+(p.archived?'↩':'🗃')+'</button></td></tr>';}).join('')
+      +'<td>'+stkEur(Math.max(0,qy)*cmp)+'</td>'
+      +'<td class="tsub">'+stkEur(cmp)+(j?' <span style="font-weight:800;font-size:11px;color:'+(j.pct>0?'#e11d48':'#0e9f6e')+'">'+(j.pct>0?'▲+':'▼')+j.pct+'%</span>':'')+'</td>'
+      +'<td class="tsub">'+(p.minQty||0)+' '+p.unit+'</td><td class="tsub">'+escH(p.supplier||'—')+'</td>'
+      +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="stkPriceModal(\''+p.id+'\')" title="Historique des prix">📈</button> <button class="btn ghost sm" onclick="stkProdForm(\''+p.id+'\')">✎</button> <button class="btn ghost sm" onclick="stkArchive(\''+p.id+'\')">'+(p.archived?'↩':'🗃')+'</button></td></tr>';}).join('')
      :'<tr><td colspan="8" class="empty" style="padding:26px;text-align:center">Aucun produit. Créez vos produits ou importez vos ingrédients Food Cost.</td></tr>')+'</tbody></table></div></div>';
   } else if(STK_TAB==='moves'){
     const now=new Date();
@@ -3689,18 +3730,33 @@ function stkRenderTab(){const b=document.getElementById('stk_body');if(!b)return
 }
 function stkProdForm(id){const p=id?stkProds(true).find(x=>x.id===id):null;
   const fours=['Aucun'].concat((state.fournisseurs||[]).filter(f=>f.clientId===CID).map(f=>f.nom));
+  const ings=(state.foodIng||[]).filter(g=>g.clientId===CID);
+  const ingLbl=['Aucun'].concat(ings.map(g=>g.name+' ('+(g.unit||'')+')'));
+  const curIng=p&&p.foodIngId?(function(){const i=ings.findIndex(g=>g.id===p.foodIngId);return i>=0?ingLbl[i+1]:'Aucun';})():'Aucun';
   openForm(id?'Modifier le produit':'Nouveau produit',[
     {key:'name',label:'Nom du produit',value:p?p.name:''},
     {key:'cat',label:'Catégorie',value:p?(p.cat||''):'',ph:'Ex. Viandes, Boissons, Emballages…'},
     {key:'unit',label:'Unité',type:'select',options:STK_UNITS,value:p?p.unit:'kg'},
-    {key:'price',label:'Prix d\'achat par unité (€)',type:'number',value:p?p.price:'',ph:'Ex. 2.50'},
+    {key:'price',label:'Prix d\'achat de départ (€ / unité)',type:'number',value:p?p.price:'',ph:'Ex. 2.50 — ensuite calculé sur vos réceptions'},
     {key:'minQty',label:'Seuil minimum (alerte)',type:'number',value:p?p.minQty:0},
-    {key:'supplier',label:'Fournisseur',type:'select',options:fours,value:p&&p.supplier?p.supplier:'Aucun'}
+    {key:'supplier',label:'Fournisseur',type:'select',options:fours,value:p&&p.supplier?p.supplier:'Aucun'},
+    {key:'ing',label:'Ingrédient Food Cost lié (le coût des recettes suivra ce produit)',type:'select',options:ingLbl,value:curIng}
   ],function(v){if(!v.name.trim()){toast('Nom requis');return;}
-    const o={name:v.name.trim(),cat:(v.cat||'').trim(),unit:v.unit,price:Number(String(v.price).replace(',','.'))||0,minQty:Number(String(v.minQty).replace(',','.'))||0,supplier:v.supplier==='Aucun'?'':v.supplier};
-    if(p){Object.assign(p,o);if(p.foodIngId){const g=(state.foodIng||[]).find(x=>x.id===p.foodIngId);if(g&&o.price){g.priceHT=Math.round(o.price*(g.purchQty||1)*100)/100;}}}
-    else state.stockProducts.push(Object.assign({id:'sp'+Date.now(),clientId:CID,archived:false,foodIngId:''},o));
+    const ii=ingLbl.indexOf(v.ing);const ingId=(ii>0&&ings[ii-1])?ings[ii-1].id:'';
+    const o={name:v.name.trim(),cat:(v.cat||'').trim(),unit:v.unit,price:Number(String(v.price).replace(',','.'))||0,minQty:Number(String(v.minQty).replace(',','.'))||0,supplier:v.supplier==='Aucun'?'':v.supplier,foodIngId:ingId};
+    if(p)Object.assign(p,o);
+    else state.stockProducts.push(Object.assign({id:'sp'+Date.now(),clientId:CID,archived:false},o));
     renderClient('stock');toast('Produit enregistré');});}
+function stkPriceModal(pid){const p=stkProds(true).find(x=>x.id===pid);if(!p)return;
+  const h=stkPriceHist(pid);const j=stkPriceJump(pid);
+  openInfoHTML('Prix d\'achat — '+p.name,
+   '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">'
+   +'<div style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:12px;padding:12px 14px"><div class="tsub" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px">Coût moyen pondéré</div><div style="font-size:22px;font-weight:800">'+stkEur(stkCost(pid))+'</div><div class="tsub" style="font-size:11px">par '+escH(p.unit)+' · utilisé pour la valeur du stock et vos recettes</div></div>'
+   +'<div style="flex:1;min-width:150px;border:1px solid var(--line);border-radius:12px;padding:12px 14px"><div class="tsub" style="font-size:11px;text-transform:uppercase;letter-spacing:.5px">Dernier prix payé</div><div style="font-size:22px;font-weight:800">'+stkEur(stkLastPrice(pid))+'</div>'+(j?'<div style="font-size:11.5px;font-weight:700;color:'+(j.pct>0?'#e11d48':'#0e9f6e')+'">'+(j.pct>0?'+':'')+j.pct+'% vs achat précédent</div>':'<div class="tsub" style="font-size:11px">—</div>')+'</div></div>'
+   +(h.length?('<table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:6px;font-size:11px;color:#64748b">DATE</th><th style="text-align:right;padding:6px;font-size:11px;color:#64748b">PRIX / '+escH(p.unit).toUpperCase()+'</th><th style="text-align:right;padding:6px;font-size:11px;color:#64748b">VARIATION</th><th style="text-align:left;padding:6px;font-size:11px;color:#64748b">SAISI PAR</th></tr>'
+     +h.map(function(x,i){const prev=h[i+1];const pc=prev&&prev.cost?Math.round((x.cost-prev.cost)/prev.cost*1000)/10:null;
+       return '<tr style="border-top:1px solid #eef2f7"><td style="padding:6px;font-size:13px">'+new Date(x.at).toLocaleDateString('fr-FR')+'</td><td style="padding:6px;text-align:right;font-weight:700;font-size:13px">'+stkEur(x.cost)+'</td><td style="padding:6px;text-align:right;font-size:12.5px;font-weight:700;color:'+(pc==null?'#94a3b8':pc>0?'#e11d48':pc<0?'#0e9f6e':'#64748b')+'">'+(pc==null?'—':(pc>0?'+':'')+pc+'%')+'</td><td style="padding:6px;font-size:12.5px;color:#64748b">'+escH(x.by||'—')+'</td></tr>';}).join('')+'</table>')
+     :'<div class="tsub" style="text-align:center;padding:20px">Aucun prix enregistré pour l\'instant. Saisissez le prix d\'achat lors de vos prochaines entrées de stock : l\'historique se construira tout seul.</div>'),580);}
 function stkImportFood(){state.foodIng=state.foodIng||[];
   const done=stkProds(true).map(p=>p.foodIngId).filter(Boolean);
   const cand=(state.foodIng||[]).filter(g=>g.clientId===CID&&done.indexOf(g.id)<0);
@@ -3721,7 +3777,19 @@ function _stkQtyForm(title,motifs,cb){const prods=stkProds();if(!prods.length){t
   ],function(v){const idx=prods.map(p=>p.name+' ('+stkQty(p.id)+' '+p.unit+')').indexOf(v.prod);const p=prods[idx];
     const qy=Number(String(v.qty).replace(',','.'));if(!p||!qy||qy<=0){toast('Quantité invalide');return;}
     cb(p,qy,v.motif,v.note);});}
-function stkEntryForm(){_stkQtyForm('Entrée de stock',STK_MOTIFS_IN,function(p,qy,motif,note){stkMove(p.id,'in',qy,motif,'manuel',note);renderClient('stock');toast('+'+qy+' '+p.unit+' — '+p.name);});}
+function stkEntryForm(){const prods=stkProds();if(!prods.length){toast('Créez d\'abord des produits');return;}
+  const labels=prods.map(p=>p.name+' ('+stkQty(p.id)+' '+p.unit+')');
+  openForm('Entrée de stock',[
+    {key:'prod',label:'Produit',type:'select',options:labels},
+    {key:'qty',label:'Quantité reçue',type:'number',value:'',ph:'Ex. 5'},
+    {key:'price',label:'Prix d\'achat HT par unité (€)',type:'number',value:'',ph:'Vide = coût moyen inchangé'},
+    {key:'motif',label:'Motif',type:'select',options:STK_MOTIFS_IN},
+    {key:'note',label:'Commentaire (optionnel)',value:''}
+  ],function(v){const p=prods[labels.indexOf(v.prod)];const qy=Number(String(v.qty).replace(',','.'));
+    if(!p||!qy||qy<=0){toast('Quantité invalide');return;}
+    const pr=String(v.price||'').trim()!==''?Number(String(v.price).replace(',','.')):null;
+    stkMove(p.id,'in',qy,v.motif,'manuel',v.note,'','',pr);
+    renderClient('stock');toast('+'+qy+' '+p.unit+' — '+p.name);});}
 function stkOutForm(){_stkQtyForm('Sortie de stock',STK_MOTIFS_OUT,function(p,qy,motif,note){stkMove(p.id,'out',qy,motif,'manuel',note);renderClient('stock');toast('−'+qy+' '+p.unit+' — '+p.name);});}
 function stkInvStart(by){const prods=stkProds();if(!prods.length){toast('Créez d\'abord des produits');return null;}
   const inv={id:'si'+Date.now(),clientId:CID,startedAt:new Date().toISOString(),closedAt:null,status:'open',by:by||stkBy(),lines:prods.map(p=>({prodId:p.id,theo:stkQty(p.id),counted:null})),valEcart:0};
@@ -3744,14 +3812,15 @@ function tbStockLogin(id){tbStockUser=id;tbGo('stockmenu');}
 function tbStockMove(type){const pid=(document.getElementById('tbs_prod')||{}).value;const q=Number(String((document.getElementById('tbs_qty')||{}).value||'').replace(',','.'));const motif=(document.getElementById('tbs_motif')||{}).value||'';
   if(!pid||!q||q<=0){toast('Saisissez une quantité');return;}
   const su=(state.employees.find(e=>e.id===tbStockUser)||{});
-  stkMove(pid,type,q,motif,'manuel','','',su.name||'Tablette');
+  const pv=String((document.getElementById('tbs_price')||{}).value||'').trim();
+  stkMove(pid,type,q,motif,'manuel','','',su.name||'Tablette',(type==='in'&&pv!=='')?Number(pv.replace(',','.')):null);
   const p=stkProds(true).find(x=>x.id===pid)||{};
   toast((type==='in'?'＋':'−')+q+' '+(p.unit||'')+' — '+(p.name||''));
   tbRender('stockmenu');}
 function stkInvValidate(id,fromTablet){const inv=(state.stockInvs||[]).find(x=>x.id===id);if(!inv)return;
   let val=0,n=0;
   inv.lines.forEach(l=>{if(l.counted==null)return;const diff=Math.round((l.counted-l.theo)*100)/100;
-    const p=stkProds(true).find(x=>x.id===l.prodId)||{};val+=diff*(p.price||0);
+    val+=diff*stkCost(l.prodId);
     if(diff!==0){stkMove(l.prodId,'adjust',diff,'Recalage inventaire','inventaire','',inv.id,inv.by);}n++;});
   if(!n){toast('Saisissez au moins un comptage');return;}
   inv.status='done';inv.closedAt=new Date().toISOString();inv.valEcart=Math.round(val*100)/100;
@@ -3770,26 +3839,29 @@ function _stkPrint(title,body){const w=window.open('','_blank');const est=state.
   w.document.close();}
 function stkStatePdf(){const prods=stkProds();
   _stkPrint('État du stock valorisé','<table><tr><th>Produit</th><th>Catégorie</th><th>Quantité</th><th>Prix/unité</th><th>Valeur</th><th>Seuil</th></tr>'
-  +prods.map(p=>{const qy=stkQty(p.id);return '<tr><td>'+escH(p.name)+'</td><td>'+escH(p.cat||'')+'</td><td>'+qy+' '+p.unit+'</td><td>'+stkEur(p.price||0)+'</td><td>'+stkEur(Math.max(0,qy)*(p.price||0))+'</td><td>'+(p.minQty||0)+'</td></tr>';}).join('')
+  +prods.map(p=>{const qy=stkQty(p.id);const c=stkCost(p.id);return '<tr><td>'+escH(p.name)+'</td><td>'+escH(p.cat||'')+'</td><td>'+qy+' '+p.unit+'</td><td>'+stkEur(c)+'</td><td>'+stkEur(Math.max(0,qy)*c)+'</td><td>'+(p.minQty||0)+'</td></tr>';}).join('')
   +'<tr><th colspan="4">VALEUR TOTALE</th><th colspan="2">'+stkEur(stkVal())+'</th></tr></table>');}
 function _stkCsv(name,lines){const csv='﻿'+lines.map(r=>r.map(c=>{c=String(c==null?'':c);return (c.indexOf(';')>-1||c.indexOf('"')>-1)?('"'+c.replace(/"/g,'""')+'"'):c;}).join(';')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=name;a.click();}
-function stkStateCsv(){_stkCsv('stock_'+new Date().toISOString().slice(0,10)+'.csv',[['Produit','Catégorie','Unité','Quantité','Prix unitaire (€)','Valeur (€)','Seuil','Fournisseur']].concat(stkProds().map(p=>{const qy=stkQty(p.id);return [p.name,p.cat||'',p.unit,String(qy).replace('.',','),String(p.price||0).replace('.',','),String(Math.round(Math.max(0,qy)*(p.price||0)*100)/100).replace('.',','),p.minQty||0,p.supplier||''];})));toast('Export Excel téléchargé');}
+function stkStateCsv(){_stkCsv('stock_'+new Date().toISOString().slice(0,10)+'.csv',[['Produit','Catégorie','Unité','Quantité','Coût moyen pondéré (€)','Dernier prix payé (€)','Valeur (€)','Seuil','Fournisseur']].concat(stkProds().map(p=>{const qy=stkQty(p.id);const c=stkCost(p.id);return [p.name,p.cat||'',p.unit,String(qy).replace('.',','),String(Math.round(c*10000)/10000).replace('.',','),String(stkLastPrice(p.id)).replace('.',','),String(Math.round(Math.max(0,qy)*c*100)/100).replace('.',','),p.minQty||0,p.supplier||''];})));toast('Export Excel téléchargé');}
 function stkMovesCsv(){_stkCsv('mouvements_stock.csv',[['Date','Produit','Type','Quantité','Motif','Origine','Auteur','Note']].concat((state.stockMoves||[]).filter(m=>m.clientId===CID).map(m=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};return [new Date(m.at).toLocaleString('fr-FR'),p.name||'?',m.type==='in'?'Entrée':m.type==='out'?'Sortie':'Recalage',String(m.qty).replace('.',','),m.motif||'',m.origin||'',m.by||'',m.note||''];})));toast('Export Excel téléchargé');}
 function stkInvPdf(id){const inv=(state.stockInvs||[]).find(x=>x.id===id);if(!inv)return;
   _stkPrint('Rapport d\'inventaire du '+new Date(inv.startedAt).toLocaleDateString('fr-FR'),
   '<div class="sub">Réalisé par : '+escH(inv.by||'—')+' — validé le '+(inv.closedAt?new Date(inv.closedAt).toLocaleString('fr-FR'):'')+'</div>'
   +'<table><tr><th>Produit</th><th>Théorique</th><th>Compté</th><th>Écart</th><th>Écart valorisé</th></tr>'
-  +inv.lines.filter(l=>l.counted!=null).map(l=>{const p=stkProds(true).find(x=>x.id===l.prodId)||{};const ec=Math.round((l.counted-l.theo)*100)/100;return '<tr><td>'+escH(p.name||'?')+'</td><td>'+l.theo+' '+(p.unit||'')+'</td><td>'+l.counted+' '+(p.unit||'')+'</td><td>'+(ec>0?'+':'')+ec+'</td><td>'+stkEur(ec*(p.price||0))+'</td></tr>';}).join('')
+  +inv.lines.filter(l=>l.counted!=null).map(l=>{const p=stkProds(true).find(x=>x.id===l.prodId)||{};const ec=Math.round((l.counted-l.theo)*100)/100;return '<tr><td>'+escH(p.name||'?')+'</td><td>'+l.theo+' '+(p.unit||'')+'</td><td>'+l.counted+' '+(p.unit||'')+'</td><td>'+(ec>0?'+':'')+ec+'</td><td>'+stkEur(ec*stkCost(l.prodId))+'</td></tr>';}).join('')
   +'<tr><th colspan="4">ÉCART TOTAL</th><th>'+stkEur(inv.valEcart||0)+'</th></tr></table>');}
 function stkMatch(name){const n=(name||'').toLowerCase().trim();if(!n)return null;
   return stkProds().find(p=>p.name.toLowerCase().trim()===n)||stkProds().find(p=>p.name.toLowerCase().indexOf(n)>-1||n.indexOf(p.name.toLowerCase())>-1)||null;}
 function stockAfterReception(produit,fournisseur,by){if(!modOn('stock'))return;const p=stkMatch(produit);if(!p)return;
   openInfoHTML('Ajouter au stock ?','<div style="font-size:13.5px;color:#334155;line-height:1.5;margin-bottom:12px">Réception de <b>'+escH(produit)+'</b>'+(fournisseur?' ('+escH(fournisseur)+')':'')+' — quelle quantité ajouter au stock de « '+escH(p.name)+' » ?</div>'
-  +'<div style="display:flex;gap:8px;align-items:center"><input id="stk_rq" type="number" step="0.01" placeholder="Quantité" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:16px;text-align:center"><span style="font-weight:700">'+p.unit+'</span></div>'
+  +'<div style="display:flex;gap:8px;align-items:center"><input id="stk_rq" type="number" step="0.01" placeholder="Quantité" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:16px;text-align:center"><span style="font-weight:700;width:64px">'+p.unit+'</span></div>'
+  +'<div style="display:flex;gap:8px;align-items:center;margin-top:10px"><input id="stk_rp" type="number" step="0.01" placeholder="Prix d\'achat HT (optionnel)" value="'+(stkCost(p.id)||'')+'" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:16px;text-align:center"><span style="font-weight:700;width:64px">€ / '+p.unit+'</span></div>'
+  +'<div class="tsub" style="font-size:11.5px;margin-top:6px">Le prix met à jour le coût moyen du produit et le coût de vos recettes.</div>'
   +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn ghost" style="flex:1" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">Ignorer</button><button class="btn" style="flex:1" onclick="stkRecepConfirm(\''+p.id+'\',\''+escH(fournisseur||'')+'\',\''+escH(by||'')+'\')">＋ Ajouter au stock</button></div>',420);}
 function stkRecepConfirm(pid,fourn,by){const q=Number(String((document.getElementById('stk_rq')||{}).value||'').replace(',','.'));if(!q||q<=0){toast('Quantité invalide');return;}
-  stkMove(pid,'in',q,'Livraison'+(fourn?' '+fourn:''),'reception','',by||'');
+  const pv=String((document.getElementById('stk_rp')||{}).value||'').trim();
+  stkMove(pid,'in',q,'Livraison'+(fourn?' '+fourn:''),'reception','','',by||'',pv!==''?Number(pv.replace(',','.')):null);
   document.getElementById('info_mask').classList.remove('on');toast('✓ +'+q+' ajouté au stock');}
 function stkFromDlc(dlcId){const d=(state.dlc||[]).find(x=>x.id===dlcId);if(!d)return;
   const p=stkMatch(d.produit);if(!p){toast('Aucun produit de stock correspondant');return;}
