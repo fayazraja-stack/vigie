@@ -1413,11 +1413,35 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
      +(planSelTpl?'<button class="btn ghost sm" onclick="formShiftTpl(\''+planSelTpl+'\')">Modifier</button><button class="btn ghost sm" onclick="rhDelTpl(\''+planSelTpl+'\')">Suppr.</button>':'')
      +'</div><div class="tsub" style="margin-top:8px">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez un favori, puis une case pour poser un créneau.')+'</div></div></div>';
     if(view==='semaine'){
-      ph+='<div class="panel"><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th>'+days.map(d=>'<th style="text-align:center">'+d+'</th>').join('')+'<th style="text-align:center">Total</th></tr></thead><tbody>'
-      +emps.map(e=>{let tot=0;const cells=days.map((d,di)=>{const sh=state.shifts.filter(s=>s.clientId===cid&&s.empId===e.id&&s.day===di);sh.forEach(s=>{const t=tpls.find(x=>x.id===s.templateId);if(t)tot+=shiftHours(t);});
-        return '<td style="text-align:center;cursor:pointer;min-width:104px;vertical-align:top" onclick="rhAssign(\''+e.id+'\','+di+')">'+(sh.length?sh.map(s=>{const t=tpls.find(x=>x.id===s.templateId)||{};return '<div class="chip" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px auto;display:block">'+(t.label||'')+' <span style="cursor:pointer" onclick="event.stopPropagation();rhRemoveShift(\''+s.id+'\')">✕</span></div>';}).join(''):'<span style="color:#cbd5e1;font-size:18px">＋</span>')+'</td>';}).join('');
+      const wk=rhWeekKey(planDate);const mon=rhMonday(planDate);const today=new Date();
+      const wShifts=rhShiftsOf(cid,wk);
+      const sessions=rhBadgeSessions(cid);
+      const jobs=state.jobs.filter(j=>state.employees.some(e=>e.clientId===cid&&e.jobId===j.id));
+      const shown=emps.filter(e=>(!planFilter.job||e.jobId===planFilter.job)&&(!planFilter.emp||e.id===planFilter.emp));
+      ph+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'
+       +'<select onchange="rhSetPlanFilter(\'job\',this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les postes</option>'+jobs.map(j=>'<option value="'+j.id+'"'+(planFilter.job===j.id?' selected':'')+'>'+escH(j.name)+'</option>').join('')+'</select>'
+       +'<select onchange="rhSetPlanFilter(\'emp\',this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'"'+(planFilter.emp===e.id?' selected':'')+'>'+escH(e.name)+'</option>').join('')+'</select>'
+       +'<span class="tsub" style="align-self:center;font-size:12px">Cases orange = pointages badgeuse (réels) · chips colorées = planifié. Glissez-déposez un shift pour le déplacer.</span></div>';
+      ph+='<div class="panel"><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th>'
+       +days.map((d,di)=>{const dd=new Date(mon);dd.setDate(mon.getDate()+di);const isT=_sameDay(dd,today);
+         return '<th style="text-align:center;'+(isT?'background:#eef2f7':'')+'"><div style="font-size:10px;color:#94a3b8;letter-spacing:1px">'+d.toUpperCase()+'.</div><div style="font-size:16px">'+dd.getDate()+'</div></th>';}).join('')
+       +'<th style="text-align:center">Total</th></tr></thead><tbody>'
+      +shown.map(e=>{let tot=0;let badgeMin=0;
+        const cells=days.map((d,di)=>{
+          const dd=new Date(mon);dd.setDate(mon.getDate()+di);const dk=rhDateKey(dd);const isT=_sameDay(dd,today);
+          const sh=wShifts.filter(s=>s.empId===e.id&&s.day===di);
+          sh.forEach(s=>{const t=tpls.find(x=>x.id===s.templateId);if(t)tot+=shiftHours(t);});
+          const sess=sessions.filter(s=>(s.empId===e.id||s.name===e.name)&&s.date===dk);
+          sess.forEach(s=>{if(s.min)badgeMin+=s.min;});
+          return '<td style="text-align:center;cursor:pointer;min-width:106px;vertical-align:top;'+(isT?'background:#f6f8fb;':'')+'" onclick="rhAssign(\''+e.id+'\','+di+')" ondragover="event.preventDefault()" ondrop="rhDropShift(event,\''+e.id+'\','+di+')">'
+           +(sh.length?sh.map(s=>{const t=tpls.find(x=>x.id===s.templateId)||{};return '<div class="chip" draggable="true" ondragstart="rhDragShift(event,\''+s.id+'\')" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px auto;display:block;cursor:grab">'+(t.label||'')+'<br><span style="font-size:10px">'+(t.start||'')+' - '+(t.end||'')+'</span> <span style="cursor:pointer" onclick="event.stopPropagation();rhRemoveShift(\''+s.id+'\')">✕</span></div>';}).join(''):'')
+           +sess.map(rhBadgeChip).join('')
+           +(!sh.length&&!sess.length?'<span style="color:#cbd5e1;font-size:18px">＋</span>':'')
+           +'</td>';}).join('');
         const diff=Math.round((tot-e.contract)*10)/10;const j=state.jobs.find(x=>x.id===e.jobId)||{};
-        return '<tr><td class="tname">'+e.name+'<div class="tsub">'+(j.name||'')+'</div></td>'+cells+'<td style="text-align:center"><div class="tsub">Contrat '+e.contract+'h</div><b>'+tot+'h</b><br><span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span></td></tr>';}).join('')
+        return '<tr><td class="tname">'+e.name+'<div class="tsub">'+(j.name||'')+'</div></td>'+cells
+         +'<td style="text-align:center"><div class="tsub">Contrat '+e.contract+'h</div><b>'+(Math.round(tot*10)/10)+'h</b> <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span>'
+         +(badgeMin?'<div style="color:#b45309;font-weight:800;font-size:12px;margin-top:4px">⏱ '+fmtDur(badgeMin)+' badgé</div>':'<div class="tsub" style="font-size:11px;margin-top:4px">— badgé</div>')+'</td></tr>';}).join('')
       +'</tbody></table></div></div>';
     } else if(view==='jour'){ ph+=rhDayView(emps,tpls,cid); }
     else { ph+=rhMonthView(emps,tpls,cid); }
@@ -1426,11 +1450,24 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
   } else if(clientView==='rh_heures'){
     const emps=state.employees.filter(e=>e.clientId===cid);const filtered=histEmp?emps.filter(e=>e.id===histEmp):emps;
     const totalMin=filtered.filter(e=>e.active!==false).reduce((s,e)=>s+rhPlannedHours(e.id)*60,0);
-    m.innerHTML=topbar('Historique des heures','Heures issues du planning de la semaine','<button class="btn ghost" onclick="rhHeuresExport()">↓ Exporter PDF</button>')
-    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1;margin:0"><label>Période</label><select><option>'+new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})+'</option><option>'+prevMonthLabel()+'</option></select></div><div class="field" style="flex:1;margin:0"><label>Employé</label><select onchange="histEmp=this.value;renderClient(\'rh_heures\')"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'" '+(histEmp===e.id?'selected':'')+'>'+e.name+'</option>').join('')+'</select></div></div></div></div>'
-    +'<div class="kpis" style="grid-template-columns:repeat(3,1fr)">'+kpi('Total heures',fmtHM(totalMin),'sur la période','up')+kpi('Employés actifs',emps.filter(e=>e.active!==false).length,'','up')+kpi('Jours planifiés',filtered.reduce((s,e)=>s+rhPlannedDays(e.id),0),'sur la semaine','up')+'</div>'
-    +'<div class="panel"><div class="ph"><h3>Récapitulatif par employé</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Employé</th><th>Poste</th><th>Contrat</th><th>Heures planifiées</th><th>Jours</th><th></th></tr></thead><tbody>'
-    +filtered.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};const ph=rhPlannedHours(e.id);const pd=rhPlannedDays(e.id);const diff=Math.round((ph-(e.contract||0))*10)/10;return '<tr'+(e.active===false?' style="opacity:.5"':'')+'><td class="tname">'+e.name+'</td><td>'+(j.name||'—')+'</td><td class="tsub">'+(e.contract||0)+' h</td><td class="tname">'+fmtHM(ph*60)+' <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span></td><td>'+pd+' jour'+(pd>1?'s':'')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="rhHeuresDetail(\''+e.id+'\')">Détail</button></td></tr>';}).join('')+'</tbody></table></div></div>';
+    const now=new Date();
+    const allSess=rhBadgeSessions(cid).filter(function(s){
+      if(histEmp){const e=emps.find(function(x){return x.id===histEmp;});if(e&&!(s.empId===e.id||s.name===e.name))return false;}
+      const d=s.inAt;
+      if(histPeriod==='week')return rhWeekKey(d)===rhWeekKey(now);
+      if(histPeriod==='month')return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
+      return true;});
+    const badgeMin=allSess.reduce(function(t,s){return t+(s.min||0);},0);
+    const badgeByEmp={};allSess.forEach(function(s){const k=s.empId||s.name;badgeByEmp[k]=(badgeByEmp[k]||0)+(s.min||0);});
+    m.innerHTML=topbar('Historique des heures','Heures planifiées et heures badgées (pointages réels)','<button class="btn ghost" onclick="rhHeuresExport()">↓ Exporter PDF</button>')
+    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1;margin:0"><label>Période</label><select onchange="histPeriod=this.value;renderClient(\'rh_heures\')">'+[['week','Semaine en cours'],['month','Mois en cours'],['all','Tout l\'historique']].map(function(o){return '<option value="'+o[0]+'"'+(histPeriod===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div><div class="field" style="flex:1;margin:0"><label>Employé</label><select onchange="histEmp=this.value;renderClient(\'rh_heures\')"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'" '+(histEmp===e.id?'selected':'')+'>'+e.name+'</option>').join('')+'</select></div></div></div></div>'
+    +'<div class="kpis" style="grid-template-columns:repeat(4,1fr)">'+kpi('Heures planifiées',fmtHM(totalMin),'semaine en cours','up')+kpi('Heures badgées',fmtDur(badgeMin),'pointages réels sur la période','up')+kpi('Pointages',allSess.length,'sessions badgées','up')+kpi('Employés actifs',emps.filter(e=>e.active!==false).length,'','up')+'</div>'
+    +'<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Récapitulatif par employé</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th><th>Poste</th><th>Contrat</th><th>Planifié (semaine)</th><th>Badgé (période)</th><th></th></tr></thead><tbody>'
+    +filtered.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};const ph=rhPlannedHours(e.id);const diff=Math.round((ph-(e.contract||0))*10)/10;const bm=badgeByEmp[e.id]||badgeByEmp[e.name]||0;return '<tr'+(e.active===false?' style="opacity:.5"':'')+'><td class="tname">'+e.name+'</td><td>'+(j.name||'—')+'</td><td class="tsub">'+(e.contract||0)+' h</td><td class="tname">'+fmtHM(ph*60)+' <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span></td><td>'+(bm?'<b style="color:#b45309">'+fmtDur(bm)+'</b>':'<span class="tsub">—</span>')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="rhHeuresDetail(\''+e.id+'\')">Détail</button></td></tr>';}).join('')+'</tbody></table></div></div>'
+    +'<div class="panel"><div class="ph"><h3>Pointages badgeuse ('+allSess.length+')</h3><div class="sub">Chaque badge sur la tablette apparaît ici automatiquement</div></div><div class="pb" style="padding:0;overflow:auto">'
+    +(allSess.length?('<table><thead><tr><th>Date</th><th>Employé</th><th>Arrivée</th><th>Départ</th><th>Durée</th></tr></thead><tbody>'
+      +allSess.map(function(s){return '<tr><td class="tsub">'+s.inAt.toLocaleDateString('fr-FR')+'</td><td class="tname">'+escH(s.name)+'</td><td>'+fmtTime(s.inAt)+'</td><td>'+(s.outAt?fmtTime(s.outAt):'<span class="chip warn">en cours</span>')+'</td><td><b style="color:#b45309">'+fmtDur(s.min)+'</b></td></tr>';}).join('')+'</tbody></table>')
+      :'<div class="empty" style="padding:30px">Aucun pointage sur cette période. Les badges de la tablette (Badgeuse) remonteront ici.</div>')+'</div></div>';
   } else if(clientView==='food'){
     state.recipes=state.recipes||[];state.foodIng=state.foodIng||[];state.foodSubs=state.foodSubs||[];
     const rs=state.recipes.filter(r=>r.clientId===cid);const ings=state.foodIng.filter(g=>g.clientId===cid);const subs=state.foodSubs.filter(s=>s.clientId===cid);
@@ -2876,7 +2913,9 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     +'<div id="tbf_out" style="margin-top:16px"></div></div>';
   } else if(s==='badge'){
     b.innerHTML='<div class="tb-title-k">Badgeuse</div><div class="tb-title">Qui pointe ?</div><div class="emp-grid">'
-    +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>'<div class="emp" onclick="badgePoint(\''+e.name+'\')"><div class="av">'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl"><span class="chip muted">'+e.role+'</span></div></div>').join('')+'</div>';
+    +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>{const open=rhOpenBadge(cid,e.id||e.name);
+      return '<div class="emp" onclick="badgePoint(\''+e.name+'\')"><div class="av"'+(open?' style="box-shadow:0 0 0 3px #34d399"':'')+'>'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl">'+(open?'<span class="chip ok">présent · '+fmtTime(new Date(open.at))+'</span>':'<span class="chip muted">'+e.role+'</span>')+'</div></div>';}).join('')+'</div>'
+    +'<div class="tsub" style="text-align:center;margin-top:14px">Touchez votre nom pour badger : 1er badge = arrivée, 2e badge = départ. Les heures remontent automatiquement dans le planning et l\'historique.</div>';
   } else if(s==='identify'){
     b.innerHTML='<div class="tb-title-k">Module HACCP</div><div class="tb-title">Identification</div><div class="emp-grid">'
     +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>'<div class="emp" onclick="tbLogin(\''+e.id+'\')"><div class="av">'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl"><span class="chip muted">'+e.role+'</span></div></div>').join('')+'</div>';
@@ -2996,7 +3035,7 @@ function tbSavePerte(){const p=document.getElementById('pe_prod').value.trim();i
   toast(' Perte enregistrée');tbArchTab='perte';tbRender('archives');}
 
 /* ===== RH & Planning ===== */
-let rhTab='params',histEmp='',planSelTpl=null;
+let rhTab='params',histEmp='',histPeriod='week',planSelTpl=null;
 function rhSetTab(t){rhTab=t;renderClient('rh_etab');}
 function rhToggle(k){state.rhCfg[k]=!state.rhCfg[k];renderClient('rh_etab');}
 function _tglRow(label,desc,key,on){return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)"><div><div style="font-weight:700;font-size:14px">'+label+'</div>'+(desc?'<div class="tsub">'+desc+'</div>':'')+'</div><span class="switch '+(on?'on':'')+'" style="margin-left:auto" onclick="rhToggle(\''+key+'\')"><span class="tk"></span></span></div>';}
@@ -3027,7 +3066,33 @@ function rhArchiveEmp(id){const e=state.employees.find(x=>x.id===id);if(!e)retur
   openConfirm('Archiver '+e.name+' ?','Il n\'apparaîtra plus sur la tablette ni dans les plannings.',()=>{e.active=false;renderClient('rh_etab');toast('Employé archivé');});}
 function shiftHours(t){const p=s=>{const a=s.split(':');return (+a[0])+(+a[1])/60;};return Math.round((p(t.end)-p(t.start))*10)/10;}
 let planView='semaine',planDate=null;
+let planFilter={job:'',emp:''};
+function rhSetPlanFilter(k,v){planFilter[k]=v;renderClient('rh_planning');}
 function _sameDay(a,b){return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();}
+function rhWeekKey(d){const m=rhMonday(d||new Date());return m.getFullYear()+'-'+String(m.getMonth()+1).padStart(2,'0')+'-'+String(m.getDate()).padStart(2,'0');}
+function rhMigrateShifts(){(state.shifts||[]).forEach(function(s){if(!s.week)s.week=rhWeekKey(new Date());});}
+function rhShiftsOf(cid,wk){rhMigrateShifts();return (state.shifts||[]).filter(function(s){return s.clientId===cid&&s.week===wk;});}
+function rhDateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+/* ---- Badgeuse : enregistrements réels ---- */
+function rhOpenBadge(cid,key){const bs=(state.badges||[]).filter(function(b){return b.clientId===cid&&((b.empId&&b.empId===key)||b.name===key);}).sort(function(a,b){return a.at<b.at?-1:1;});
+  const last=bs[bs.length-1];if(!last||last.type==='out')return null;
+  if(Date.now()-new Date(last.at).getTime()>16*3600000)return null;return last;}
+function rhBadgeSessions(cid){
+  const bs=(state.badges||[]).filter(function(b){return b.clientId===cid;}).sort(function(a,b){return a.at<b.at?-1:1;});
+  const byEmp={};bs.forEach(function(b){const k=b.empId||b.name;(byEmp[k]=byEmp[k]||[]).push(b);});
+  const out=[];
+  Object.keys(byEmp).forEach(function(k){let cur=null;
+    byEmp[k].forEach(function(b){
+      if(b.type==='in'){if(cur)out.push(cur);cur={empId:b.empId||'',name:b.name,inAt:new Date(b.at),outAt:null,min:null};}
+      else if(cur){cur.outAt=new Date(b.at);cur.min=Math.max(0,Math.round((cur.outAt-cur.inAt)/60000));out.push(cur);cur=null;}
+    });
+    if(cur){const age=Date.now()-cur.inAt.getTime();cur.min=age<16*3600000?Math.round(age/60000):null;cur.open=true;out.push(cur);}
+  });
+  out.forEach(function(s){s.date=rhDateKey(s.inAt);});
+  out.sort(function(a,b){return b.inAt-a.inAt;});
+  return out;}
+function fmtDur(min){if(min==null)return '—';return Math.floor(min/60)+'h'+String(Math.round(min%60)).padStart(2,'0');}
+function rhBadgeChip(s){return '<div style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:3px 7px;margin:3px auto 0;font-size:10.5px;color:#b45309;display:inline-block;text-align:left"><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b><br><span style="color:#c2681a">'+fmtTime(s.inAt)+' - '+(s.outAt?fmtTime(s.outAt):'…')+'</span></div>';}
 function rhMonday(d){const x=new Date(d);const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);x.setHours(0,0,0,0);return x;}
 function rhDayIdxOf(d){return (d.getDay()+6)%7;}
 function rhSetPlanView(v){planView=v;renderClient('rh_planning');}
@@ -3038,26 +3103,36 @@ function rhPlanLabel(){if(!planDate)planDate=new Date();const v=planView||'semai
   if(v==='mois')return planDate.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
   const mon=rhMonday(planDate);const sun=new Date(mon);sun.setDate(mon.getDate()+6);
   return 'Semaine du '+mon.getDate()+' '+mon.toLocaleDateString('fr-FR',{month:'short'})+' au '+sun.getDate()+' '+sun.toLocaleDateString('fr-FR',{month:'short'});}
-function rhDayView(emps,tpls,cid){const di=rhDayIdxOf(planDate);
-  const rows=emps.map(function(e){const sh=state.shifts.filter(function(s){return s.clientId===cid&&s.empId===e.id&&s.day===di;});const j=state.jobs.find(function(x){return x.id===e.jobId;})||{};
+function rhDayView(emps,tpls,cid){const di=rhDayIdxOf(planDate);const wk=rhWeekKey(planDate);const wShifts=rhShiftsOf(cid,wk);
+  const dk=rhDateKey(planDate);const sessions=rhBadgeSessions(cid).filter(function(s){return s.date===dk;});
+  const rows=emps.map(function(e){const sh=wShifts.filter(function(s){return s.empId===e.id&&s.day===di;});const j=state.jobs.find(function(x){return x.id===e.jobId;})||{};
     let h=0;const chips=sh.map(function(s){const t=tpls.find(function(x){return x.id===s.templateId;})||{};if(t.start)h+=shiftHours(t);return '<span class="chip" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px 4px 2px 0;display:inline-block">'+escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'')+' <span style="cursor:pointer" onclick="rhRemoveShift(\''+s.id+'\')">✕</span></span>';}).join('');
-    return '<tr><td class="tname">'+escH(e.name)+'<div class="tsub">'+escH(j.name||'')+'</div></td><td>'+(chips||'<span class="tsub">Repos</span>')+'</td><td style="text-align:right"><b>'+(h?h+' h':'—')+'</b></td><td style="text-align:right"><button class="btn ghost sm" onclick="rhAssign(\''+e.id+'\','+di+')">＋ Ajouter</button></td></tr>';}).join('');
-  const working=emps.filter(function(e){return state.shifts.some(function(s){return s.clientId===cid&&s.empId===e.id&&s.day===di;});}).length;
-  return '<div class="panel"><div class="ph"><h3>'+working+' personne(s) en poste ce jour</h3></div><div class="pb" style="padding:0"><table><thead><tr><th>Employé</th><th>Créneaux</th><th style="text-align:right">Heures</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="4" class="empty" style="padding:20px">Aucun employé actif.</td></tr>')+'</tbody></table></div></div>';}
+    const sess=sessions.filter(function(s){return s.empId===e.id||s.name===e.name;});
+    return '<tr><td class="tname">'+escH(e.name)+'<div class="tsub">'+escH(j.name||'')+'</div></td><td>'+(chips||'<span class="tsub">Repos</span>')+'</td><td>'+(sess.length?sess.map(rhBadgeChip).join(' '):'<span class="tsub">—</span>')+'</td><td style="text-align:right"><b>'+(h?h+' h':'—')+'</b></td><td style="text-align:right"><button class="btn ghost sm" onclick="rhAssign(\''+e.id+'\','+di+')">＋ Ajouter</button></td></tr>';}).join('');
+  const working=emps.filter(function(e){return wShifts.some(function(s){return s.empId===e.id&&s.day===di;});}).length;
+  return '<div class="panel"><div class="ph"><h3>'+working+' personne(s) en poste ce jour</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th><th>Créneaux planifiés</th><th>Pointage badgeuse</th><th style="text-align:right">Heures</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="5" class="empty" style="padding:20px">Aucun employé actif.</td></tr>')+'</tbody></table></div></div>';}
 function rhMonthView(emps,tpls,cid){const y=planDate.getFullYear(),mo=planDate.getMonth();const first=new Date(y,mo,1);const startMon=rhMonday(first);const days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const today=new Date();let cells='';const cur=new Date(startMon);
+  rhMigrateShifts();
   for(let w=0;w<6;w++){for(let d=0;d<7;d++){const di=(cur.getDay()+6)%7;const inMonth=cur.getMonth()===mo;
-    const dayShifts=state.shifts.filter(function(s){return s.clientId===cid&&s.day===di&&emps.some(function(e){return e.id===s.empId;});});
+    const wkCell=rhWeekKey(cur);
+    const dayShifts=state.shifts.filter(function(s){return s.clientId===cid&&s.week===wkCell&&s.day===di&&emps.some(function(e){return e.id===s.empId;});});
     const chips=dayShifts.slice(0,3).map(function(s){const e=emps.find(function(x){return x.id===s.empId;});const t=tpls.find(function(x){return x.id===s.templateId;})||{};if(!e)return '';return '<div style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';border-radius:4px;padding:1px 4px;margin-top:2px">'+escH((e.name||'').split(' ')[0])+' '+(t.start||'')+'</div>';}).filter(Boolean).join('');
     const more=dayShifts.length>3?'<div style="font-size:10px;color:#94a3b8;margin-top:2px">+'+(dayShifts.length-3)+' autres</div>':'';
     const dd=cur.getDate();const cdate=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');const isT=_sameDay(cur,today);
     cells+='<div onclick="rhMonthPick(\''+cdate+'\')" style="min-height:86px;border:1px solid var(--line);border-radius:8px;padding:5px;cursor:pointer;background:'+(inMonth?'#fff':'#f8fafc')+';'+(isT?'outline:2px solid #0e7c58;outline-offset:-1px;':'')+'"><div style="font-size:12px;font-weight:700;color:'+(inMonth?'#0b1220':'#cbd5e1')+'">'+dd+'</div>'+chips+more+'</div>';
     cur.setDate(cur.getDate()+1);}}
-  return '<div class="panel"><div class="pb"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+days.map(function(d){return '<div class="tsub" style="text-align:center;font-weight:700">'+d+'</div>';}).join('')+'</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+cells+'</div><div class="tsub" style="margin-top:10px">Le planning est hebdomadaire : chaque jour affiche les créneaux du même jour de la semaine. Cliquez un jour pour l\'ouvrir en vue Jour.</div></div></div>';}
+  return '<div class="panel"><div class="pb"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+days.map(function(d){return '<div class="tsub" style="text-align:center;font-weight:700">'+d+'</div>';}).join('')+'</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+cells+'</div><div class="tsub" style="margin-top:10px">Chaque jour affiche les créneaux planifiés de sa semaine. Cliquez un jour pour l\'ouvrir en vue Jour.</div></div></div>';}
 function rhMonthPick(cdate){planDate=new Date(cdate+'T12:00:00');planView='jour';renderClient('rh_planning');}
 function rhSelTpl(id){planSelTpl=planSelTpl===id?null:id;renderClient('rh_planning');}
-function rhAssign(empId,day){if(!planSelTpl){toast('Sélectionnez d\'abord un shift favori');return;}state.shifts.push({id:'sh'+Date.now(),clientId:CID,empId:empId,day:day,templateId:planSelTpl});renderClient('rh_planning');toast('Shift assigné');}
+function rhAssign(empId,day){if(!planSelTpl){toast('Sélectionnez d\'abord un shift favori');return;}state.shifts.push({id:'sh'+Date.now(),clientId:CID,empId:empId,day:day,week:rhWeekKey(planDate||new Date()),templateId:planSelTpl});renderClient('rh_planning');toast('Shift assigné');}
 function rhRemoveShift(id){const i=state.shifts.findIndex(x=>x.id===id);if(i>=0)state.shifts.splice(i,1);renderClient('rh_planning');}
+function rhDragShift(ev,id){try{ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';}catch(e){}ev.stopPropagation();}
+function rhDropShift(ev,empId,day){ev.preventDefault();ev.stopPropagation();
+  let id='';try{id=ev.dataTransfer.getData('text/plain');}catch(e){}
+  const s=(state.shifts||[]).find(function(x){return x.id===id;});if(!s)return;
+  s.empId=empId;s.day=day;s.week=rhWeekKey(planDate||new Date());
+  renderClient('rh_planning');toast('Shift déplacé');}
 function formShiftTpl(id){state.shiftTemplates=state.shiftTemplates||[];const t=id?state.shiftTemplates.find(function(x){return x.id===id;}):null;
   openForm(id?'Modifier le shift favori':'Nouveau shift favori',[
     {key:'label',label:'Nom du shift',value:t?t.label:'',ph:'Ex. Matin, Soir, Coupure…'},
@@ -3069,10 +3144,11 @@ function formShiftTpl(id){state.shiftTemplates=state.shiftTemplates||[];const t=
     else{state.shiftTemplates.push({id:'tpl'+Date.now(),clientId:CID,label:v.label.trim(),start:v.start,end:v.end,color:v.color});}
     renderClient('rh_planning');toast('Shift favori enregistré');});}
 function rhDelTpl(id){openConfirm('Supprimer le favori','Supprimer ce shift favori ? Les créneaux déjà posés avec ce favori seront retirés du planning.',function(){state.shiftTemplates=state.shiftTemplates.filter(function(t){return t.id!==id;});state.shifts=state.shifts.filter(function(s){return s.templateId!==id;});if(planSelTpl===id)planSelTpl=null;renderClient('rh_planning');toast('Favori supprimé');});}
-function rhPlannedHours(id){let tot=0;(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id;}).forEach(function(s){const t=(state.shiftTemplates||[]).find(function(x){return x.id===s.templateId;});if(t)tot+=shiftHours(t);});return Math.round(tot*10)/10;}
-function rhPlannedDays(id){const set={};(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id;}).forEach(function(s){set[s.day]=1;});return Object.keys(set).length;}
+function rhPlannedHours(id){rhMigrateShifts();const wk=rhWeekKey(new Date());let tot=0;(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).forEach(function(s){const t=(state.shiftTemplates||[]).find(function(x){return x.id===s.templateId;});if(t)tot+=shiftHours(t);});return Math.round(tot*10)/10;}
+function rhPlannedDays(id){rhMigrateShifts();const wk=rhWeekKey(new Date());const set={};(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).forEach(function(s){set[s.day]=1;});return Object.keys(set).length;}
 function rhHeuresDetail(id){const e=state.employees.find(function(x){return x.id===id;});if(!e)return;const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-  const sh=(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id;}).sort(function(a,b){return a.day-b.day;});
+  rhMigrateShifts();const wk=rhWeekKey(new Date());
+  const sh=(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).sort(function(a,b){return a.day-b.day;});
   let tot=0;const rows=sh.map(function(s){const t=(state.shiftTemplates||[]).find(function(x){return x.id===s.templateId;})||{};const h=t.start?shiftHours(t):0;tot+=h;return '<tr><td>'+days[s.day]+'</td><td>'+escH(t.label||'')+'</td><td>'+(t.start||'')+'–'+(t.end||'')+'</td><td style="text-align:right">'+h+' h</td></tr>';}).join('');
   openInfoHTML('Détail de la semaine — '+e.name, sh.length?('<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Jour</th><th style="text-align:left">Shift</th><th style="text-align:left">Horaires</th><th style="text-align:right">Heures</th></tr></thead><tbody>'+rows+'</tbody></table><div class="progline" style="margin-top:10px"><div class="lbl">Total planifié</div><div style="font-weight:800">'+(Math.round(tot*10)/10)+' h</div></div>'):'<div class="empty" style="padding:20px">Aucun créneau planifié pour cet employé cette semaine.</div>');}
 function fmtHM(min){return Math.floor(min/60)+'h '+String(Math.round(min%60)).padStart(2,'0');}
@@ -3084,9 +3160,33 @@ function _simplePdf(title,sub,heads,xs,ws,rows,filename){const W=595,H=842,M=40;
   if(!rows.length){T(M,'Aucune donnee',{size:8,rgb:[150,150,150]});}
   rows.forEach(r=>{if(y>H-45){nP();heads.forEach((h,i)=>T(xs[i],h,{size:8,bold:true,rgb:[71,85,105]}));y+=12;}r.forEach((c,i)=>T(xs[i],trunc(c,ws[i]),{size:8,rgb:[40,45,55]}));y+=13;});
   const pdf=buildPDF(pages,W,H);const b=new Blob([pdf],{type:'application/pdf'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=filename;a.click();toast(' PDF téléchargé');}
-function rhPlanExport(){const cid=CID;const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];const rows=[];
-  state.employees.filter(e=>e.clientId===cid&&e.active!==false).forEach(e=>{state.shifts.filter(s=>s.clientId===cid&&s.empId===e.id).sort((a,b)=>a.day-b.day).forEach(s=>{const t=state.shiftTemplates.find(x=>x.id===s.templateId)||{};rows.push([e.name,days[s.day],t.label||'',t.start+'-'+t.end]);});});
-  _simplePdf('Planning de la semaine','Convention : '+state.rhCfg.convention,['Employe','Jour','Poste','Horaire'],[40,210,330,450],[26,12,20,16],rows,'planning-vigie.pdf');}
+function rhPlanExport(){const cid=CID;if(!planDate)planDate=new Date();
+  const mon=rhMonday(planDate);const sun=new Date(mon);sun.setDate(mon.getDate()+6);
+  const wk=rhWeekKey(planDate);const wShifts=rhShiftsOf(cid,wk);const tpls=state.shiftTemplates.filter(t=>t.clientId===cid);
+  const sessions=rhBadgeSessions(cid);
+  const days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const est=(state.clients.find(function(c){return c.id===CID;})||{});
+  const emps=state.employees.filter(e=>e.clientId===cid&&e.active!==false);
+  const head='<tr><th>Employé</th>'+days.map(function(d,di){const dd=new Date(mon);dd.setDate(mon.getDate()+di);return '<th>'+d+'. '+dd.getDate()+'/'+String(dd.getMonth()+1).padStart(2,'0')+'</th>';}).join('')+'<th>Planifié</th><th>Badgé</th></tr>';
+  let totP=0,totB=0;
+  const body=emps.map(function(e){let tot=0,bMin=0;
+    const cells=days.map(function(d,di){const dd=new Date(mon);dd.setDate(mon.getDate()+di);const dk=rhDateKey(dd);
+      const sh=wShifts.filter(function(s){return s.empId===e.id&&s.day===di;});
+      sh.forEach(function(s){const t=tpls.find(function(x){return x.id===s.templateId;});if(t)tot+=shiftHours(t);});
+      const sess=sessions.filter(function(s){return (s.empId===e.id||s.name===e.name)&&s.date===dk;});
+      sess.forEach(function(s){if(s.min)bMin+=s.min;});
+      const parts=sh.map(function(s){const t=tpls.find(function(x){return x.id===s.templateId;})||{};return escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'');})
+        .concat(sess.map(function(s){return '<span style="color:#b45309">⏱ '+fmtDur(s.min)+' ('+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+')</span>';}));
+      return '<td>'+(parts.length?parts.join('<br>'):'—')+'</td>';}).join('');
+    totP+=tot;totB+=bMin;
+    return '<tr><td><b>'+escH(e.name)+'</b></td>'+cells+'<td style="text-align:right"><b>'+(Math.round(tot*10)/10)+' h</b><br>contrat '+e.contract+' h</td><td style="text-align:right;color:#b45309"><b>'+fmtDur(bMin)+'</b></td></tr>';}).join('');
+  const w=window.open('','_blank');if(!w){toast('Autorisez les pop-ups pour générer le PDF');return;}
+  w.document.write('<html><head><title>Planning — '+escH(est.name||'')+'</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:26px;color:#0b1220}h1{font-size:19px;margin:0}table{width:100%;border-collapse:collapse;font-size:10.5px;margin-top:14px}th,td{border:1px solid #cbd5e1;padding:5px 6px;text-align:left;vertical-align:top}th{background:#f1f5f9}.sub{color:#64748b;font-size:12px;margin-top:4px}@media print{body{padding:10px}}</style></head><body>'
+   +'<h1>Planning — semaine du '+mon.getDate()+' '+mon.toLocaleDateString('fr-FR',{month:'long'})+' au '+sun.getDate()+' '+sun.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})+'</h1>'
+   +'<div class="sub">'+escH(est.name||'')+' — Édité le '+new Date().toLocaleDateString('fr-FR')+' — Total planifié : <b>'+(Math.round(totP*10)/10)+' h</b> · Total badgé : <b>'+fmtDur(totB)+'</b>. Les lignes orange ⏱ sont les pointages réels de la badgeuse.</div>'
+   +'<table><thead>'+head+'</thead><tbody>'+body+'</tbody></table>'
+   +'<div class="sub" style="margin-top:14px">Document généré par Vigie.</div></body></html>');
+  w.document.close();setTimeout(function(){try{w.print();}catch(e){}},400);}
 function rhHeuresExport(){const cid=CID;const rows=state.employees.filter(e=>e.clientId===cid&&(!histEmp||e.id===histEmp)).map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return [e.name,j.name||'',fmtHM(e.hReal*60),(e.joursTravailles||0)+' j'];});
   _simplePdf('Historique des heures',new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})+' - Convention '+state.rhCfg.convention,['Employe','Poste','Total heures','Jours'],[40,210,360,470],[26,20,16,10],rows,'historique-heures-vigie.pdf');}
 function h6(go,k,title,desc,bg,cnt){return '<div class="h6" style="background:'+bg+'" onclick="tbGo(\''+go+'\')"><div class="ic">'+({temp:'',clean:'',oil:'',dlclabel:'',recep:'',trace:''})[go]+'</div><div class="k">'+k+'</div><h3>'+title+'</h3><p>'+desc+'</p><div class="arr">→</div>'+(cnt?'<div class="cnt"> '+cnt+'</div>':'')+'</div>';}
@@ -3166,7 +3266,16 @@ async function tbFidRedeem(t){
   }catch(e){if(msg){msg.style.color='#be123c';msg.textContent='Erreur réseau.';}}
 }
 function tbLogin(id){tbUser=id;tbStack=[];tbRender('haccp');}
-function badgePoint(name){toast(' '+name.split(' ')[0]+' pointé(e) à '+fmtTime(new Date()));setTimeout(()=>{tbStack=[];tbRender('modules');},600);}
+function badgePoint(name){
+  state.badges=state.badges||[];
+  const emp=state.employees.find(function(e){return e.clientId===CID&&e.name===name;})||{};
+  const key=emp.id||name;const now=new Date();
+  const open=rhOpenBadge(CID,key);
+  if(open){state.badges.push({id:'bg'+Date.now(),clientId:CID,empId:emp.id||'',name:name,at:now.toISOString(),type:'out'});
+    toast(name.split(' ')[0]+' — départ enregistré à '+fmtTime(now));}
+  else{state.badges.push({id:'bg'+Date.now(),clientId:CID,empId:emp.id||'',name:name,at:now.toISOString(),type:'in'});
+    toast(name.split(' ')[0]+' — arrivée enregistrée à '+fmtTime(now));}
+  setTimeout(()=>{tbStack=[];tbRender('modules');},700);}
 function tbToggleClean(id){const t=state.postes.find(p=>p.id===id);t.done=!t.done;t.by=t.done?(state.employees.find(e=>e.id===tbUser)||{}).name||'—':null;t.at=t.done?new Date():null;tbRender('clean');toast(t.done?'✓ Nettoyage signé : '+t.name:'Décoché');}
 function tbPrintLabel(){const sel=document.getElementById('dl_prod');if(!sel){toast('Aucun produit');return;}
   const prod=state.dlcProducts.find(p=>p.id===sel.value);if(!prod){toast('Aucun produit');return;}
