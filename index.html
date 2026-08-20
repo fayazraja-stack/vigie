@@ -957,7 +957,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
       +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
       +'<div class="panel"><div class="pb">'
       +(ZONE_LIB.length?ZONE_LIB.map(function(z){return '<div style="border:1px solid var(--line);border-radius:14px;margin-bottom:10px;padding:13px 15px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:20px">'+(z.icon||'🧽')+'</span><b style="font-size:15.5px">'+escH(z.name)+'</b><span class="chip muted">'+z.tasks.length+' tâches</span><div style="margin-left:auto;display:flex;gap:6px"><button class="btn ghost sm" onclick="catEditZone(\''+z.key+'\')">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+z.key+'\')">Suppr.</button></div></div>'
-        +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px">'+z.tasks.map(function(t){return '<span class="chip" style="background:#f1f5f9">'+escH(t.name)+' <span style="opacity:.6;font-size:10px">'+escH(t.freq)+'</span></span>';}).join('')+'</div></div>';}).join('')
+        +'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;max-height:132px;overflow:auto">'+z.tasks.map(function(t){return '<span class="chip" style="background:#f1f5f9"'+(t.com?' title="'+escH(t.com)+'"':'')+'>'+escH(t.name)+' <span style="opacity:.6;font-size:10px">'+escH(t.freq)+'</span></span>';}).join('')+'</div></div>';}).join('')
        :'<div class="empty" style="padding:34px 20px;text-align:center">La bibliothèque intégrée est utilisée. Ajoutez une zone ici pour la remplacer par votre propre base.</div>')
       +'</div></div>';
       return;
@@ -1361,24 +1361,14 @@ let EQUIP_CATALOG=[
   {key:'bainmarie',name:'Bain-marie',cat:'chaud',min:63,max:90,icon:''},
 ];
 /* ===== Bibliothèque de plans de nettoyage (zones & tâches types) ===== */
-const _T=(n,f)=>({name:n,freq:f||'Quotidien'});
+const _T=(n,f,c,g)=>({name:n,freq:f||'Quotidien',com:c||'',cat:g||''});
+const CLEAN_FREQS=['Plusieurs fois par jour','Quotidien','Hebdomadaire','Bimensuel','Mensuel','Trimestriel','Semestriel','Annuel','Après chaque usage','À chaque service'];
 let ZONE_LIB=[
- {key:'cuisine',name:'Cuisine',icon:'🍳',tasks:[_T('Plans de travail'),_T('Sol de la cuisine'),_T('Plaques de cuisson / fourneaux'),_T('Salamandre / grill'),_T('Extérieur des friteuses'),_T('Micro-ondes'),_T('Four','Hebdomadaire'),_T('Filtres de la hotte','Hebdomadaire'),_T('Dégraissage complet de la hotte','Mensuel'),_T('Trancheuse','Après usage'),_T('Robot / mixeur','Après usage'),_T('Étagères et rangements','Hebdomadaire'),_T('Poubelles de cuisine'),_T('Siphons et grilles d\'évacuation','Hebdomadaire'),_T('Murs et carrelage','Hebdomadaire'),_T('Plafond et luminaires','Mensuel')]},
- {key:'labo',name:'Laboratoire / préparation',icon:'🔪',tasks:[_T('Plans de travail du labo'),_T('Planches à découper','Après usage'),_T('Couteaux et petit matériel','Après usage'),_T('Cellule de refroidissement'),_T('Machine sous vide','Après usage'),_T('Balances'),_T('Sol du laboratoire'),_T('Bacs gastronormes','Après usage')]},
- {key:'cfpos',name:'Chambre froide positive',icon:'❄️',tasks:[_T('Sol de la chambre froide','Hebdomadaire'),_T('Étagères et clayettes','Hebdomadaire'),_T('Joints de porte','Hebdomadaire'),_T('Poignée et contact de porte'),_T('Évaporateur / ventilateur','Mensuel'),_T('Dégivrage','Mensuel')]},
- {key:'cfneg',name:'Congélateur / chambre froide négative',icon:'🧊',tasks:[_T('Sol du congélateur','Mensuel'),_T('Étagères et bacs','Mensuel'),_T('Joints de porte','Mensuel'),_T('Dégivrage complet','Trimestriel')]},
- {key:'reserve',name:'Réserve sèche',icon:'📦',tasks:[_T('Sol de la réserve','Hebdomadaire'),_T('Étagères de stockage','Hebdomadaire'),_T('Contrôle des DLC et rotation','Hebdomadaire'),_T('Bacs et contenants','Hebdomadaire'),_T('Contrôle anti-nuisibles','Mensuel')]},
- {key:'plonge',name:'Plonge',icon:'🚿',tasks:[_T('Bacs de plonge'),_T('Extérieur du lave-vaisselle'),_T('Filtres du lave-vaisselle'),_T('Détartrage du lave-vaisselle','Mensuel'),_T('Égouttoirs et paniers'),_T('Sol de la plonge'),_T('Poubelles de plonge')]},
- {key:'salle',name:'Salle',icon:'🍽️',tasks:[_T('Tables et chaises','2x / jour'),_T('Sol de la salle'),_T('Comptoir et caisse'),_T('Menus et supports'),_T('Banquettes','Hebdomadaire'),_T('Vitres et baies','Hebdomadaire'),_T('Décoration et étagères','Mensuel'),_T('Bouches de ventilation','Mensuel'),_T('Luminaires','Mensuel')]},
- {key:'bar',name:'Bar',icon:'🍸',tasks:[_T('Plan de bar','2x / jour'),_T('Becs de tireuse à bière'),_T('Lignes de tireuse à bière','Hebdomadaire'),_T('Machine à café'),_T('Broyeur à café','Hebdomadaire'),_T('Machine à glaçons','Hebdomadaire'),_T('Bacs à glace'),_T('Verrerie et rinceur'),_T('Frigos à boissons','Hebdomadaire'),_T('Sol du bar')]},
- {key:'sanit',name:'Sanitaires',icon:'🚻',tasks:[_T('WC clients','2x / jour'),_T('Lavabos','2x / jour'),_T('Miroirs'),_T('Distributeurs savon et papier'),_T('Sol des sanitaires'),_T('Poubelles'),_T('Désinfection complète','Hebdomadaire')]},
- {key:'vestiaire',name:'Vestiaires / personnel',icon:'👕',tasks:[_T('Lavabo du personnel'),_T('Casiers et vestiaires','Hebdomadaire'),_T('Sol des vestiaires','Hebdomadaire'),_T('Tenues de travail','Hebdomadaire')]},
- {key:'poubelles',name:'Local poubelles',icon:'🗑️',tasks:[_T('Sortie des poubelles'),_T('Nettoyage des bacs','Hebdomadaire'),_T('Désinfection du local','Hebdomadaire'),_T('Sol du local','Hebdomadaire')]},
- {key:'recep',name:'Zone de réception',icon:'🚚',tasks:[_T('Sol de la zone de réception'),_T('Table de déballage'),_T('Transpalette et chariots','Hebdomadaire')]},
- {key:'pizza',name:'Pizzeria',icon:'🍕',tasks:[_T('Four à pizza'),_T('Pierre réfractaire','Hebdomadaire'),_T('Tour à pizza réfrigérée'),_T('Pelles à pizza'),_T('Pétrin','Après usage'),_T('Bacs à pâtons','Après usage')]},
- {key:'snack',name:'Snack / fast-food',icon:'🍔',tasks:[_T('Grill / plancha','2x / jour'),_T('Toaster'),_T('Machine à sodas'),_T('Distributeurs de sauces'),_T('Bacs à frites'),_T('Comptoir de service','2x / jour')]},
- {key:'boul',name:'Boulangerie / pâtisserie',icon:'🥐',tasks:[_T('Pétrin','Après usage'),_T('Façonneuse / diviseuse'),_T('Chambre de pousse','Hebdomadaire'),_T('Four à sole','Hebdomadaire'),_T('Plaques et moules','Après usage'),_T('Vitrine réfrigérée'),_T('Plan de tour')]},
- {key:'terrasse',name:'Terrasse',icon:'⛱️',tasks:[_T('Tables et chaises de terrasse'),_T('Sol de la terrasse'),_T('Cendriers'),_T('Parasols et stores','Mensuel')]},
+ {key:'cuisine',name:'Cuisine',icon:'🍳',tasks:[_T('Planches / couteaux','Quotidien'),_T('Plans de travail','Quotidien'),_T('Passe plat','Quotidien'),_T('Petit matériel (pinces, bacs gastro)','Quotidien'),_T('Sol cuisine (sol, siphon)','Quotidien'),_T('Hotte filtre','Hebdomadaire'),_T('Hotte structure','Hebdomadaire'),_T('Plinthes','Hebdomadaire'),_T('Murs','Hebdomadaire'),_T('Interrupteurs','Hebdomadaire'),_T('Portes','Hebdomadaire'),_T('Nettoyage quotidien','Quotidien'),_T('Plafond','Hebdomadaire'),_T('Étagères / racks de stockage (inox)','Hebdomadaire'),_T('Bacs GN + couvercles + grilles inox','Quotidien'),_T('Balance électronique','Quotidien','Nettoyage surface'),_T('Thermomètre(s) sonde + boîtier','Quotidien'),_T('Distributeur film/alu','Hebdomadaire'),_T('Bacs à marinade','Quotidien'),_T('Range-planches / support planches','Quotidien'),_T('Aiguiseur / fusil (nettoyage)','Hebdomadaire'),_T('Bac à graisses hotte (si présent)','Quotidien'),_T('Goulotte / rigole hotte','Hebdomadaire'),_T('Grilles d’aération / entrées d’air','Hebdomadaire'),_T('Extracteur / moteur accessible (contrôle)','Mensuel'),_T('Climatisation (filtres) / unité intérieure','Mensuel','Selon maintenance'),_T('Distributeur savon + essuie-mains (recharge + nettoyage)','Quotidien'),_T('Siphons / évacuations plonge','Hebdomadaire'),_T('Tables inox (prépa)','Quotidien'),_T('Étagères murales inox','Hebdomadaire'),_T('Chariots inox','Quotidien'),_T('Armoires inox (portes/poignées)','Quotidien'),_T('Bacs à ingrédients VRAC (extérieur)','Hebdomadaire','Zones contact : quotidien'),_T('Plafond zones hotte (profondeur)','Mensuel','Selon niveau de gras'),_T('Supports poubelles / couvercles','Quotidien'),_T('Local poubelles / zone conteneurs','Hebdomadaire'),_T('Bacs extérieurs (désinfection)','Mensuel'),_T('Balais / raclettes','Quotidien'),_T('Seaux / franges / serpillières','Quotidien'),_T('Presse à frange','Hebdomadaire'),_T('Autolaveuse (si présent)','Hebdomadaire'),_T('Armoire produits d’entretien','Hebdomadaire'),_T('Supports brosses / porte-balais','Hebdomadaire'),_T('Doseurs sauces / pompes à sauce','Quotidien','Si présents')]},
+ {key:'equipementscuisine',name:'Équipements cuisine',icon:'⚙️',tasks:[_T('Chambre froide positive','Quotidien','','Froid'),_T('Chambre froide négative','Quotidien','','Froid'),_T('Frigo de service (poignées, joints, grille)','Quotidien','','Froid'),_T('Lave-vaisselle (filtres, bras, joints)','Quotidien','','Lavage / eau'),_T('Lave main','Quotidien','','Lavage / eau'),_T('Friteuse','Quotidien','','Cuisson / chaud'),_T('Plancha','Quotidien','','Cuisson / chaud'),_T('Grill','Quotidien','','Cuisson / chaud'),_T('Chauffe frites','Quotidien','','Cuisson / chaud'),_T('Four à naan','Quotidien','','Cuisson / chaud'),_T('Plaques','Quotidien','','Cuisson / chaud'),_T('Four','Quotidien','','Cuisson / chaud'),_T('Micro-ondes','Quotidien','','Cuisson / chaud'),_T('Salamandre','Quotidien','','Cuisson / chaud'),_T('Table réfrigérée (tour 2/3 portes) - surfaces/poignées','Quotidien','Hebdo : joints + grilles','Froid'),_T('Saladette / table à ingrédients (bacs + couvercles)','Quotidien','Bacs GN + couvercles + rails · Vitres + bacs + zone moteur extérieur','Froid'),_T('Vitrine réfrigérée cuisine (mise en place)','Quotidien','Comme \'vitrine réfrigérée cuisine (mise en place)\'','Froid'),_T('Armoire réfrigérée positive (poignées + extérieur)','Quotidien','Hebdo : joints + grilles','Froid'),_T('Congélateur coffre (extérieur)','Quotidien','Hebdo : intérieur','Froid'),_T('Cellule de refroidissement / surgélateur','Hebdomadaire','Mensuel : nettoyage profondeur','Froid'),_T('Machine à glaçons (bac + pelle)','Quotidien','Mensuel : détartrage/assainissement','Froid'),_T('Robot coupe / cutter','Quotidien','','Préparation'),_T('Mixeur plongeant','Quotidien','','Préparation'),_T('Batteur / mélangeur','Quotidien','','Préparation'),_T('Pétrin (extérieur)','Quotidien','Hebdo : détails et recoins','Préparation'),_T('Laminoir','Quotidien','','Préparation'),_T('Trancheuse','Quotidien','Si utilisée','Préparation'),_T('Hachoir à viande','Quotidien','Si utilisé','Préparation'),_T('Presse-agrumes','Quotidien','','Préparation'),_T('Bain-marie','Quotidien','','Cuisson / chaud'),_T('Cuiseur à riz','Quotidien','','Cuisson / chaud'),_T('Cuiseur à pâtes / marmite / faitout pro','Quotidien','','Cuisson / chaud'),_T('Brûleur wok / wok burner','Quotidien','','Cuisson / chaud'),_T('Toaster / salamandre (surface et bac)','Quotidien','','Cuisson / chaud'),_T('Panini / presse à sandwich','Quotidien','','Cuisson / chaud'),_T('Étuve / maintien au chaud','Quotidien','','Cuisson / chaud'),_T('Lampes chauffantes / passe chaud','Quotidien','','Cuisson / chaud'),_T('Système filtration friteuse (si présent)','Quotidien','Hebdo selon usage','Lavage / eau'),_T('Lave-verres','Quotidien','Si présent','Lavage / eau'),_T('Plonge (bacs, égouttoirs, douchette)','Quotidien','','Lavage / eau'),_T('Adoucisseur d’eau (contrôle sel)','Mensuel','Si présent','Lavage / eau'),_T('Osmoseur / cartouches (contrôle)','Mensuel','Si présent','Lavage / eau'),_T('Machine sous vide','Quotidien','Si présent','Préparation'),_T('Thermoplongeur / bain de cuisson (SV)','Quotidien','Si présent','Cuisson / chaud'),_T('Armoire de fermentation / pousse','Quotidien','Si présent','Cuisson / chaud'),_T('Table réfrigérée (tour 2/3 portes)','Quotidien','Surfaces/poignées quotidien; joints+grilles hebdo','Froid'),_T('Table à pizza positif','Quotidien','Quotidien surfaces/poignées; hebdo joints+grilles','Froid / Prépa'),_T('Armoire 1 porte positive','Quotidien','Poignées/ext quotidien; joints+grilles hebdo · Comme armoire positive 1 porte','Froid'),_T('Armoire 1 porte négatif','Quotidien','Extérieur quotidien; intérieur/étagères hebdo · Doublon d’image','Froid'),_T('Armoire 2 portes positive','Quotidien','Extérieur/poignées; joints+grilles hebdo','Froid'),_T('Armoire 2 portes négatif','Quotidien','Extérieur quotidien; intérieur/étagères hebdo','Froid'),_T('Arrière bar','Quotidien','Poignées/portes quotidien; clayettes/joints hebdo','Froid / Boissons'),_T('Vitrine à dessert','Quotidien','Vitres + grilles + bac de récupération si présent','Froid / Vente'),_T('Buffet chaud','Quotidien','Bacs + vitres pare-haleine + surfaces inox','Chaud'),_T('DHB','Quotidien','Surfaces + bacs/tiroirs + poignées','Chaud'),_T('Chauffe poulet','Quotidien','Plateaux + grilles + vitres','Chaud'),_T('Garde chaud pizza','Quotidien','Clayettes + vitres + poignée','Chaud'),_T('Placard chauffant','Quotidien','Intérieur si projections + surfaces','Chaud'),_T('Vitrine chauffante','Quotidien','Bacs GN + vitres + ventilation extérieure','Chaud')]},
+ {key:'comptoir',name:'Comptoir',icon:'🧾',tasks:[_T('Caisse','Quotidien'),_T('TPE','Quotidien'),_T('Vitrine à dessert (grille, vitre)','Quotidien'),_T('Frigo à boisson (grille, vitre)','Quotidien'),_T('Arrière bar (grille, vitre)','Quotidien'),_T('Blender','Quotidien'),_T('Machine à glace pasteurisée','Hebdomadaire'),_T('Machine à café','Quotidien')]},
+ {key:'salle',name:'Salle',icon:'🍽️',tasks:[_T('Table','Quotidien'),_T('Chaises','Quotidien'),_T('Sol','Quotidien'),_T('Bornes','Quotidien'),_T('Arrière bar','Quotidien','','Froid'),_T('Poubelle','Quotidien'),_T('Chariots à plateau','Quotidien'),_T('Façade','Hebdomadaire')]},
+ {key:'sanitaires',name:'Sanitaires',icon:'🚻',tasks:[_T('L’ensemble','Plusieurs fois par jour')]},
 ];
 let PRODUCT_CATALOG=[
   {key:'sauce',name:'Sauce tomate maison',sub:'Sauces & bases'},{key:'pate',name:'Pâte à pizza',sub:'Sauces & bases'},
@@ -3748,64 +3738,139 @@ function imgUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;
 
 function zoneNames(){const z=state.zones.filter(x=>x.clientId===CID).map(x=>x.name);return z.length?z:['Cuisine'];}
 /* --- Bibliothèque : sélection de zones & tâches types --- */
-let ZLIB_SEL={},ZLIB_Q='';
-function zlibOpen(){ZLIB_SEL={};ZLIB_Q='';
-  openInfoHTML('Bibliothèque de plans de nettoyage','<div id="zlib_body"></div>',780);
+let ZLIB_SEL={},ZLIB_FRQ={},ZLIB_Q='',ZLIB_STEP=1,ZLIB_OPEN={};
+function zlibOpen(){ZLIB_SEL={};ZLIB_FRQ={};ZLIB_Q='';ZLIB_STEP=1;ZLIB_OPEN={};
+  if(ZONE_LIB[0])ZLIB_OPEN[ZONE_LIB[0].key]=true;
+  openInfoHTML('Bibliothèque de plans de nettoyage','<div id="zlib_body"></div>',860);
   zlibRender();}
 function zlibHas(zone,task){return (state.postes||[]).some(function(p){return p.clientId===CID&&(p.zone||'').toLowerCase()===zone.toLowerCase()&&(p.name||'').toLowerCase()===task.toLowerCase();});}
 function zlibZoneExists(n){return (state.zones||[]).some(function(z){return z.clientId===CID&&(z.name||'').toLowerCase()===n.toLowerCase();});}
 function zlibCount(){let z=0,t=0;Object.keys(ZLIB_SEL).forEach(function(k){const a=ZLIB_SEL[k]||[];if(a.length){z++;t+=a.length;}});return {z:z,t:t};}
+function zlibFreqOf(k,i){const z=ZONE_LIB.find(function(x){return x.key===k;});const t=z?z.tasks[i]:null;
+  return (ZLIB_FRQ[k+'|'+i])||(t?t.freq:'Quotidien');}
+function zlibFreqCls(f){const m={'Plusieurs fois par jour':'#e11d48','Quotidien':'#0e9f6e','Hebdomadaire':'#2563eb','Bimensuel':'#2563eb','Mensuel':'#7c3aed','Trimestriel':'#64748b','Semestriel':'#64748b','Annuel':'#64748b','Après chaque usage':'#d97706','À chaque service':'#d97706'};
+  return m[f]||'#64748b';}
+function zlibChip(f){const c=zlibFreqCls(f);return '<span style="border:1.5px solid '+c+';color:'+c+';border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:800;white-space:nowrap">'+escH(f)+'</span>';}
+function zlibStep(n){if(n>1&&!zlibCount().t){toast('Cochez au moins un élément');return;}ZLIB_STEP=n;zlibRender();}
 function zlibRender(){const b=document.getElementById('zlib_body');if(!b)return;
+  const c=zlibCount();
+  const tabs='<div class="seg-mini" style="margin:-4px 0 12px">'
+    +[[1,'1 · Choisir'],[2,'2 · Fréquences'],[3,'3 · Récapitulatif']].map(function(s){
+      return '<button class="'+(ZLIB_STEP===s[0]?'active':'')+'" onclick="zlibStep('+s[0]+')">'+s[1]+'</button>';}).join('')+'</div>';
+  let body='';
+  if(ZLIB_STEP===1)body=zlibStep1();
+  else if(ZLIB_STEP===2)body=zlibStep2();
+  else body=zlibStep3();
+  const foot='<div style="display:flex;gap:8px;align-items:center;margin-top:14px;border-top:1px solid var(--line);padding-top:12px;flex-wrap:wrap">'
+    +'<span class="tsub" style="font-size:13px">'+(c.t?('<b>'+c.t+'</b> tâche'+(c.t>1?'s':'')+' · <b>'+c.z+'</b> zone'+(c.z>1?'s':'')):'Rien de sélectionné pour l\'instant')+'</span>'
+    +'<span style="margin-left:auto;display:flex;gap:8px">'
+    +(ZLIB_STEP>1?'<button class="btn ghost" onclick="zlibStep('+(ZLIB_STEP-1)+')">‹ Retour</button>':'')
+    +(ZLIB_STEP<3?'<button class="btn" onclick="zlibStep('+(ZLIB_STEP+1)+')"'+(c.t?'':' style="opacity:.5;pointer-events:none"')+'>Continuer ›</button>'
+                 :'<button class="btn" onclick="zlibApply()"'+(c.t?'':' style="opacity:.5;pointer-events:none"')+'>＋ Ajouter au plan de nettoyage</button>')
+    +'</span></div>';
+  b.innerHTML=tabs+body+foot;}
+function zlibStep1(){
   const q=(ZLIB_Q||'').toLowerCase().trim();
   const zones=ZONE_LIB.map(function(z){
-    const tasks=z.tasks.filter(function(t){return !q||t.name.toLowerCase().indexOf(q)>-1||z.name.toLowerCase().indexOf(q)>-1;});
+    const tasks=z.tasks.filter(function(t){return !q||t.name.toLowerCase().indexOf(q)>-1||(t.com||'').toLowerCase().indexOf(q)>-1||(t.cat||'').toLowerCase().indexOf(q)>-1||z.name.toLowerCase().indexOf(q)>-1;});
     return {z:z,tasks:tasks};}).filter(function(x){return x.tasks.length;});
-  const c=zlibCount();
-  b.innerHTML='<div class="tsub" style="margin:-4px 0 12px;font-size:13.5px">Cochez les zones et les tâches à ajouter à votre plan de nettoyage. Vous pourrez toujours les modifier ou en créer d\'autres à la main.</div>'
-  +'<input placeholder="🔍 Rechercher une zone ou une tâche…" value="'+escH(ZLIB_Q)+'" oninput="ZLIB_Q=this.value;zlibRender()" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:12px">'
-  +'<div style="max-height:52vh;overflow:auto;padding-right:4px">'
+  return '<div class="tsub" style="margin:0 0 10px;font-size:13.5px">Cochez les éléments présents chez vous. Vous choisirez la fréquence de nettoyage juste après.</div>'
+  +'<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'
+  +'<input id="zlib_q" placeholder="🔍 Rechercher une zone, un équipement…" value="'+escH(ZLIB_Q)+'" oninput="ZLIB_Q=this.value;zlibRender();const e=document.getElementById(\'zlib_q\');if(e){e.focus();e.setSelectionRange(e.value.length,e.value.length);}" style="flex:1;min-width:200px;box-sizing:border-box;padding:10px 12px;border:1px solid var(--line);border-radius:10px">'
+  +'<button class="btn ghost sm" onclick="zlibSelectAll()">Tout cocher</button></div>'
+  +'<div style="max-height:50vh;overflow:auto;padding-right:4px">'
   +(zones.length?zones.map(function(x){
     const z=x.z;const sel=ZLIB_SEL[z.key]||[];const all=sel.length===z.tasks.length&&z.tasks.length>0;
-    const already=zlibZoneExists(z.name);
-    return '<div style="border:1px solid '+(sel.length?'#0e9f6e':'var(--line)')+';border-radius:14px;margin-bottom:10px;overflow:hidden;background:'+(sel.length?'#f6fdfa':'#fff')+'">'
-    +'<div onclick="zlibToggleZone(\''+z.key+'\')" style="display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer;user-select:none">'
-      +'<span style="width:20px;height:20px;border-radius:6px;border:2px solid '+((all||sel.length)?'#0e9f6e':'#cbd5e1')+';background:'+(all?'#0e9f6e':'#fff')+';display:grid;place-items:center;color:'+(all?'#fff':'#0e9f6e')+';font-size:14px;font-weight:900;line-height:1;flex:none">'+(all?'✓':(sel.length?'−':''))+'</span>'
+    const open=q?true:!!ZLIB_OPEN[z.key];
+    let inner='';let lastcat='';
+    x.tasks.forEach(function(t){
+      const i=z.tasks.indexOf(t);const on=sel.indexOf(i)>=0;const dup=zlibHas(z.name,t.name);
+      if(t.cat&&t.cat!==lastcat){lastcat=t.cat;
+        inner+='<div style="padding:9px 14px 3px;font-size:10.5px;font-weight:800;letter-spacing:.9px;text-transform:uppercase;color:var(--muted)">'+escH(t.cat)+'</div>';}
+      inner+='<div onclick="zlibToggleTask(\''+z.key+'\','+i+')" style="display:flex;align-items:center;gap:11px;padding:8px 14px;cursor:pointer;user-select:none;border-top:1px solid var(--line);background:'+(on?'#f2fbf7':'transparent')+'">'
+        +'<span style="width:19px;height:19px;border-radius:6px;border:2px solid '+(on?'#0e9f6e':'#cbd5e1')+';background:'+(on?'#0e9f6e':'#fff')+';color:#fff;display:grid;place-items:center;font-size:12px;font-weight:900;flex:none">'+(on?'✓':'')+'</span>'
+        +'<span style="min-width:0"><div style="font-weight:600;font-size:13.5px">'+escH(t.name)+(dup?' <span class="chip muted" style="font-size:9px">déjà là</span>':'')+'</div>'
+        +(t.com?'<div class="tsub" style="font-size:11.5px">'+escH(t.com)+'</div>':'')+'</span>'
+        +'<span style="margin-left:auto;flex:none">'+zlibChip(zlibFreqOf(z.key,i))+'</span></div>';});
+    return '<div style="border:1px solid '+(sel.length?'#0e9f6e':'var(--line)')+';border-radius:14px;margin-bottom:10px;overflow:hidden;background:#fff">'
+    +'<div style="display:flex;align-items:center;gap:11px;padding:11px 14px;user-select:none">'
+      +'<span onclick="zlibToggleZone(\''+z.key+'\')" style="cursor:pointer;width:20px;height:20px;border-radius:6px;border:2px solid '+((all||sel.length)?'#0e9f6e':'#cbd5e1')+';background:'+(all?'#0e9f6e':'#fff')+';display:grid;place-items:center;color:'+(all?'#fff':'#0e9f6e')+';font-size:14px;font-weight:900;line-height:1;flex:none">'+(all?'✓':(sel.length?'−':''))+'</span>'
+      +'<span onclick="zlibToggleOpen(\''+z.key+'\')" style="cursor:pointer;display:flex;align-items:center;gap:10px;flex:1;min-width:0">'
       +'<span style="font-size:19px">'+z.icon+'</span>'
-      +'<span style="font-weight:800;font-size:15px">'+escH(z.name)+'</span>'
-      +(already?'<span class="chip muted" style="font-size:9.5px">zone existante</span>':'')
-      +'<span class="tsub" style="margin-left:auto;font-size:12px">'+(sel.length?sel.length+' / '+z.tasks.length+' sélectionnée(s)':z.tasks.length+' tâches')+'</span></div>'
-    +'<div style="display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 12px">'
-      +x.tasks.map(function(t){const i=z.tasks.indexOf(t);const on=sel.indexOf(i)>=0;const dup=zlibHas(z.name,t.name);
-        return '<span onclick="zlibToggleTask(\''+z.key+'\','+i+')" title="'+escH(t.freq)+'" style="cursor:pointer;user-select:none;font-size:12.5px;padding:5px 11px;border-radius:999px;border:1px solid '+(on?'#0e9f6e':'var(--line)')+';background:'+(on?'#0e9f6e':'#fff')+';color:'+(on?'#fff':(dup?'#94a3b8':'#334155'))+'">'+(on?'✓ ':'')+escH(t.name)+' <span style="opacity:.7;font-size:10.5px">'+escH(t.freq)+'</span>'+(dup?' <span style="font-size:10px">déjà là</span>':'')+'</span>';}).join('')
-    +'</div></div>';}).join('')
+      +'<span style="min-width:0"><div style="font-weight:800;font-size:15px">'+escH(z.name)+'</div>'
+      +'<div class="tsub" style="font-size:11.5px">'+z.tasks.length+' élément'+(z.tasks.length>1?'s':'')+(q?' · '+x.tasks.length+' résultat'+(x.tasks.length>1?'s':''):'')+'</div></span>'
+      +'<span style="margin-left:auto;display:flex;align-items:center;gap:8px;flex:none">'
+      +(sel.length?'<span class="chip ok" style="font-size:10.5px">'+sel.length+' coché'+(sel.length>1?'s':'')+'</span>':'')
+      +'<span class="tsub" style="font-size:15px;display:inline-block;transform:rotate('+(open?90:0)+'deg)">›</span></span></span></div>'
+    +(open?inner:'')+'</div>';}).join('')
    :'<div class="empty" style="padding:30px;text-align:center">Aucun résultat pour « '+escH(ZLIB_Q)+' ».</div>')
-  +'</div>'
-  +'<div style="display:flex;gap:8px;align-items:center;margin-top:14px;border-top:1px solid var(--line);padding-top:12px">'
-  +'<span class="tsub" style="font-size:13px">'+(c.t?('<b>'+c.z+'</b> zone(s) · <b>'+c.t+'</b> tâche(s) sélectionnée(s)'):'Rien de sélectionné pour l\'instant')+'</span>'
-  +'<button class="btn ghost sm" style="margin-left:auto" onclick="zlibSelectAll()">Tout cocher</button>'
-  +'<button class="btn" onclick="zlibApply()"'+(c.t?'':' style="opacity:.5;pointer-events:none"')+'>＋ Ajouter au plan de nettoyage</button></div>';}
+  +'</div>';}
+function zlibStep2(){
+  let h='<div class="tsub" style="margin:0 0 10px;font-size:13.5px">Chaque élément arrive avec la fréquence recommandée. Ajustez-la ligne par ligne, ou d\'un coup pour toute une zone.</div>'
+   +'<div style="max-height:52vh;overflow:auto;padding-right:4px">';
+  ZONE_LIB.forEach(function(z){
+    const sel=(ZLIB_SEL[z.key]||[]).slice().sort(function(a,b){return a-b;});if(!sel.length)return;
+    h+='<div style="border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;background:#fff">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:#f8fafc;flex-wrap:wrap">'
+      +'<span style="font-size:18px">'+z.icon+'</span><b style="font-size:14.5px">'+escH(z.name)+'</b>'
+      +'<span class="chip muted" style="font-size:10.5px">'+sel.length+' tâche'+(sel.length>1?'s':'')+'</span>'
+      +'<span style="margin-left:auto;display:flex;align-items:center;gap:7px"><span class="tsub" style="font-size:12px">Toute la zone :</span>'
+      +'<select onchange="zlibBulk(\''+z.key+'\',this.value)" style="padding:6px 9px;border:1.5px solid var(--line);border-radius:9px;font-weight:700;font-size:12px"><option value="">— choisir —</option>'
+      +CLEAN_FREQS.map(function(f){return '<option>'+f+'</option>';}).join('')+'</select></span></div>';
+    sel.forEach(function(i){const t=z.tasks[i];if(!t)return;const cur=zlibFreqOf(z.key,i);
+      h+='<div style="display:flex;align-items:center;gap:11px;padding:9px 14px;border-top:1px solid var(--line)">'
+        +'<span style="width:6px;height:24px;border-radius:3px;background:'+zlibFreqCls(cur)+';flex:none"></span>'
+        +'<span style="min-width:0"><div style="font-weight:600;font-size:13.5px">'+escH(t.name)+'</div>'
+        +(t.com?'<div class="tsub" style="font-size:11.5px">'+escH(t.com)+'</div>':'')+'</span>'
+        +'<select onchange="zlibSetFreq(\''+z.key+'\','+i+',this.value)" style="margin-left:auto;flex:none;padding:7px 10px;border:1.5px solid var(--line);border-radius:10px;font-weight:700;font-size:12.5px;min-width:175px">'
+        +CLEAN_FREQS.map(function(f){return '<option'+(f===cur?' selected':'')+'>'+f+'</option>';}).join('')+'</select>'
+        +'<button class="btn ghost sm" title="Retirer" onclick="zlibToggleTask(\''+z.key+'\','+i+');zlibRender()" style="flex:none;padding:5px 9px">✕</button></div>';});
+    h+='</div>';});
+  return h+'</div>';}
+function zlibStep3(){
+  const by={};let tot=0;
+  ZONE_LIB.forEach(function(z){(ZLIB_SEL[z.key]||[]).forEach(function(i){const f=zlibFreqOf(z.key,i);by[f]=(by[f]||0)+1;tot++;});});
+  let h='<div class="tsub" style="margin:0 0 10px;font-size:13.5px">Vérifiez, puis ajoutez le tout au plan de nettoyage.</div>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'
+   +'<div style="border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:96px"><div class="tsub" style="font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase">Tâches</div><div style="font-size:23px;font-weight:800;letter-spacing:-.8px">'+tot+'</div></div>'
+   +CLEAN_FREQS.filter(function(f){return by[f];}).map(function(f){const c=zlibFreqCls(f);
+     return '<div style="border:1px solid var(--line);border-radius:12px;padding:10px 14px;min-width:96px"><div style="font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:'+c+'">'+escH(f)+'</div><div style="font-size:23px;font-weight:800;letter-spacing:-.8px">'+by[f]+'</div></div>';}).join('')
+   +'</div><div style="max-height:44vh;overflow:auto;padding-right:4px">';
+  ZONE_LIB.forEach(function(z){
+    const sel=(ZLIB_SEL[z.key]||[]).slice().sort(function(a,b){return a-b;});if(!sel.length)return;
+    h+='<div style="border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden;background:#fff">'
+      +'<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc"><span style="font-size:18px">'+z.icon+'</span><b style="font-size:14.5px">'+escH(z.name)+'</b>'
+      +'<span class="chip muted" style="font-size:10.5px;margin-left:auto">'+sel.length+' tâche'+(sel.length>1?'s':'')+'</span></div>';
+    sel.forEach(function(i){const t=z.tasks[i];if(!t)return;
+      h+='<div style="display:flex;align-items:center;gap:10px;padding:7px 14px;border-top:1px solid var(--line)"><span style="font-weight:600;font-size:13.5px">'+escH(t.name)+'</span>'
+        +'<span style="margin-left:auto">'+zlibChip(zlibFreqOf(z.key,i))+'</span></div>';});
+    h+='</div>';});
+  return h+'</div>';}
+function zlibToggleOpen(k){ZLIB_OPEN[k]=!ZLIB_OPEN[k];zlibRender();}
 function zlibToggleZone(k){const z=ZONE_LIB.find(function(x){return x.key===k;});if(!z)return;
   const sel=ZLIB_SEL[k]||[];
   ZLIB_SEL[k]=(sel.length===z.tasks.length)?[]:z.tasks.map(function(_,i){return i;});
-  zlibRender();}
+  ZLIB_OPEN[k]=true;zlibRender();}
 function zlibToggleTask(k,i){const sel=ZLIB_SEL[k]||[];const j=sel.indexOf(i);
-  if(j>=0)sel.splice(j,1);else sel.push(i);
-  ZLIB_SEL[k]=sel;zlibRender();}
+  if(j>=0){sel.splice(j,1);delete ZLIB_FRQ[k+'|'+i];}else sel.push(i);
+  ZLIB_SEL[k]=sel;if(ZLIB_STEP===1)zlibRender();}
+function zlibSetFreq(k,i,v){ZLIB_FRQ[k+'|'+i]=v;zlibRender();}
+function zlibBulk(k,v){if(!v)return;const z=ZONE_LIB.find(function(x){return x.key===k;});if(!z)return;
+  (ZLIB_SEL[k]||[]).forEach(function(i){ZLIB_FRQ[k+'|'+i]=v;});zlibRender();toast('Fréquence appliquée à « '+z.name+' »');}
 function zlibSelectAll(){const any=zlibCount().t>0;ZLIB_SEL={};
   if(!any)ZONE_LIB.forEach(function(z){ZLIB_SEL[z.key]=z.tasks.map(function(_,i){return i;});});
   zlibRender();}
 function zlibApply(){let nz=0,nt=0,skip=0;
-  Object.keys(ZLIB_SEL).forEach(function(k){
-    const sel=ZLIB_SEL[k]||[];if(!sel.length)return;
-    const z=ZONE_LIB.find(function(x){return x.key===k;});if(!z)return;
+  ZONE_LIB.forEach(function(z){
+    const sel=ZLIB_SEL[z.key]||[];if(!sel.length)return;
     if(!zlibZoneExists(z.name)){state.zones.push({id:'z'+Date.now()+Math.random().toString(36).slice(2,5),clientId:CID,name:z.name});nz++;}
-    sel.forEach(function(i){const t=z.tasks[i];if(!t)return;
+    sel.slice().sort(function(a,b){return a-b;}).forEach(function(i){const t=z.tasks[i];if(!t)return;
       if(zlibHas(z.name,t.name)){skip++;return;}
-      state.postes.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,6),clientId:CID,zone:z.name,name:t.name,freq:t.freq,done:false});nt++;});
+      state.postes.push({id:'p'+Date.now()+Math.random().toString(36).slice(2,6),clientId:CID,zone:z.name,name:t.name,freq:zlibFreqOf(z.key,i),done:false});nt++;});
   });
   const mask=document.getElementById('info_mask');if(mask)mask.classList.remove('on');
   renderClient('h_zones');
-  toast('✓ '+nt+' tâche(s) ajoutée(s)'+(nz?' · '+nz+' zone(s) créée(s)':'')+(skip?' · '+skip+' déjà présente(s)':''));}
+  toast('✓ '+nt+' tâche'+(nt>1?'s':'')+' ajoutée'+(nt>1?'s':'')+(nz?' · '+nz+' zone'+(nz>1?'s':'')+' créée'+(nz>1?'s':''):'')+(skip?' · '+skip+' déjà présente'+(skip>1?'s':''):''));}
 function formZone(id){const z=id?state.zones.find(x=>x.id===id):null;
   openForm(id?'Modifier la zone':'Nouvelle zone',[
     {key:'name',label:'Nom de la zone / local',value:z?z.name:'',ph:'Ex. Cuisine, Salle, Réserve…'}
@@ -3814,7 +3879,7 @@ function formTask(id){const t=id?state.postes.find(x=>x.id===id):null;const zs=z
   openForm(id?'Modifier la tâche':'Nouvelle tâche',[
     {key:'zone',label:'Zone / local',type:'select',options:zs,value:t?t.zone:zs[0]},
     {key:'name',label:'Tâche',value:t?t.name:'',ph:'Ex. Nettoyage plan de travail'},
-    {key:'freq',label:'Fréquence',type:'select',options:['Quotidien','2x / jour','Après usage','Hebdomadaire','Mensuel'],value:t?t.freq:'Quotidien'}
+    {key:'freq',label:'Fréquence',type:'select',options:CLEAN_FREQS,value:t?t.freq:'Quotidien'}
   ],v=>{if(!v.name.trim()){toast('Indiquez la tâche');return;}if(t){Object.assign(t,{zone:v.zone,name:v.name,freq:v.freq});}else{state.postes.push({id:'p'+Date.now(),clientId:CID,zone:v.zone,name:v.name,freq:v.freq,done:false});}renderClient('h_zones');toast(t?'Tâche modifiée':'Tâche ajoutée — visible sur la tablette');});}
 
 function formEquip(id){const e=id?state.equip.find(x=>x.id===id):null;
@@ -4596,7 +4661,7 @@ async function loadCatalog(){
       PRODUCT_CATALOG=data.filter(r=>r.kind==='product').map(map);
       const zr=data.filter(r=>r.kind==='zone'),tr=data.filter(r=>r.kind==='task');
       if(zr.length){ZONE_LIB=zr.map(function(z){return {key:z.id,name:z.name,icon:z.icon||'🧽',
-        tasks:tr.filter(function(t){return (t.sub||'')===z.name;}).map(function(t){return {name:t.name,freq:t.cat||'Quotidien'};})};});}
+        tasks:tr.filter(function(t){return (t.sub||'')===z.name;}).map(function(t){return {name:t.name,freq:t.cat||'Quotidien',com:'',cat:''};})};});}
     }
   }catch(e){console.warn('loadCatalog',e);}
 }
