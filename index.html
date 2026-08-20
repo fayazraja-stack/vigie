@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0e9f6e">
 <title>Vigie — Plateforme HACCP & Restaurant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --brand:#0e9f6e;--brand-d:#0b7d57;--brand-l:#e7f7f0;
@@ -15,7 +17,7 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+  body{font-family:"Plus Jakarta Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
   a{color:inherit;text-decoration:none}button{font-family:inherit;cursor:pointer}
   h1,h2,h3,h4{margin:0;line-height:1.2}p{margin:0}
 
@@ -97,6 +99,14 @@
   .side .sub-i{display:flex;align-items:center;gap:9px;padding:7px 12px 7px 40px;border-radius:9px;font-size:13px;font-weight:500;color:#94a3b8;cursor:pointer}
   .side .sub-i:hover{background:#1e293b;color:#fff}.side .sub-i.active{color:var(--brand);font-weight:700}
   .side .who{margin-top:12px;background:#111c30;border-radius:12px;padding:11px;display:flex;gap:10px;align-items:center}
+  .side .nav-g{display:flex;align-items:center;gap:11px;padding:7px 10px;border-radius:14px;font-size:14px;font-weight:700;color:#cbd5e1;cursor:pointer;margin:2px 0;user-select:none}
+  .side .nav-g:hover{background:#111c30}
+  .side .nav-g.active{background:#16233c;color:#fff}
+  .side .nav-g .gic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;flex:none}
+  .side .nav-g .chev{margin-left:auto;color:#64748b;font-size:17px;font-weight:800;transition:transform .15s;line-height:1}
+  .side .nav-g .chev.open{transform:rotate(90deg)}
+  .side .nav-kids{display:none;margin:0 0 3px}
+  .side .nav-kids.open{display:block}
   .side .who .av{width:34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800}
   .side .who .nm{font-size:13px;color:#fff;font-weight:700}.side .who .rl{font-size:11px;color:#64748b}
   .main{padding:24px 28px;overflow:auto}
@@ -119,6 +129,13 @@
   td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
   tr:last-child td{border-bottom:0}tbody tr:hover{background:#fafbfc}
   .tname{font-weight:700}.tsub{font-size:12px;color:var(--muted)}
+  .pwk th{padding:4px 8px}
+  .pwk td{padding:3px 5px;font-size:12.5px}
+  .pwk td .chip{padding:2px 7px;font-size:10.5px;line-height:1.3;gap:4px;border-radius:8px}
+  .pwk .tname{font-size:12.5px;line-height:1.25}
+  .pwk .tsub{font-size:10.5px}
+  .pwk thead th{position:sticky;top:0;background:#fff;z-index:2}
+  .planwrap{max-height:calc(100vh - 252px);overflow:auto}
   .bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:14px}
   .bars .bar{flex:1;background:var(--brand-l);border-radius:6px 6px 0 0;position:relative;min-height:4px}
   .bars .bar .cap{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--slate)}
@@ -167,8 +184,8 @@
   .tb-foot button{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px;display:flex;gap:6px;align-items:center}
   .tb-foot .imp{margin-left:auto;color:var(--brand-d)}
   .tb-title-k{text-align:center;color:var(--muted);font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase}
-  .tb-title{text-align:center;font-size:30px;font-weight:800;margin:6px 0 24px;letter-spacing:-.6px}
-  .modgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:640px;margin:0 auto}
+  .tb-title{text-align:center;font-size:26px;font-weight:800;margin:4px 0 16px;letter-spacing:-.6px}
+  .modgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;max-width:860px;margin:0 auto}
   .modcard{border:1px solid #eee;border-radius:20px;padding:22px;background:#fff;cursor:pointer;transition:.15s;position:relative;overflow:hidden}
   .modcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .modcard .k{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--brand);text-transform:uppercase}
@@ -176,12 +193,13 @@
   .modcard h3{font-size:22px;margin-bottom:8px}.modcard p{font-size:13px;color:var(--muted);line-height:1.5}
   .modcard .arr{margin-top:16px;color:var(--brand);font-weight:800;font-size:13px}
   .modcard .cnt{position:absolute;top:16px;right:16px;background:#fde7ec;color:var(--bad);font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
-  .haccp6{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:720px;margin:0 auto}
-  .h6{border-radius:18px;padding:18px;cursor:pointer;position:relative;transition:.15s;border:1px solid transparent}
+  .haccp6{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;max-width:980px;margin:0 auto}
+  @media(max-width:860px){.haccp6{grid-template-columns:1fr 1fr;gap:10px}}
+  .h6{border-radius:16px;padding:13px 15px;cursor:pointer;position:relative;transition:.15s;border:1px solid transparent}
   .h6:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .h6 .k{font-size:10.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
-  .h6 .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:21px;background:#fff;margin-bottom:8px}
-  .h6 h3{font-size:19px;margin:4px 0 6px}.h6 p{font-size:12.5px;color:var(--slate);line-height:1.45}
+  .h6 .ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px;background:#fff;margin-bottom:5px}
+  .h6 h3{font-size:16.5px;margin:3px 0 4px}.h6 p{font-size:11.5px;color:var(--slate);line-height:1.4}
   .h6 .arr{position:absolute;bottom:16px;right:18px;color:var(--brand);font-weight:800}
   .h6 .cnt{position:absolute;top:14px;right:14px;background:#fde7ec;color:var(--bad);font-size:11px;font-weight:800;padding:3px 9px;border-radius:999px}
   .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;max-width:680px;margin:0 auto}
@@ -267,6 +285,10 @@
     .side{flex-direction:row;align-items:center;gap:6px;overflow-x:auto;padding:8px 10px;position:sticky;top:52px;z-index:6;-webkit-overflow-scrolling:touch}
     .side .brand,.side .who,.side .cat{display:none}
     .side .nav-i,.side .sub-i{flex:0 0 auto;white-space:nowrap;padding:8px 12px;margin:0}
+    .side .nav-g{flex:0 0 auto;white-space:nowrap;padding:6px 10px}
+    .side .nav-g .chev{display:none}
+    .side .nav-kids{display:flex!important;flex:0 0 auto;gap:4px}
+    .side .nav-kids .sub-i{padding:8px 12px}
     .main{padding:16px 14px}
     .kpis{grid-template-columns:repeat(2,1fr)}.grid2{grid-template-columns:1fr}
     .band .wrap{grid-template-columns:repeat(2,1fr)}.modgrid,.haccp6,.split2{grid-template-columns:1fr}
@@ -504,6 +526,7 @@
       <div class="nav-i" onclick="adminNav('alerts',this)">Alertes réseau</div>
       <div class="nav-i" onclick="adminNav('veille',this)">Veille &amp; prospection</div>
       <div class="nav-i" onclick="adminNav('crm',this)">Base de données client</div>
+      <div class="nav-i" onclick="adminNav('support',this)">Support</div>
       <div class="cat">Gestion système</div>
       <div class="nav-i" onclick="adminNav('system',this)">Réseaux & franchises</div>
       <div class="cat">Bibliothèques</div>
@@ -874,6 +897,10 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="acrm_search" placeholder="Rechercher (nom, email, établissement…)" oninput="adminCrmFilter()"></div></div>'
     +'<div id="acrm_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
     adminCrmLoad();
+  } else if(adminView==='support'){
+    m.innerHTML='<div class="topbar"><div><h1>Support</h1><div class="sub">Tickets ouverts par vos restaurateurs — répondez directement ici</div></div><div class="actions"><select onchange="window._SUPADM_F=this.value;supAdmLoad()" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les statuts</option><option value="open">Ouverts</option><option value="answered">Répondus</option><option value="closed">Fermés</option></select><button class="btn ghost sm" onclick="supAdmLoad()">↻ Actualiser</button></div></div>'
+    +'<div class="panel"><div class="pb" id="supadm_list"><div class="empty" style="padding:40px;text-align:center">Chargement…</div></div></div>';
+    supAdmLoad();
   } else if(adminView==='system'){
     const nets=state.networks||[];
     const rows=nets.map(n=>{const count=(state.clients||[]).filter(c=>c.network===n.name).length;return '<tr><td class="tname">'+escH(n.name)+'</td><td>'+count+' client'+(count>1?'s':'')+'</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="netRename(\''+n.id+'\')"> Renommer</button> <button class="btn ghost sm" onclick="netDelete(\''+n.id+'\')">Suppr.</button></td></tr>';}).join('');
@@ -1243,29 +1270,41 @@ const CLIENT_NAV=[
   {cat:'Pilotage'},
   {v:'dash',ic:'',t:'Vue d\'ensemble'},
   {cat:'HACCP',mod:'haccp'},
-  {v:'h_zones',ic:'',t:'Zones & Tâches',sub:1,mod:'haccp'},
-  {v:'h_equip',ic:'',t:'Équipements',sub:1,mod:'haccp'},
-  {v:'h_friteuses',ic:'',t:'Friteuses',sub:1,mod:'haccp'},
-  {v:'h_dlc',ic:'',t:'Étiquettes DLC',sub:1,mod:'haccp'},
-  {v:'h_four',ic:'',t:'Fournisseurs',sub:1,mod:'haccp'},
-  {v:'h_docs',ic:'',t:'Documents',sub:1,mod:'haccp'},
-  {v:'h_suivi',ic:'',t:'Suivi HACCP',sub:1,mod:'haccp'},
-  {v:'h_report',ic:'',t:'Paramétrage rapports',sub:1,mod:'haccp'},
+  {v:'h_zones',ic:'🧽',t:'Zones & Tâches',sub:1,mod:'haccp'},
+  {v:'h_equip',ic:'🌡️',t:'Équipements',sub:1,mod:'haccp'},
+  {v:'h_friteuses',ic:'🍟',t:'Friteuses',sub:1,mod:'haccp'},
+  {v:'h_dlc',ic:'🏷️',t:'Étiquettes DLC',sub:1,mod:'haccp'},
+  {v:'h_four',ic:'🚚',t:'Fournisseurs',sub:1,mod:'haccp'},
+  {v:'h_docs',ic:'📄',t:'Documents',sub:1,mod:'haccp'},
+  {v:'h_suivi',ic:'📈',t:'Suivi HACCP',sub:1,mod:'haccp'},
+  {v:'h_report',ic:'🧾',t:'Paramétrage rapports',sub:1,mod:'haccp'},
   {cat:'RH & Planning',mod:'rh'},
-  {v:'rh_etab',ic:'',t:'Établissement',sub:1,mod:'rh'},
-  {v:'rh_planning',ic:'',t:'Planning',sub:1,mod:'rh'},
-  {v:'rh_heures',ic:'',t:'Historique heures',sub:1,mod:'rh'},
+  {v:'rh_etab',ic:'👥',t:'Établissement',sub:1,mod:'rh'},
+  {v:'rh_planning',ic:'📅',t:'Planning',sub:1,mod:'rh'},
+  {v:'rh_heures',ic:'🕐',t:'Historique heures',sub:1,mod:'rh'},
   {cat:'Gestion'},
   {v:'food',ic:'',t:'Food Cost',mod:'food'},
   {cat:'Fidélisation',mod:'fid'},
-  {v:'fid',ic:'',t:'Jeux',sub:1,mod:'fid'},
-  {v:'fid_stats',ic:'',t:'Statistiques',sub:1,mod:'fid'},
-  {v:'crm',ic:'',t:'Données clients',sub:1},
+  {v:'fid',ic:'🎮',t:'Jeux',sub:1,mod:'fid'},
+  {v:'fid_stats',ic:'📊',t:'Statistiques',sub:1,mod:'fid'},
+  {v:'crm',ic:'🗄️',t:'Données clients',sub:1},
   {cat:'Configuration'},
   {v:'config_est',ic:'',t:'Paramètres du compte'},
-  {v:'tablet',ic:'',t:'Tablette'},
-  {v:'wiki',ic:'',t:'Wiki & Aide'},
+  {v:'tablet',ic:'⚙️',t:'Lien & Paramètres'},
+  {v:'wiki',ic:'📖',t:'Tutoriels'},
+  {v:'support',ic:'💬',t:'Contacter le support'},
 ];
+const NAV_GROUPS=[
+  {t:'Vue d\'ensemble',e:'▦',bg:'#1e293b',fg:'#cbd5e1',v:'dash'},
+  {t:'HACCP',e:'📋',bg:'#16a34a',mod:'haccp',kids:['h_zones','h_equip','h_friteuses','h_dlc','h_four','h_docs','h_suivi','h_report']},
+  {t:'RH & Planning',e:'👥',bg:'#3b82f6',mod:'rh',kids:['rh_etab','rh_planning','rh_heures']},
+  {t:'Food Cost',e:'💲',bg:'#8b5cf6',mod:'food',v:'food'},
+  {t:'Fidélisation',e:'❤️',bg:'#ec4899',mod:'fid',kids:['fid','fid_stats','crm']},
+  {t:'Tablette',e:'📱',bg:'#475569',kids:['tablet']},
+  {t:'Paramètres du compte',e:'⚙️',bg:'#334155',v:'config_est'},
+  {t:'Wiki & Aide',e:'📖',bg:'#f59e0b',kids:['wiki','support']},
+];
+let NAV_OPEN={};
 const ALL_MODULES=['haccp','rh','food','fid'];
 const MODULE_LABELS={haccp:'HACCP & hygiène',rh:'RH & Planning',food:'Food Cost',fid:'Fidélisation'};
 /* ===== Catalogue de déploiement (sélection rapide) ===== */
@@ -1300,16 +1339,22 @@ const NAV_MOD={};CLIENT_NAV.forEach(n=>{if(n.v&&n.mod)NAV_MOD[n.v]=n.mod;});
 function moduleBlockHTML(mod){return '<div class="topbar"><div><h1>'+escH(MODULE_LABELS[mod]||'Module')+'</h1></div></div><div class="panel"><div class="pb" style="text-align:center;padding:48px 20px"><div style="font-size:48px"></div><h2 style="margin:12px 0 6px">Module non inclus dans votre abonnement</h2><p class="lead" style="max-width:480px;margin:0 auto 20px">Le module « '+escH(MODULE_LABELS[mod]||'')+' » n\'est pas activé sur votre compte. Pour le débloquer et y souscrire, contactez notre support.</p><a class="btn" href="mailto:support@vigie.app?subject='+encodeURIComponent('Souscription module '+(MODULE_LABELS[mod]||''))+'"> Contacter le support</a></div></div>';}
 let clientView='dash';
 function buildClientSide(){const c=state.clients.find(x=>x.id===CID)||{contact:'—',name:''};
+  const byV={};CLIENT_NAV.forEach(n=>{if(n.v)byV[n.v]=n;});
   let out='';
-  for(let i=0;i<CLIENT_NAV.length;i++){const n=CLIENT_NAV[i];
-    if(n.cat){const kids=[];let j=i+1;for(;j<CLIENT_NAV.length&&!CLIENT_NAV[j].cat;j++)kids.push(CLIENT_NAV[j]);
-      if(kids.length){out+='<div class="cat">'+n.cat+'</div>';kids.forEach(k=>{const locked=!modOn(k.mod);out+='<div class="'+(k.sub?'sub-i':'nav-i')+(k.v===clientView?' active':'')+(locked?' locked':'')+'" data-v="'+k.v+'" onclick="clientNav(\''+k.v+'\')"><span class="ic">'+k.ic+'</span> '+k.t+(locked?' <span class="lk"></span>':'')+'</div>';});}
-      i=j-1;}
-  }
+  NAV_GROUPS.forEach((g,gi)=>{
+    const locked=g.mod&&!modOn(g.mod);
+    const kids=(g.kids||[]).map(v=>byV[v]).filter(Boolean);
+    const isActive=g.v?g.v===clientView:kids.some(k=>k.v===clientView);
+    if(kids.length&&NAV_OPEN[g.t]===undefined&&isActive)NAV_OPEN[g.t]=true;
+    const open=!!NAV_OPEN[g.t];
+    out+='<div class="nav-g'+(isActive?' active':'')+'" onclick="'+(kids.length?'navToggle('+gi+')':'clientNav(\''+g.v+'\')')+'"><span class="gic" style="background:'+g.bg+';color:'+(g.fg||'#fff')+'">'+g.e+'</span><span class="gt">'+g.t+'</span>'+(locked?'<span style="margin-left:6px;font-size:11px">🔒</span>':'')+(kids.length?'<span class="chev'+(open?' open':'')+'">›</span>':'')+'</div>';
+    if(kids.length)out+='<div class="nav-kids'+(open?' open':'')+'">'+kids.map(k=>'<div class="sub-i'+(k.v===clientView?' active':'')+'" data-v="'+k.v+'" onclick="clientNav(\''+k.v+'\')"><span class="ic">'+(k.ic||'')+'</span> '+k.t+'</div>').join('')+'</div>';
+  });
   const nm=(c.contact||'—').trim();
   document.getElementById('client_side').innerHTML='<div class="brand"><span class="mk">✓</span> Vigie</div>'+out
   +'<div class="who"><div class="av">'+(nm[0]||'—').toUpperCase()+'</div><div><div class="nm">'+(nm.split(' ')[0]||'—')+'</div><div class="rl">'+(c.name||'')+'</div></div></div>';}
-function clientNav(v){clientView=v;document.querySelectorAll('#client_side [data-v]').forEach(n=>n.classList.toggle('active',n.dataset.v===v));renderClient(v);}
+function navToggle(gi){const g=NAV_GROUPS[gi];NAV_OPEN[g.t]=!NAV_OPEN[g.t];buildClientSide();}
+function clientNav(v){clientView=v;buildClientSide();renderClient(v);}
 function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.clients.find(x=>x.id===cid);const m=document.getElementById('client_main');
   const vmod=NAV_MOD[clientView];if(vmod&&!modOn(vmod)){m.innerHTML=moduleBlockHTML(vmod);return;}
   const eqs=cEquip(cid);const today=todayRel(cid);const alerts=openAlerts(cid);
@@ -1366,7 +1411,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       docOpenFolder=null;
       m.innerHTML=topbar('Documents','Vos dossiers de documents — cliquez un dossier pour l\'ouvrir','<button class="btn" onclick="formFolder()">＋ Nouveau dossier</button>')
       +(folders.length?('<div class="drive-grid">'+folders.map(f=>{const n=docs.filter(d=>d.folderId===f.id).length;
-        return '<div class="drive-folder" onclick="docEnter(\''+f.id+'\')"><div class="df-ic"><span class="df-tab"></span></div><div class="df-name">'+escH(f.name)+'</div><div class="df-count">'+n+' fichier'+(n>1?'s':'')+'</div><div class="df-acts" onclick="event.stopPropagation()"><button class="btn ghost sm" onclick="formFolder(\''+f.id+'\')" title="Renommer">Renommer</button><button class="btn ghost sm" onclick="docDelFolder(\''+f.id+'\')" title="Supprimer">Suppr.</button></div></div>';}).join('')+'</div>')
+        return '<div class="drive-folder" onclick="docEnter(\''+f.id+'\')"><div class="df-ic"><span class="df-tab"></span></div><div class="df-name">'+escH(f.name)+'</div><div class="df-count">'+n+' fichier'+(n>1?'s':'')+'</div><div class="df-acts" onclick="event.stopPropagation()"><button class="btn ghost sm" onclick="formFolder(\''+f.id+'\')" title="Renommer">Renommer</button><button class="btn ghost sm" style="color:#94a3b8;padding:4px 8px" onclick="docDupFolder(\''+f.id+'\')" title="Dupliquer le dossier">⧉</button><button class="btn ghost sm" onclick="docDelFolder(\''+f.id+'\')" title="Supprimer">Suppr.</button></div></div>';}).join('')+'</div>')
       :'<div class="empty" style="padding:50px 20px">Aucun dossier. Créez votre premier dossier avec « ＋ Nouveau dossier » (ex. Contrats, Formations, Analyses…).</div>')
       +helpBox([['Organiser','créez un dossier par thème : contrats, formations, analyses laboratoire, factures…'],['Ajouter des fichiers','ouvrez un dossier puis glissez-déposez vos documents (PDF, images, Word, Excel…).'],['Consulter partout','vos fichiers sont aussi accessibles depuis la tablette en cuisine, en lecture et en ajout.']]);
     } else {
@@ -1404,27 +1449,26 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
   } else if(clientView==='rh_planning'){
     const emps=state.employees.filter(e=>e.clientId===cid&&e.active!==false);const tpls=state.shiftTemplates.filter(t=>t.clientId===cid);const days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     if(!planDate)planDate=new Date();const view=planView||'semaine';
+    const jobsF=state.jobs.filter(j=>state.employees.some(e=>e.clientId===cid&&e.jobId===j.id));
     let ph=topbar('Planning','Vue jour, semaine ou mois — cliquez une case vide pour créer un shift','<button class="btn ghost" onclick="formEmp()">＋ Employé</button> <button class="btn ghost" onclick="rhPlanExport()">↓ Exporter PDF</button>')
-    +'<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px"><span class="seg-mini">'+[['jour','Jour'],['semaine','Semaine'],['mois','Mois']].map(v=>'<button class="'+(view===v[0]?'active':'')+'" onclick="rhSetPlanView(\''+v[0]+'\')">'+v[1]+'</button>').join('')+'</span>'
+    +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><span class="seg-mini">'+[['jour','Jour'],['semaine','Semaine'],['mois','Mois']].map(v=>'<button class="'+(view===v[0]?'active':'')+'" onclick="rhSetPlanView(\''+v[0]+'\')">'+v[1]+'</button>').join('')+'</span>'
+     +(view==='semaine'?'<select onchange="rhSetPlanFilter(\'job\',this.value)" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:12.5px"><option value="">Tous les postes</option>'+jobsF.map(j=>'<option value="'+j.id+'"'+(planFilter.job===j.id?' selected':'')+'>'+escH(j.name)+'</option>').join('')+'</select>'
+       +'<select onchange="rhSetPlanFilter(\'emp\',this.value)" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:12.5px"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'"'+(planFilter.emp===e.id?' selected':'')+'>'+escH(e.name)+'</option>').join('')+'</select>':'')
      +'<div style="display:flex;align-items:center;gap:6px;margin-left:auto"><button class="btn ghost sm" onclick="rhPlanNav(-1)">←</button><span style="font-weight:800;min-width:210px;text-align:center">'+rhPlanLabel()+'</span><button class="btn ghost sm" onclick="rhPlanNav(1)">→</button><button class="btn ghost sm" onclick="rhPlanToday()">Aujourd\'hui</button></div></div>'
-    +'<div class="panel" style="margin-bottom:14px"><div class="pb"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="tsub" style="font-weight:800">Shifts favoris :</span>'
-     +(tpls.length?tpls.map(t=>'<span class="chip" style="cursor:pointer;background:'+(planSelTpl===t.id?t.color:t.color+'22')+';color:'+(planSelTpl===t.id?'#fff':t.color)+'" onclick="rhSelTpl(\''+t.id+'\')">'+escH(t.label)+' '+t.start+'-'+t.end+'</span>').join(''):'<span class="tsub">Aucun favori — créez-en un pour commencer à planifier.</span>')
+    +'<div class="panel" style="margin-bottom:10px"><div class="pb" style="padding:9px 14px"><div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="tsub" style="font-weight:800">Shifts favoris :</span>'
+     +(tpls.length?tpls.map(t=>'<span class="chip" style="cursor:pointer;background:'+(planSelTpl===t.id?t.color:t.color+'22')+';color:'+(planSelTpl===t.id?'#fff':t.color)+'" onclick="rhSelTpl(\''+t.id+'\')">'+escH(t.label)+' '+t.start+'-'+t.end+'</span>').join(''):'<span class="tsub">Aucun favori.</span>')
      +'<button class="btn ghost sm" onclick="formShiftTpl()">＋ Nouveau favori</button>'
      +(planSelTpl?'<button class="btn ghost sm" onclick="formShiftTpl(\''+planSelTpl+'\')">Modifier</button><button class="btn ghost sm" onclick="rhDelTpl(\''+planSelTpl+'\')">Suppr.</button>':'')
-     +'</div><div class="tsub" style="margin-top:8px">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez une case vide pour créer un shift, ou sélectionnez un favori puis une case pour le poser en 1 clic.')+'</div></div></div>';
+     +'<span class="tsub" style="font-size:11px;margin-left:auto">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez une case vide pour créer un shift · cases orange = badgeuse')+'</span>'
+     +'</div></div></div>';
     if(view==='semaine'){
       const wk=rhWeekKey(planDate);const mon=rhMonday(planDate);const today=new Date();
       const wShifts=rhShiftsOf(cid,wk);
       const sessions=rhBadgeSessions(cid);
-      const jobs=state.jobs.filter(j=>state.employees.some(e=>e.clientId===cid&&e.jobId===j.id));
       const shown=emps.filter(e=>(!planFilter.job||e.jobId===planFilter.job)&&(!planFilter.emp||e.id===planFilter.emp));
-      ph+='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'
-       +'<select onchange="rhSetPlanFilter(\'job\',this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les postes</option>'+jobs.map(j=>'<option value="'+j.id+'"'+(planFilter.job===j.id?' selected':'')+'>'+escH(j.name)+'</option>').join('')+'</select>'
-       +'<select onchange="rhSetPlanFilter(\'emp\',this.value)" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'"'+(planFilter.emp===e.id?' selected':'')+'>'+escH(e.name)+'</option>').join('')+'</select>'
-       +'<span class="tsub" style="align-self:center;font-size:12px">Cases orange = pointages badgeuse (réels) · chips colorées = planifié. Glissez-déposez un shift pour le déplacer.</span></div>';
-      ph+='<div class="panel"><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th>'
+      ph+='<div class="panel"><div class="pb planwrap" style="padding:0"><table class="pwk"><thead><tr><th>Employé</th>'
        +days.map((d,di)=>{const dd=new Date(mon);dd.setDate(mon.getDate()+di);const isT=_sameDay(dd,today);
-         return '<th style="text-align:center;'+(isT?'background:#eef2f7':'')+'"><div style="font-size:10px;color:#94a3b8;letter-spacing:1px">'+d.toUpperCase()+'.</div><div style="font-size:16px">'+dd.getDate()+'</div></th>';}).join('')
+         return '<th style="text-align:center;'+(isT?'background:#eef2f7':'')+'"><span style="font-size:9.5px;color:#94a3b8;letter-spacing:1px">'+d.toUpperCase()+'.</span> <span style="font-size:13px;color:#0b1220">'+dd.getDate()+'</span></th>';}).join('')
        +'<th style="text-align:center">Total</th></tr></thead><tbody>'
       +shown.map(e=>{let tot=0;let badgeMin=0;
         const cells=days.map((d,di)=>{
@@ -1433,15 +1477,15 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
           sh.forEach(s=>{tot+=rhShiftInfo(s).h;});
           const sess=sessions.filter(s=>(s.empId===e.id||s.name===e.name)&&s.date===dk);
           sess.forEach(s=>{if(s.min)badgeMin+=s.min;});
-          return '<td style="text-align:center;cursor:pointer;min-width:106px;vertical-align:top;'+(isT?'background:#f6f8fb;':'')+'" onclick="rhAssign(\''+e.id+'\','+di+')" ondragover="event.preventDefault()" ondrop="rhDropShift(event,\''+e.id+'\','+di+')">'
-           +(sh.length?sh.map(s=>{const t=rhShiftInfo(s);return '<div class="chip" draggable="true" ondragstart="rhDragShift(event,\''+s.id+'\')" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px auto;display:block;cursor:grab">'+(t.label||'')+'<br><span style="font-size:10px">'+(t.start||'')+' - '+(t.end||'')+'</span> <span style="cursor:pointer" onclick="event.stopPropagation();rhRemoveShift(\''+s.id+'\')">✕</span></div>';}).join(''):'')
+          return '<td style="text-align:center;cursor:pointer;min-width:96px;vertical-align:middle;'+(isT?'background:#f6f8fb;':'')+'" onclick="rhAssign(\''+e.id+'\','+di+')" ondragover="event.preventDefault()" ondrop="rhDropShift(event,\''+e.id+'\','+di+')">'
+           +(sh.length?sh.map(s=>{const t=rhShiftInfo(s);return '<div class="chip" draggable="true" ondragstart="rhDragShift(event,\''+s.id+'\')" title="'+escH(t.label||'')+'" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:1px auto;display:block;cursor:grab;white-space:nowrap">'+escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'')+' <span style="cursor:pointer" onclick="event.stopPropagation();rhRemoveShift(\''+s.id+'\')">✕</span></div>';}).join(''):'')
            +sess.map(rhBadgeChip).join('')
-           +(!sh.length&&!sess.length?'<span style="color:#cbd5e1;font-size:18px">＋</span>':'')
+           +(!sh.length&&!sess.length?'<span style="color:#cbd5e1;font-size:14px">＋</span>':'')
            +'</td>';}).join('');
         const diff=Math.round((tot-e.contract)*10)/10;const j=state.jobs.find(x=>x.id===e.jobId)||{};
-        return '<tr><td class="tname">'+e.name+'<div class="tsub">'+(j.name||'')+'</div></td>'+cells
-         +'<td style="text-align:center"><div class="tsub">Contrat '+e.contract+'h</div><b>'+(Math.round(tot*10)/10)+'h</b> <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span>'
-         +(badgeMin?'<div style="color:#b45309;font-weight:800;font-size:12px;margin-top:4px">⏱ '+fmtDur(badgeMin)+' badgé</div>':'<div class="tsub" style="font-size:11px;margin-top:4px">— badgé</div>')+'</td></tr>';}).join('')
+        return '<tr><td class="tname" style="white-space:nowrap;max-width:130px;overflow:hidden;text-overflow:ellipsis;padding-left:10px">'+e.name+'<div class="tsub">'+(j.name||'')+'</div></td>'+cells
+         +'<td style="text-align:center;white-space:nowrap;padding-right:10px"><b>'+(Math.round(tot*10)/10)+'h</b> <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'" style="padding:1px 6px;font-size:10px">'+(diff>0?'+':'')+diff+'h</span>'
+         +'<div class="tsub" style="font-size:10px">Contrat '+e.contract+'h'+(badgeMin?' · <b style="color:#b45309">⏱ '+fmtDur(badgeMin)+'</b>':'')+'</div></td></tr>';}).join('')
       +(shown.length?'':'<tr><td colspan="9" style="text-align:center;padding:34px 16px"><div style="font-weight:800;margin-bottom:6px">Aucun employé'+(emps.length?' ne correspond aux filtres':' pour le moment')+'</div>'+(emps.length?'':'<div class="tsub" style="margin-bottom:12px">Ajoutez vos employés : chaque employé aura sa ligne dans cette grille.</div><button class="btn" onclick="formEmp()">＋ Ajouter un employé</button>')+'</td></tr>')
       +'</tbody></table></div></div>';
     } else if(view==='jour'){ ph+=rhDayView(emps,tpls,cid); }
@@ -1449,26 +1493,34 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     ph+=helpBox([['Ajouter un shift','cliquez sur une cellule vide pour créer un nouveau shift (horaires libres).'],['Shifts favoris','définissez vos créneaux types (Matin 9h-15h, Soir 18h-23h…) puis posez-les en 1 clic ; la croix retire un créneau, le glisser-déposer le déplace.'],['Changer de vue','Jour pour voir qui travaille, Semaine pour planifier, Mois pour la vision globale.'],['Badgeuse','les cases orange sont les pointages réels de la tablette ; ils remontent aussi dans « Historique heures ».']]);
     m.innerHTML=ph;
   } else if(clientView==='rh_heures'){
-    const emps=state.employees.filter(e=>e.clientId===cid);const filtered=histEmp?emps.filter(e=>e.id===histEmp):emps;
-    const totalMin=filtered.filter(e=>e.active!==false).reduce((s,e)=>s+rhPlannedHours(e.id)*60,0);
-    const now=new Date();
-    const allSess=rhBadgeSessions(cid).filter(function(s){
-      if(histEmp){const e=emps.find(function(x){return x.id===histEmp;});if(e&&!(s.empId===e.id||s.name===e.name))return false;}
-      const d=s.inAt;
-      if(histPeriod==='week')return rhWeekKey(d)===rhWeekKey(now);
-      if(histPeriod==='month')return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();
-      return true;});
-    const badgeMin=allSess.reduce(function(t,s){return t+(s.min||0);},0);
-    const badgeByEmp={};allSess.forEach(function(s){const k=s.empId||s.name;badgeByEmp[k]=(badgeByEmp[k]||0)+(s.min||0);});
-    m.innerHTML=topbar('Historique des heures','Heures planifiées et heures badgées (pointages réels)','<button class="btn ghost" onclick="rhHeuresExport()">↓ Exporter PDF</button>')
-    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1;margin:0"><label>Période</label><select onchange="histPeriod=this.value;renderClient(\'rh_heures\')">'+[['week','Semaine en cours'],['month','Mois en cours'],['all','Tout l\'historique']].map(function(o){return '<option value="'+o[0]+'"'+(histPeriod===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div><div class="field" style="flex:1;margin:0"><label>Employé</label><select onchange="histEmp=this.value;renderClient(\'rh_heures\')"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'" '+(histEmp===e.id?'selected':'')+'>'+e.name+'</option>').join('')+'</select></div></div></div></div>'
-    +'<div class="kpis" style="grid-template-columns:repeat(4,1fr)">'+kpi('Heures planifiées',fmtHM(totalMin),'semaine en cours','up')+kpi('Heures badgées',fmtDur(badgeMin),'pointages réels sur la période','up')+kpi('Pointages',allSess.length,'sessions badgées','up')+kpi('Employés actifs',emps.filter(e=>e.active!==false).length,'','up')+'</div>'
-    +'<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Récapitulatif par employé</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th><th>Poste</th><th>Contrat</th><th>Planifié (semaine)</th><th>Badgé (période)</th><th></th></tr></thead><tbody>'
-    +filtered.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};const ph=rhPlannedHours(e.id);const diff=Math.round((ph-(e.contract||0))*10)/10;const bm=badgeByEmp[e.id]||badgeByEmp[e.name]||0;return '<tr'+(e.active===false?' style="opacity:.5"':'')+'><td class="tname">'+e.name+'</td><td>'+(j.name||'—')+'</td><td class="tsub">'+(e.contract||0)+' h</td><td class="tname">'+fmtHM(ph*60)+' <span class="chip '+(diff<0?'bad':diff>0?'warn':'ok')+'">'+(diff>0?'+':'')+diff+'h</span></td><td>'+(bm?'<b style="color:#b45309">'+fmtDur(bm)+'</b>':'<span class="tsub">—</span>')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="rhHeuresDetail(\''+e.id+'\')">Détail</button></td></tr>';}).join('')+'</tbody></table></div></div>'
-    +'<div class="panel"><div class="ph"><h3>Pointages badgeuse ('+allSess.length+')</h3><div class="sub">Chaque badge sur la tablette apparaît ici automatiquement</div></div><div class="pb" style="padding:0;overflow:auto">'
-    +(allSess.length?('<table><thead><tr><th>Date</th><th>Employé</th><th>Arrivée</th><th>Départ</th><th>Durée</th></tr></thead><tbody>'
-      +allSess.map(function(s){return '<tr><td class="tsub">'+s.inAt.toLocaleDateString('fr-FR')+'</td><td class="tname">'+escH(s.name)+'</td><td>'+fmtTime(s.inAt)+'</td><td>'+(s.outAt?fmtTime(s.outAt):'<span class="chip warn">en cours</span>')+'</td><td><b style="color:#b45309">'+fmtDur(s.min)+'</b></td></tr>';}).join('')+'</tbody></table>')
-      :'<div class="empty" style="padding:30px">Aucun pointage sur cette période. Les badges de la tablette (Badgeuse) remonteront ici.</div>')+'</div></div>';
+    const emps=state.employees.filter(e=>e.clientId===cid);
+    if(!histMonth){const n0=new Date();histMonth=n0.getFullYear()+'-'+String(n0.getMonth()+1).padStart(2,'0');}
+    const monthLabel=new Date(histMonth+'-15T12:00:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+    const allSess=rhBadgeSessions(cid).filter(s=>s.date&&s.date.slice(0,7)===histMonth);
+    const sessOf=e=>allSess.filter(s=>s.empId===e.id||s.name===e.name);
+    if(histDetail){
+      const e=emps.find(x=>x.id===histDetail)||{};const j=state.jobs.find(x=>x.id===e.jobId)||{};
+      const sess=sessOf(e);const byDate={};sess.forEach(s=>{(byDate[s.date]=byDate[s.date]||[]).push(s);});
+      const dates=Object.keys(byDate).sort().reverse();
+      m.innerHTML='<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap"><button class="btn ghost sm" onclick="histDetail=null;renderClient(\'rh_heures\')">‹ Retour</button><div><h1 style="margin:0;font-size:22px">'+escH(e.name||'')+'</h1><div class="tsub">'+escH(j.name||e.role||'—')+'</div></div><div style="margin-left:auto;display:flex;gap:8px"><button class="btn ghost" onclick="rhAddCreneau(\''+e.id+'\')">＋ Ajouter un créneau</button><button class="btn ghost" onclick="rhHeuresExport()">↓ Exporter PDF</button></div></div>'
+      +'<div class="panel"><div class="ph"><div><h3>Détail des heures – '+monthLabel+'</h3><div class="sub">Cliquez sur « Modifier » pour rectifier les heures d\'un créneau</div></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Date</th><th>Créneaux</th><th>Total journée</th><th>Justification</th><th>Notes</th></tr></thead><tbody>'
+      +(dates.length?dates.map(dk=>{const list=byDate[dk];const tot=list.reduce((t,s)=>t+(s.min||0),0);
+        const dLbl=new Date(dk+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+        const cren=list.map(s=>'<div style="display:flex;align-items:center;gap:7px;margin:3px 0;flex-wrap:wrap"><span class="chip" style="background:#dcfce7;color:#16a34a;font-family:ui-monospace,monospace">'+fmtTime(s.inAt)+'</span><span style="color:#94a3b8">→</span><span class="chip" style="background:#fee2e2;color:#dc2626;font-family:ui-monospace,monospace">'+(s.outAt?fmtTime(s.outAt):'…')+'</span><span class="tsub">('+fmtDur(s.min)+(s.open?' · en cours':'')+')</span><button class="btn ghost sm" onclick="rhEditCreneau(\''+s.inId+'\',\''+s.outId+'\')">✎ Modifier</button><button class="btn ghost sm" style="color:#dc2626" onclick="rhDelCreneau(\''+s.inId+'\',\''+s.outId+'\')">🗑 Supprimer</button></div>').join('');
+        return '<tr><td class="tname" style="white-space:nowrap;text-transform:capitalize;vertical-align:top;padding-top:14px">'+dLbl+(list.length>1?' <span class="tsub">('+list.length+' créneaux)</span>':'')+'</td><td>'+cren+'</td><td class="tname" style="vertical-align:top;padding-top:14px">'+fmtDur(tot)+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">'+escH(list.map(s=>s.motif).filter(Boolean).join(', ')||'–')+'</td><td class="tsub" style="vertical-align:top;padding-top:14px">–</td></tr>';}).join('')
+       :'<tr><td colspan="5" class="empty" style="padding:28px;text-align:center">Aucun pointage ce mois-ci pour cet employé.</td></tr>')
+      +'</tbody></table></div></div>';
+    } else {
+      const shown=(histEmp?emps.filter(e=>e.id===histEmp):emps.filter(e=>e.active!==false));
+      const totMin=allSess.reduce((t,s)=>t+(s.min||0),0);
+      m.innerHTML=topbar('Historique des heures','Consultez les heures de travail de vos employés','<button class="btn ghost" onclick="rhHeuresExport()">↓ Exporter PDF</button>')
+      +'<div class="panel" style="margin-bottom:14px"><div class="pb"><div style="display:flex;gap:12px;flex-wrap:wrap"><div class="field" style="flex:1;margin:0;min-width:170px"><label>Période</label><input type="month" value="'+histMonth+'" onchange="histMonth=this.value;renderClient(\'rh_heures\')"></div><div class="field" style="flex:1;margin:0;min-width:170px"><label>Employé</label><select onchange="histEmp=this.value;renderClient(\'rh_heures\')"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'" '+(histEmp===e.id?'selected':'')+'>'+e.name+'</option>').join('')+'</select></div></div></div></div>'
+      +'<div class="kpis" style="grid-template-columns:repeat(3,1fr)">'+kpi('Total heures',fmtDur(totMin),monthLabel,'up')+kpi('Employés actifs',emps.filter(e=>e.active!==false).length,'','up')+kpi('Sessions ce mois',allSess.length,'pointages badgeuse','up')+'</div>'
+      +'<div class="panel"><div class="ph"><div><h3>Récapitulatif par employé</h3><div class="sub" style="text-transform:capitalize">'+monthLabel+'</div></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th><th>Poste</th><th>Total heures</th><th>Jours travaillés</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
+      +(shown.length?shown.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};const ss=sessOf(e);const mm=ss.reduce((t,s)=>t+(s.min||0),0);const dj=new Set(ss.map(s=>s.date)).size;
+        return '<tr><td class="tname">'+e.name+'</td><td>'+(j.name||e.role||'—')+'</td><td><span class="chip" style="background:#f1f5f9;color:#0b1220;font-family:ui-monospace,monospace">🕐 '+fmtDur(mm)+'</span></td><td class="tsub">'+dj+' jour'+(dj>1?'s':'')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="histDetail=\''+e.id+'\';renderClient(\'rh_heures\')">👁 Détail</button></td></tr>';}).join('')
+       :'<tr><td colspan="5" class="empty" style="padding:26px;text-align:center">Aucun employé.</td></tr>')+'</tbody></table></div></div>';
+    }
   } else if(clientView==='food'){
     state.recipes=state.recipes||[];state.foodIng=state.foodIng||[];state.foodSubs=state.foodSubs||[];
     const rs=state.recipes.filter(r=>r.clientId===cid);const ings=state.foodIng.filter(g=>g.clientId===cid);const subs=state.foodSubs.filter(s=>s.clientId===cid);
@@ -1554,11 +1606,20 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +modRow('active','Tablette active','La tablette est accessible','background:#f8fafc')
       +'</div></div>'
     +'<div class="panel"><div class="ph"><h3>Accès tablette</h3></div><div class="pb">'
-      +'<div style="text-align:center;padding:10px;border:1px solid var(--line);border-radius:14px"><div class="tsub" style="letter-spacing:2px;font-size:11px">CODE ÉTABLISSEMENT</div><div style="font-size:32px;font-weight:800;letter-spacing:5px;margin:8px 0;font-family:ui-monospace,monospace">'+escH(state.estCode||CUR||'')+'</div><button class="btn ghost sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+escH(state.estCode||CUR||'')+'\');toast(\'Code copié\')">Copier</button><div class="tsub" style="margin-top:6px">À entrer au 1er lancement de l\'application</div></div>'
+      +'<div style="text-align:center;padding:10px;border:1px solid var(--line);border-radius:14px"><div class="tsub" style="letter-spacing:2px;font-size:11px">CODE ÉTABLISSEMENT</div><div style="font-size:32px;font-weight:800;letter-spacing:5px;margin:8px 0;font-family:ui-monospace,monospace">'+escH(state.estCode||CUR||'')+'</div><button class="btn ghost sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+escH(state.estCode||CUR||'')+'\');toast(\'Code copié\')">⧉ Copier</button><div class="tsub" style="margin-top:6px">Code fixe, propre à votre compte — il ne change jamais</div></div>'
+      +(function(){const url=location.origin+location.pathname+'?tablet='+encodeURIComponent(state.estCode||CUR||'');
+        return '<div style="margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px"><div style="font-weight:800;font-size:14px">🌐 Accès par navigateur</div><div class="tsub" style="margin:4px 0 10px">Fonctionne directement dans Chrome sur la tablette, sans téléchargement ni connexion.</div>'
+        +'<div style="display:flex;gap:6px"><input readonly value="'+escH(url)+'" onclick="this.select()" style="flex:1;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-family:ui-monospace,monospace;font-size:12px;background:#f8fafc">'
+        +'<button class="btn ghost sm" onclick="navigator.clipboard&&navigator.clipboard.writeText(\''+escH(url)+'\');toast(\'Lien copié\')" title="Copier">⧉</button>'
+        +'<button class="btn ghost sm" onclick="window.open(\''+escH(url)+'\',\'_blank\')" title="Ouvrir">↗</button></div></div>';})()
       +'<button class="btn block" style="margin-top:14px" onclick="go(\'app_terrain\')">Lancer la tablette sur cet appareil</button>'
-      +'<div class="minicard" style="margin-top:14px"><div class="mt">Application Android</div><div class="ms">Application native installable sur toute tablette Android — disponible prochainement. En attendant, utilisez la tablette depuis le navigateur avec le bouton ci-dessus.</div></div>'
+      +'<div class="minicard" style="margin-top:14px"><div class="mt">Application Android</div><div class="ms">Application native installable sur toute tablette Android — disponible prochainement. En attendant, ouvrez le lien ci-dessus dans le navigateur de votre tablette : il arrive directement sur votre établissement.</div></div>'
       +'</div></div></div>'
     +helpBox([['Code PIN','si défini, la tablette demande ce code à l\'ouverture — utile en salle.'],['Modules','désactivez un module pour le masquer de la tablette sans toucher à votre abonnement.'],['Tablette active','désactivez pour bloquer complètement l\'accès à la tablette.']]);
+  } else if(clientView==='support'){
+    m.innerHTML='<div class="topbar"><div style="display:flex;align-items:center;gap:14px"><div style="width:52px;height:52px;border-radius:14px;background:#f59e0b;display:grid;place-items:center;font-size:24px">🛟</div><div><h1>Contacter le support</h1><div class="sub">Une question, un bug, une idée ? Notre équipe vous répond directement ici.</div></div></div><div class="actions"><button class="btn" onclick="supNewTicket()">＋ Nouveau ticket</button></div></div>'
+    +'<div class="panel"><div class="pb" id="sup_list" style="min-height:280px"><div class="empty" style="padding:50px 20px;text-align:center">Chargement…</div></div></div>';
+    supLoad();
   } else if(clientView==='wiki'){
     m.innerHTML=topbar('Wiki & Aide','Tutoriels & support','')
     +'<div class="cardgrid">'+[['','Guide HACCP','Bonnes pratiques & obligations'],['','Relevés de température','Comment bien relever'],['','Plan de nettoyage','Configurer zones & tâches'],['','Utiliser la tablette','Prise en main terrain'],['','Contacter le support','Réponse sous 2h'],['','Tutoriels vidéo','Tous les modules']].map(x=>'<div class="minicard" style="cursor:pointer" onclick="toast(\''+x[1]+' (démo)\')"><div class="mt">'+x[0]+' '+x[1]+'</div><div class="ms">'+x[2]+'</div></div>').join('')+'</div>';
@@ -3061,31 +3122,52 @@ function tbSavePerte(){const p=document.getElementById('pe_prod').value.trim();i
   toast(' Perte enregistrée');tbArchTab='perte';tbRender('archives');}
 
 /* ===== RH & Planning ===== */
-let rhTab='params',histEmp='',histPeriod='week',planSelTpl=null;
+let rhTab='params',histEmp='',histPeriod='week',planSelTpl=null,RH_SHOW_ARCH=false,histMonth='',histDetail=null;
 function rhSetTab(t){rhTab=t;renderClient('rh_etab');}
 function rhToggle(k){state.rhCfg[k]=!state.rhCfg[k];renderClient('rh_etab');}
 function _tglRow(label,desc,key,on){return '<div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)"><div><div style="font-weight:700;font-size:14px">'+label+'</div>'+(desc?'<div class="tsub">'+desc+'</div>':'')+'</div><span class="switch '+(on?'on':'')+'" style="margin-left:auto" onclick="rhToggle(\''+key+'\')"><span class="tk"></span></span></div>';}
 function rhParamsHtml(){const rc=state.rhCfg;const sugg=['Réunion d\'équipe','Formation','Incident technique','Forte affluence','Retard transport','Livraison urgente','Remplacement collègue','Inventaire'];
-  return '<div class="panel"><div class="ph"><h3>Éléments de paie</h3><div class="actions"><button class="btn sm" onclick="toast(\' Paramètres enregistrés\')"> Enregistrer</button></div></div><div class="pb"><div class="field" style="margin:0"><label>Convention collective</label><select onchange="state.rhCfg.convention=this.value"><option '+(rc.convention.indexOf('1501')>=0?'selected':'')+'>Restauration rapide (35h) - IDCC 1501</option><option '+(rc.convention.indexOf('1979')>=0?'selected':'')+'>HCR - Hôtels Cafés Restaurants (39h) - IDCC 1979</option><option '+(rc.convention.indexOf('843')>=0?'selected':'')+'>Boulangerie-pâtisserie - IDCC 843</option></select><p class="tsub" style="margin-top:6px">Durée légale : '+rc.dureeLegale+'h/semaine. Affichée sur les exports PDF.</p></div></div></div>'
-  +'<div class="panel" style="margin-top:14px"><div class="ph"><h3>Planning & Badgeuse</h3></div><div class="pb">'+_tglRow('Alertes dépassement heures légales','Avertit si un employé dépasse la durée légale hebdomadaire','alertesHeures',rc.alertesHeures)+_tglRow('Justification des badgeages','Demander une justification si un employé badge hors planning','badgeJustif',rc.badgeJustif)+'</div></div>'
-  +'<div class="panel" style="margin-top:14px"><div class="ph"><h3>Motifs de badgeage</h3></div><div class="pb"><p class="tsub" style="margin-bottom:10px">Raisons prédéfinies que les employés peuvent sélectionner hors planning.</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+(rc.badgeMotifs.length?rc.badgeMotifs.map((mm,i)=>'<span class="chip muted">'+mm+' <span style="cursor:pointer;color:var(--bad)" onclick="rhDelMotif('+i+')">✕</span></span>').join(''):'<span class="tsub">Aucun motif configuré.</span>')+'</div><div style="display:flex;gap:8px"><input id="rh_motif" placeholder="Ex. Réunion d\'équipe…" style="flex:1;padding:10px;border:1px solid var(--line);border-radius:10px"><button class="btn" onclick="rhAddMotif()">＋ Ajouter</button></div><div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">'+sugg.map(s=>'<span class="chip" style="cursor:pointer;background:#eef2f7" onclick="rhAddMotifQuick(this.textContent)">'+s+'</span>').join('')+'</div></div></div>'
-  +'<div class="panel" style="margin-top:14px"><div class="ph"><h3>Congés & repos compensatoires</h3></div><div class="pb">'+_tglRow('Afficher les compteurs de congés','','afficherCompteurs',rc.afficherCompteurs)+'<div style="display:flex;align-items:center;gap:12px;padding:11px 0"><div><div style="font-weight:700;font-size:14px">Mode de décompte des congés</div><div class="tsub">Jours ouvrés (lun-ven) ou ouvrables (lun-sam)</div></div><select style="margin-left:auto;padding:9px;border:1px solid var(--line);border-radius:9px" onchange="state.rhCfg.modeDecompte=this.value"><option '+(rc.modeDecompte.indexOf('ouvrés')>=0?'selected':'')+'>Jours ouvrés (5j/sem)</option><option '+(rc.modeDecompte.indexOf('ouvrables')>=0?'selected':'')+'>Jours ouvrables (6j/sem)</option></select></div></div></div>';}
+  const isNone=rc.convention.indexOf('Aucune')>=0;
+  return '<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn" onclick="toast(\'✓ Paramètres enregistrés\')">💾 Enregistrer</button></div>'
+  +'<div class="panel"><div class="ph"><h3>Éléments de paie</h3></div><div class="pb"><div class="field" style="margin:0"><label>Convention collective</label><select onchange="state.rhCfg.convention=this.value;state.rhCfg.dureeLegale=this.value.indexOf(\'39\')>=0?39:35;renderClient(\'rh_etab\')"><option '+(isNone?'selected':'')+'>Aucune convention (35h légales)</option><option '+(rc.convention.indexOf('1501')>=0?'selected':'')+'>Restauration rapide (35h) - IDCC 1501</option><option '+(rc.convention.indexOf('1979')>=0?'selected':'')+'>HCR - Hôtels Cafés Restaurants (39h) - IDCC 1979</option><option '+(rc.convention.indexOf('843')>=0?'selected':'')+'>Boulangerie-pâtisserie - IDCC 843</option></select><p class="tsub" style="margin-top:6px">Durée légale : '+rc.dureeLegale+'h/semaine. Affichée sur les exports PDF.</p></div></div></div>'
+  +'<div class="panel" style="margin-top:14px"><div class="ph"><h3>Planning</h3></div><div class="pb">'+_tglRow('Alertes dépassement heures légales','Affiche un avertissement si un employé dépasse la durée légale hebdomadaire ('+rc.dureeLegale+'h ou selon convention)','alertesHeures',rc.alertesHeures)+'</div></div>'
+  +'<div class="panel" style="margin-top:14px"><div class="ph"><h3>Badgeuse</h3></div><div class="pb">'+_tglRow('Activer la justification des badgeages','Demander une justification si un employé badge en dehors de ses horaires planifiés ou sans planning','badgeJustif',rc.badgeJustif)
+  +'<div style="margin-top:14px;border:1px solid var(--line);border-radius:14px;padding:14px"><div style="font-weight:800;font-size:15px">Motifs de badgeage</div><p class="tsub" style="margin:4px 0 10px">Configurez les raisons prédéfinies que les employés pourront sélectionner lorsqu\'ils badgent en dehors de leurs horaires planifiés</p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+(rc.badgeMotifs.length?rc.badgeMotifs.map((mm,i)=>'<span class="chip muted">'+mm+' <span style="cursor:pointer;color:var(--bad)" onclick="rhDelMotif('+i+')">✕</span></span>').join(''):'<span class="tsub">Aucun motif configuré.</span>')+'</div><div style="display:flex;gap:8px"><input id="rh_motif" placeholder="Ex. Réunion d\'équipe…" style="flex:1;padding:10px;border:1px solid var(--line);border-radius:10px"><button class="btn" onclick="rhAddMotif()">＋ Ajouter</button></div><div style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap">'+sugg.map(s=>'<span class="chip" style="cursor:pointer;background:#eef2f7" onclick="rhAddMotifQuick(this.textContent)">'+s+'</span>').join('')+'</div></div></div></div>'
+  +'<div class="panel" style="margin-top:14px"><div class="ph"><h3>Congés et Repos compensatoires</h3></div><div class="pb">'+_tglRow('Afficher les compteurs de congés','','afficherCompteurs',rc.afficherCompteurs)+'<div style="display:flex;align-items:center;gap:12px;padding:11px 0"><div><div style="font-weight:700;font-size:14px">Mode de décompte des congés</div><div class="tsub">Jours ouvrés (lun-ven) ou ouvrables (lun-sam)</div></div><select style="margin-left:auto;padding:9px;border:1px solid var(--line);border-radius:9px" onchange="state.rhCfg.modeDecompte=this.value"><option '+(rc.modeDecompte.indexOf('ouvrés')>=0?'selected':'')+'>Jours ouvrés (5j/sem)</option><option '+(rc.modeDecompte.indexOf('ouvrables')>=0?'selected':'')+'>Jours ouvrables (6j/sem)</option></select></div></div></div>';}
 function rhPostesHtml(jobs,emps){return '<div class="panel"><div class="ph"><h3>Postes ('+jobs.length+')</h3><div class="actions"><button class="btn sm" onclick="formJob()">＋ Nouveau poste</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Couleur</th><th>Nom du poste</th><th>Employés</th><th></th></tr></thead><tbody>'
   +jobs.map(j=>'<tr><td><span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:'+j.color+'"></span></td><td class="tname">'+j.name+'</td><td>'+emps.filter(e=>e.jobId===j.id).length+'</td><td style="text-align:right">'+rowActions('formJob','jobs',j.id,'rh_etab')+'</td></tr>').join('')+'</tbody></table></div></div>';}
-function rhEmpsHtml(emps){return '<div class="panel"><div class="ph"><h3>Employés ('+emps.filter(e=>e.active!==false).length+')</h3><div class="actions"><button class="btn sm" onclick="formEmp()">＋ Nouvel employé</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Nom</th><th>Poste</th><th>Compteurs (CP·RTT·Récup)</th><th>Contrat</th><th>Statut</th><th></th></tr></thead><tbody>'
-  +emps.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return '<tr'+(e.active===false?' style="opacity:.5"':'')+'><td class="tname">'+e.name+'</td><td><span class="chip" style="background:'+((j.color||'#64748b')+'22')+';color:'+(j.color||'#475569')+'">'+(j.name||e.role||'—')+'</span></td><td class="tsub">'+e.cpRest+'j · '+e.rttRest+'j · '+e.recupRest+'j</td><td>'+e.contract+' h</td><td>'+(e.active===false?'<span class="chip muted">archivé</span>':'<span class="chip ok">actif</span>')+'</td><td style="text-align:right"><button class="btn ghost sm" onclick="formEmp(\''+e.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="rhArchiveEmp(\''+e.id+'\')">'+(e.active===false?'':'')+'</button></td></tr>';}).join('')+'</tbody></table></div></div>';}
-function rhCongesHtml(emps){return '<div class="panel"><div class="ph"><h3>Soldes '+new Date().getFullYear()+'</h3><div class="actions"><button class="btn ghost sm" onclick="toast(\'Acquisition CP calculée (démo)\')"> Calculer acquisition CP</button><button class="btn sm" onclick="toast(\' Soldes enregistrés\')"> Enregistrer</button></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Employé</th><th>Embauche</th><th>CP init.</th><th>CP rest.</th><th>RTT init.</th><th>RTT rest.</th><th>Récup init.</th><th>Récup rest.</th></tr></thead><tbody>'
-  +emps.map(e=>'<tr><td class="tname">'+e.name+'</td><td class="tsub">'+(e.hireDate||'—')+'</td>'+[['cpInit',e.cpInit],['cpRest',e.cpRest],['rttInit',e.rttInit],['rttRest',e.rttRest],['recupInit',e.recupInit],['recupRest',e.recupRest]].map(f=>'<td><input type="number" value="'+f[1]+'" style="width:56px;padding:6px;border:1px solid var(--line);border-radius:8px" onchange="rhSetConge(\''+e.id+'\',\''+f[0]+'\',this.value)"></td>').join('')+'</tr>').join('')+'</tbody></table></div></div>';}
+function rhEmpsHtml(emps){const act=emps.filter(e=>e.active!==false),arch=emps.filter(e=>e.active===false);const list=RH_SHOW_ARCH?arch:act;
+  return '<div class="panel"><div class="ph"><div><h3>Employés ('+act.length+')</h3><div class="sub">'+arch.length+' employé(s) archivé(s)</div></div><div class="actions"><button class="btn ghost sm" onclick="RH_SHOW_ARCH=!RH_SHOW_ARCH;renderClient(\'rh_etab\')">'+(RH_SHOW_ARCH?'← Voir actifs':'🗃 Voir archivés')+'</button><button class="btn sm" onclick="formEmp()">＋ Nouvel employé</button></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Nom</th><th>Poste</th><th>Compteurs</th><th>Contact</th><th>Contrat</th><th>Statut</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
+  +(list.length?list.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return '<tr><td class="tname">'+e.name+'</td><td><span class="chip" style="background:'+((j.color||'#64748b')+'22')+';color:'+(j.color||'#475569')+';font-size:10.5px;letter-spacing:.5px">'+escH((j.name||e.role||'—').toUpperCase())+'</span></td>'
+   +'<td style="white-space:nowrap"><span class="chip" style="background:#f3e8ff;color:#7c3aed;font-size:10.5px;padding:2px 7px">🌴 '+(e.cpRest||0)+'j</span> <span class="chip" style="background:#e0e7ff;color:#4f46e5;font-size:10.5px;padding:2px 7px">🕐 '+(e.rttRest||0)+'j</span> <span class="chip" style="background:#dbeafe;color:#2563eb;font-size:10.5px;padding:2px 7px">☕ '+(e.recupRest||0)+'j</span></td>'
+   +'<td class="tsub">'+escH(e.contactInfo||'-')+'</td><td class="tsub">'+(e.contract||0)+' h</td><td>'+(e.active===false?'<span class="chip muted">ARCHIVÉ</span>':'<span class="chip ok">ACTIF</span>')+'</td>'
+   +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="formEmp(\''+e.id+'\')">✎ Modifier</button> <button class="btn ghost sm" onclick="rhArchiveEmp(\''+e.id+'\')">'+(e.active===false?'↩ Réactiver':'🗃 Archiver')+'</button></td></tr>';}).join(''):'<tr><td colspan="7" class="empty" style="padding:24px;text-align:center">'+(RH_SHOW_ARCH?'Aucun employé archivé.':'Aucun employé — ajoutez votre équipe.')+'</td></tr>')+'</tbody></table></div></div>';}
+function rhCongesHtml(emps){const bl='border-left:1px solid var(--line);';
+  return '<div class="panel"><div class="ph"><h3>Soldes '+new Date().getFullYear()+'</h3><div class="actions"><button class="btn ghost sm" onclick="rhCalcCP()">🧮 Calculer acquisition CP</button><button class="btn sm" onclick="toast(\'✓ Soldes enregistrés\')">💾 Enregistrer</button></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead>'
+  +'<tr><th rowspan="2" style="vertical-align:bottom">Employé</th><th rowspan="2" style="vertical-align:bottom">Date embauche</th><th colspan="2" style="text-align:center;'+bl+'">📅 Congés Payés</th><th colspan="2" style="text-align:center;'+bl+'">🕐 RTT</th><th colspan="2" style="text-align:center;'+bl+'">☕ Repos Comp.</th></tr>'
+  +'<tr><th style="text-align:center;'+bl+'">Initial</th><th style="text-align:center">Restant</th><th style="text-align:center;'+bl+'">Initial</th><th style="text-align:center">Restant</th><th style="text-align:center;'+bl+'">Initial</th><th style="text-align:center">Restant</th></tr></thead><tbody>'
+  +emps.map(e=>'<tr><td class="tname">'+e.name+'</td><td><input type="date" value="'+(e.hireDate||'')+'" onchange="rhSetHire(\''+e.id+'\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;font-size:12px;font-family:inherit">'+(e.hireDate?'':'<div class="tsub" style="font-size:10.5px;margin-top:3px">Non renseignée</div>')+'</td>'+[['cpInit',e.cpInit],['cpRest',e.cpRest],['rttInit',e.rttInit],['rttRest',e.rttRest],['recupInit',e.recupInit],['recupRest',e.recupRest]].map((f,fi)=>'<td style="text-align:center;'+(fi%2===0?bl:'')+'"><input type="number" value="'+(f[1]||0)+'" style="width:54px;padding:6px;border:1px solid var(--line);border-radius:8px;text-align:center" onchange="rhSetConge(\''+e.id+'\',\''+f[0]+'\',this.value)"></td>').join('')+'</tr>').join('')+'</tbody></table></div></div>';}
+function rhSetHire(id,v){const e=state.employees.find(x=>x.id===id);if(e)e.hireDate=v;}
+function rhCalcCP(){const mode=(state.rhCfg&&state.rhCfg.modeDecompte&&state.rhCfg.modeDecompte.indexOf('ouvrables')>=0)?2.5:2.083;const cap=mode===2.5?30:25;let n=0;
+  state.employees.filter(e=>e.clientId===CID&&e.active!==false).forEach(e=>{
+    if(!e.hireDate)return;
+    const h=new Date(e.hireDate+'T12:00:00');const now=new Date();
+    let months=(now.getFullYear()-h.getFullYear())*12+(now.getMonth()-h.getMonth());if(now.getDate()>=h.getDate())months+=1;
+    months=Math.max(0,Math.min(12,months));
+    const taken=Math.max(0,(e.cpInit||0)-(e.cpRest||0));
+    const acquis=Math.min(cap,Math.round(months*mode*2)/2);
+    e.cpInit=acquis;e.cpRest=Math.max(0,Math.round((acquis-taken)*2)/2);n++;});
+  renderClient('rh_etab');toast(n?'✓ Acquisition CP calculée pour '+n+' employé(s) ('+mode+' j/mois travaillé)':'Renseignez d\'abord les dates d\'embauche');}
 function rhAddMotif(){const el=document.getElementById('rh_motif');const v=el.value.trim();if(!v)return;if(!state.rhCfg.badgeMotifs.includes(v))state.rhCfg.badgeMotifs.push(v);renderClient('rh_etab');}
 function rhAddMotifQuick(v){if(!state.rhCfg.badgeMotifs.includes(v))state.rhCfg.badgeMotifs.push(v);renderClient('rh_etab');toast('Motif ajouté');}
 function rhDelMotif(i){state.rhCfg.badgeMotifs.splice(i,1);renderClient('rh_etab');}
 function rhSetConge(id,field,val){const e=state.employees.find(x=>x.id===id);if(e)e[field]=+val;}
 function formJob(id){const j=id?state.jobs.find(x=>x.id===id):null;openForm(id?'Modifier le poste':'Nouveau poste',[{key:'name',label:'Nom du poste',value:j?j.name:''},{key:'color',label:'Couleur',type:'color',value:j?j.color:'#2563eb'}],v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}if(j){Object.assign(j,{name:v.name,color:v.color});}else{state.jobs.push({id:'j'+Date.now(),clientId:CID,name:v.name,color:v.color});}renderClient('rh_etab');toast('Poste enregistré');});}
 function formEmp(id){const e=id?state.employees.find(x=>x.id===id):null;const jobs=state.jobs.filter(j=>j.clientId===CID);
-  openForm(id?'Modifier l\'employé':'Nouvel employé',[{key:'name',label:'Nom complet',value:e?e.name:''},{key:'job',label:'Poste',type:'select',options:jobs.map(j=>j.name),value:e?(jobs.find(j=>j.id===e.jobId)||{}).name:(jobs[0]||{}).name},{key:'contract',label:'Contrat (h/semaine)',type:'number',value:e?e.contract:35}],
+  openForm(id?'Modifier l\'employé':'Nouvel employé',[{key:'name',label:'Nom complet',value:e?e.name:''},{key:'job',label:'Poste',type:'select',options:jobs.map(j=>j.name),value:e?(jobs.find(j=>j.id===e.jobId)||{}).name:(jobs[0]||{}).name},{key:'contract',label:'Contrat (h/semaine)',type:'number',value:e?e.contract:35},{key:'contact',label:'Contact (email ou téléphone)',value:e?(e.contactInfo||''):'',ph:'optionnel'},{key:'hire',label:'Date d\'embauche',type:'date',value:e?(e.hireDate||''):''}],
   v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}const job=jobs.find(j=>j.name===v.job)||jobs[0];
-    if(e){e.name=v.name;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.contract=+v.contract;}
-    else{const ini=v.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();state.employees.push({id:'em'+Date.now(),clientId:CID,name:v.name,role:job?job.name:'',ini:ini,jobId:job?job.id:null,active:true,contract:+v.contract,hStd:+v.contract,hReal:0,hireDate:new Date().toISOString().slice(0,10),cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});}
+    if(e){e.name=v.name;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.contract=+v.contract;e.contactInfo=v.contact||'';if(v.hire)e.hireDate=v.hire;}
+    else{const ini=v.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();state.employees.push({id:'em'+Date.now(),clientId:CID,name:v.name,role:job?job.name:'',ini:ini,jobId:job?job.id:null,active:true,contract:+v.contract,hStd:+v.contract,hReal:0,contactInfo:v.contact||'',hireDate:v.hire||new Date().toISOString().slice(0,10),cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});}
     renderClient('rh_etab');toast(e?'Employé modifié':'Employé ajouté — dispo sur la tablette');});}
 function rhArchiveEmp(id){const e=state.employees.find(x=>x.id===id);if(!e)return;
   if(e.active===false){e.active=true;renderClient('rh_etab');toast('Employé réactivé');return;}
@@ -3124,8 +3206,8 @@ function rhBadgeSessions(cid){
   const out=[];
   Object.keys(byEmp).forEach(function(k){let cur=null;
     byEmp[k].forEach(function(b){
-      if(b.type==='in'){if(cur)out.push(cur);cur={empId:b.empId||'',name:b.name,inAt:new Date(b.at),outAt:null,min:null};}
-      else if(cur){cur.outAt=new Date(b.at);cur.min=Math.max(0,Math.round((cur.outAt-cur.inAt)/60000));out.push(cur);cur=null;}
+      if(b.type==='in'){if(cur)out.push(cur);cur={empId:b.empId||'',name:b.name,inAt:new Date(b.at),outAt:null,min:null,inId:b.id||'',outId:'',motif:b.motif||''};}
+      else if(cur){cur.outAt=new Date(b.at);cur.outId=b.id||'';cur.motif=cur.motif||b.motif||'';cur.min=Math.max(0,Math.round((cur.outAt-cur.inAt)/60000));out.push(cur);cur=null;}
     });
     if(cur){const age=Date.now()-cur.inAt.getTime();cur.min=age<16*3600000?Math.round(age/60000):null;cur.open=true;out.push(cur);}
   });
@@ -3133,7 +3215,26 @@ function rhBadgeSessions(cid){
   out.sort(function(a,b){return b.inAt-a.inAt;});
   return out;}
 function fmtDur(min){if(min==null)return '—';return Math.floor(min/60)+'h'+String(Math.round(min%60)).padStart(2,'0');}
-function rhBadgeChip(s){return '<div style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:3px 7px;margin:3px auto 0;font-size:10.5px;color:#b45309;display:inline-block;text-align:left"><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b><br><span style="color:#c2681a">'+fmtTime(s.inAt)+' - '+(s.outAt?fmtTime(s.outAt):'…')+'</span></div>';}
+function rhAddCreneau(empId){const e=state.employees.find(x=>x.id===empId);if(!e)return;
+  openForm('Ajouter un créneau – '+e.name,[{key:'date',label:'Date',type:'date',value:new Date().toISOString().slice(0,10)},{key:'start',label:'Heure d\'arrivée',type:'time',value:'09:00'},{key:'end',label:'Heure de départ',type:'time',value:'17:00'}],v=>{
+    if(!v.date||!v.start||!v.end){toast('Complétez tous les champs');return;}
+    state.badges=state.badges||[];
+    const inD=new Date(v.date+'T'+v.start+':00');const outD=new Date(v.date+'T'+v.end+':00');if(v.end<v.start)outD.setDate(outD.getDate()+1);
+    state.badges.push({id:'bg'+Date.now()+'a',clientId:CID,empId:e.id,name:e.name,at:inD.toISOString(),type:'in',manual:true});
+    state.badges.push({id:'bg'+Date.now()+'b',clientId:CID,empId:e.id,name:e.name,at:outD.toISOString(),type:'out',manual:true});
+    renderClient('rh_heures');toast('✓ Créneau ajouté');});}
+function rhEditCreneau(inId,outId){const bi=(state.badges||[]).find(b=>b.id===inId);const bo=(state.badges||[]).find(b=>b.id===outId);if(!bi){toast('Créneau introuvable');return;}
+  const d=new Date(bi.at);
+  openForm('Modifier le créneau',[{key:'date',label:'Date',type:'date',value:d.toISOString().slice(0,10)},{key:'start',label:'Heure d\'arrivée',type:'time',value:fmtTime(d)},{key:'end',label:'Heure de départ',type:'time',value:bo?fmtTime(new Date(bo.at)):''}],v=>{
+    if(!v.date||!v.start){toast('Complétez la date et l\'arrivée');return;}
+    const inD=new Date(v.date+'T'+v.start+':00');bi.at=inD.toISOString();bi.edited=true;
+    if(v.end){const outD=new Date(v.date+'T'+v.end+':00');if(v.end<v.start)outD.setDate(outD.getDate()+1);
+      if(bo){bo.at=outD.toISOString();bo.edited=true;}
+      else state.badges.push({id:'bg'+Date.now()+'b',clientId:CID,empId:bi.empId,name:bi.name,at:outD.toISOString(),type:'out',manual:true});}
+    renderClient('rh_heures');toast('✓ Créneau modifié');});}
+function rhDelCreneau(inId,outId){openConfirm('Supprimer ce créneau','Les pointages arrivée et départ de ce créneau seront définitivement supprimés.',function(){
+  state.badges=(state.badges||[]).filter(b=>b.id!==inId&&b.id!==outId);renderClient('rh_heures');toast('Créneau supprimé');});}
+function rhBadgeChip(s){return '<div style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:1px 6px;margin:1px auto 0;font-size:10px;color:#b45309;display:inline-block;white-space:nowrap"><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b> <span style="color:#c2681a">'+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+'</span></div>';}
 function rhMonday(d){const x=new Date(d);const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);x.setHours(0,0,0,0);return x;}
 function rhDayIdxOf(d){return (d.getDay()+6)%7;}
 function rhSetPlanView(v){planView=v;renderClient('rh_planning');}
@@ -3460,6 +3561,63 @@ function docDelFile(id){const d=state.documents.find(function(x){return x.id===i
     try{if(d.path&&SB)await SB.storage.from('docs').remove([d.path]);}catch(e){}
     const i=state.documents.findIndex(function(x){return x.id===id;});if(i>=0)state.documents.splice(i,1);
     renderClient('h_docs');toast('Fichier supprimé');});}
+/* ===== Support tickets ===== */
+const SUP_CATS=['Question','Bug / problème technique','Idée / amélioration','Facturation','Autre'];
+function supChip(st){return st==='closed'?'<span class="chip muted">Fermé</span>':st==='answered'?'<span class="chip ok">Répondu</span>':'<span class="chip" style="background:#dbeafe;color:#2563eb">Ouvert</span>';}
+function supDT(s){try{return new Date(s).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return '';}}
+async function supLoad(){const box=document.getElementById('sup_list');if(!box)return;
+  try{const {data,error}=await SB.from('support_tickets').select('*').eq('est_code',CUR).order('created_at',{ascending:false});
+    if(error)throw error;
+    if(!data||!data.length){box.innerHTML='<div style="text-align:center;padding:56px 20px"><div style="font-size:44px;color:#cbd5e1">💬</div><div style="color:#94a3b8;margin:10px 0 14px">Aucun ticket pour le moment.</div><a style="font-weight:700;cursor:pointer" onclick="supNewTicket()">Ouvrir votre premier ticket</a></div>';return;}
+    box.innerHTML=data.map(function(t){const nr=(t.replies||[]).length;
+      return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="supOpenTicket(\''+t.id+'\')"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:15px">'+escH(t.subject)+'</b>'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div><div class="tsub" style="margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(t.message)+'</div>'+(nr?'<div class="tsub" style="margin-top:4px;color:#16a34a;font-weight:700">💬 '+nr+' réponse'+(nr>1?'s':'')+'</div>':'')+'</div>';}).join('');
+    window._SUP_ROWS=data;
+  }catch(e){box.innerHTML='<div class="empty" style="padding:40px">Impossible de charger les tickets ('+escH(e.message||'erreur')+').</div>';}}
+function supNewTicket(){
+  openForm('Nouveau ticket support',[{key:'subject',label:'Sujet',ph:'Ex. Problème d\'impression des étiquettes'},{key:'cat',label:'Catégorie',type:'select',options:SUP_CATS,value:SUP_CATS[0]},{key:'msg',label:'Votre message',type:'textarea',ph:'Décrivez votre question ou votre problème…'}],async function(v){
+    if(!v.subject.trim()||!v.msg.trim()){toast('Sujet et message obligatoires');return;}
+    try{let email='';try{const {data:{user}}=await SB.auth.getUser();email=(user&&user.email)||'';}catch(e){}
+      const c=state.clients.find(function(x){return x.id===CID;})||{};
+      const {error}=await SB.from('support_tickets').insert({est_code:CUR,est_name:c.name||CUR,email:email,subject:v.subject.trim(),category:v.cat,message:v.msg.trim()});
+      if(error)throw error;
+      toast('✓ Ticket envoyé — notre équipe vous répond ici');if(clientView==='support')supLoad();
+    }catch(e){toast('Erreur : '+(e.message||e));}});}
+function supOpenTicket(id){const t=(window._SUP_ROWS||[]).find(function(x){return x.id===id;});if(!t)return;
+  const thread=[{from:'client',text:t.message,at:t.created_at}].concat(t.replies||[]);
+  openInfoHTML(t.subject,
+   '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div>'
+   +thread.map(function(r){const me=r.from!=='support';return '<div style="margin-bottom:10px;text-align:'+(me?'right':'left')+'"><div style="display:inline-block;max-width:85%;text-align:left;background:'+(me?'#0b1220':'#f1f5f9')+';color:'+(me?'#fff':'#0b1220')+';padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap">'+escH(r.text)+'</div><div class="tsub" style="font-size:10.5px;margin-top:3px">'+(me?'Vous':'Support Vigie')+' · '+supDT(r.at)+'</div></div>';}).join('')
+   +(t.status!=='closed'?'<div style="display:flex;gap:8px;margin-top:14px"><input id="sup_reply" placeholder="Répondre…" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px" onkeydown="if(event.key===\'Enter\')supReply(\''+t.id+'\')"><button class="btn" onclick="supReply(\''+t.id+'\')">Envoyer</button></div>':'<div class="tsub" style="margin-top:12px;text-align:center">Ticket fermé.</div>'),560);}
+async function supReply(id){const inp=document.getElementById('sup_reply');const txt=(inp&&inp.value||'').trim();if(!txt)return;
+  const t=(window._SUP_ROWS||[]).find(function(x){return x.id===id;});if(!t)return;
+  const reps=(t.replies||[]).concat([{from:'client',text:txt,at:new Date().toISOString()}]);
+  try{const {error}=await SB.from('support_tickets').update({replies:reps,status:'open',updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;
+    t.replies=reps;t.status='open';supOpenTicket(id);supLoad();
+  }catch(e){toast('Erreur : '+(e.message||e));}}
+/* — côté admin — */
+async function supAdmLoad(){const box=document.getElementById('supadm_list');if(!box)return;
+  try{const {data,error}=await SB.from('support_tickets').select('*').order('created_at',{ascending:false});if(error)throw error;
+    window._SUPADM=data||[];
+    const f=window._SUPADM_F||'';
+    const rows=(window._SUPADM||[]).filter(function(t){return !f||t.status===f;});
+    box.innerHTML=(rows.length?rows.map(function(t){
+      return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>'+escH(t.subject)+'</b>'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="chip" style="background:#eef2f7">'+escH(t.est_name||t.est_code)+'</span><span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div>'
+      +'<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">'+escH(t.message)+'</div>'
+      +((t.replies||[]).length?'<div style="margin-top:8px;border-left:3px solid #e2e8f0;padding-left:10px">'+(t.replies||[]).map(function(r){return '<div class="tsub" style="margin-bottom:4px"><b>'+(r.from==='support'?'Support':'Client')+'</b> · '+supDT(r.at)+' — '+escH(r.text)+'</div>';}).join('')+'</div>':'')
+      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><input id="supadm_r_'+t.id+'" placeholder="Répondre au client…" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--line);border-radius:10px"><button class="btn sm" onclick="supAdmReply(\''+t.id+'\')">Répondre</button>'
+      +(t.status!=='closed'?'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'closed\')">Fermer</button>':'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'open\')">Rouvrir</button>')+'</div></div>';}).join(''):'<div class="empty" style="padding:40px;text-align:center">Aucun ticket'+(f?' « '+f+' »':'')+'.</div>');
+  }catch(e){box.innerHTML='<div class="empty" style="padding:40px">Erreur : '+escH(e.message||'')+'</div>';}}
+async function supAdmReply(id){const inp=document.getElementById('supadm_r_'+id);const txt=(inp&&inp.value||'').trim();if(!txt)return;
+  const t=(window._SUPADM||[]).find(function(x){return x.id===id;});if(!t)return;
+  const reps=(t.replies||[]).concat([{from:'support',text:txt,at:new Date().toISOString()}]);
+  try{const {error}=await SB.from('support_tickets').update({replies:reps,status:'answered',updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;toast('Réponse envoyée');supAdmLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
+async function supAdmStatus(id,st){try{const {error}=await SB.from('support_tickets').update({status:st,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;supAdmLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
+function docDupFolder(id){const f=state.docFolders.find(function(x){return x.id===id;});if(!f)return;
+  const nf={id:'fld'+Date.now(),clientId:CID,name:f.name+' (copie)'};
+  state.docFolders.push(nf);
+  state.documents.filter(function(d){return d.clientId===CID&&d.folderId===id;}).forEach(function(d,i){
+    state.documents.push(Object.assign({},d,{id:'doc'+Date.now()+'_'+i,folderId:nf.id}));});
+  renderClient('h_docs');toast('Dossier dupliqué : '+nf.name);}
 function docDelFolder(id){const f=state.docFolders.find(function(x){return x.id===id;});if(!f)return;
   const fd=state.documents.filter(function(d){return d.folderId===id;});
   openConfirm('Supprimer le dossier','Supprimer « '+f.name+' » et ses '+fd.length+' fichier(s) ? Cette action est définitive.',async function(){
@@ -3669,11 +3827,12 @@ function showPane(p){document.querySelectorAll('#authgate .auth-pane').forEach(x
 let PENDING_REDEEM=null;
 async function authInit(){
   const params=new URLSearchParams(location.search);
-  const jeu=params.get('jeu'), lot=params.get('lot');
+  const jeu=params.get('jeu'), lot=params.get('lot'), tbl=params.get('tablet');
   if(!CFG.url||!CFG.key||!window.supabase){ go('vitrine'); return; } // mode démo local (hors-ligne)
   SB=window.supabase.createClient(CFG.url,CFG.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
   if(jeu){ startPlay(jeu); return; } // page de jeu publique — aucun compte requis
   if(lot){ startRedeem(lot); return; } // validation de lot publique — aucun compte requis
+  if(tbl){ startTabletLink(tbl); return; } // accès tablette par lien — aucun compte requis
   SB.auth.onAuthStateChange((event,session)=>{
     if(event==='PASSWORD_RECOVERY'){RECOVERY=true;openLogin();showPane('change');document.getElementById('ch_h').textContent='Réinitialisation — choisissez un nouveau mot de passe.';}
     else if(event==='SIGNED_IN' && session && !LOGIN_IN_PROGRESS && !document.body.classList.contains('authed')){afterLogin(session);}
@@ -3827,7 +3986,26 @@ async function switchEst(code){
   SYNC.ready=true;
   SYNCTIMER=setInterval(()=>{if(!SYNC.ready||SYNC.applying)return;const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
 }
-async function estSave(){if(!SB||!CUR)return;try{await SB.from('app_state').upsert({est_code:CUR,data:serializeState(),client_id:SYNC.cid,updated_at:new Date().toISOString()});}catch(e){console.warn('save',e);}}
+async function estSave(){if(!CUR)return;try{
+  if(TBLINK){await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'save',code:TBLINK,data:serializeState()})});return;}
+  if(!SB)return;
+  await SB.from('app_state').upsert({est_code:CUR,data:serializeState(),client_id:SYNC.cid,updated_at:new Date().toISOString()});}catch(e){console.warn('save',e);}}
+let TBLINK=null;
+async function startTabletLink(code){
+  code=String(code||'').trim().toLowerCase();
+  try{
+    const res=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'load',code:code})});
+    const j=await res.json().catch(function(){return {};});
+    if(!res.ok||!j||!j.data){document.body.innerHTML='<div style="padding:80px 20px;text-align:center;font-family:inherit"><div style="font-size:46px">📱</div><h2 style="margin:12px 0 8px">Lien tablette invalide</h2><p style="color:#64748b">'+(j&&j.error==='blocked'?'Ce compte est suspendu — contactez le support.':'Vérifiez le lien dans votre back-office, onglet Tablette.')+'</p></div>';return;}
+    TBLINK=code;CUR=code;
+    applyState(j.data);
+    CID=(state.clients&&state.clients[0])?state.clients[0].id:'c1';
+    state.modules=Array.isArray(j.modules)?j.modules.slice():ALL_MODULES.slice();
+    SYNC.lastStr=JSON.stringify(serializeState());
+    go('app_terrain');tbInit();
+    SYNCTIMER=setInterval(function(){const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
+  }catch(e){document.body.innerHTML='<div style="padding:80px 20px;text-align:center">Connexion impossible — vérifiez votre réseau puis rechargez la page.</div>';}
+}
 
 /* admin : ouvrir un établissement précis en back-office */
 async function adminOpenEst(code){
