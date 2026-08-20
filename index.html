@@ -1411,7 +1411,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
      +(tpls.length?tpls.map(t=>'<span class="chip" style="cursor:pointer;background:'+(planSelTpl===t.id?t.color:t.color+'22')+';color:'+(planSelTpl===t.id?'#fff':t.color)+'" onclick="rhSelTpl(\''+t.id+'\')">'+escH(t.label)+' '+t.start+'-'+t.end+'</span>').join(''):'<span class="tsub">Aucun favori — créez-en un pour commencer à planifier.</span>')
      +'<button class="btn ghost sm" onclick="formShiftTpl()">＋ Nouveau favori</button>'
      +(planSelTpl?'<button class="btn ghost sm" onclick="formShiftTpl(\''+planSelTpl+'\')">Modifier</button><button class="btn ghost sm" onclick="rhDelTpl(\''+planSelTpl+'\')">Suppr.</button>':'')
-     +'</div><div class="tsub" style="margin-top:8px">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez un favori, puis une case pour poser un créneau.')+'</div></div></div>';
+     +'</div><div class="tsub" style="margin-top:8px">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez une case vide pour créer un shift, ou sélectionnez un favori puis une case pour le poser en 1 clic.')+'</div></div></div>';
     if(view==='semaine'){
       const wk=rhWeekKey(planDate);const mon=rhMonday(planDate);const today=new Date();
       const wShifts=rhShiftsOf(cid,wk);
@@ -1430,11 +1430,11 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
         const cells=days.map((d,di)=>{
           const dd=new Date(mon);dd.setDate(mon.getDate()+di);const dk=rhDateKey(dd);const isT=_sameDay(dd,today);
           const sh=wShifts.filter(s=>s.empId===e.id&&s.day===di);
-          sh.forEach(s=>{const t=tpls.find(x=>x.id===s.templateId);if(t)tot+=shiftHours(t);});
+          sh.forEach(s=>{tot+=rhShiftInfo(s).h;});
           const sess=sessions.filter(s=>(s.empId===e.id||s.name===e.name)&&s.date===dk);
           sess.forEach(s=>{if(s.min)badgeMin+=s.min;});
           return '<td style="text-align:center;cursor:pointer;min-width:106px;vertical-align:top;'+(isT?'background:#f6f8fb;':'')+'" onclick="rhAssign(\''+e.id+'\','+di+')" ondragover="event.preventDefault()" ondrop="rhDropShift(event,\''+e.id+'\','+di+')">'
-           +(sh.length?sh.map(s=>{const t=tpls.find(x=>x.id===s.templateId)||{};return '<div class="chip" draggable="true" ondragstart="rhDragShift(event,\''+s.id+'\')" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px auto;display:block;cursor:grab">'+(t.label||'')+'<br><span style="font-size:10px">'+(t.start||'')+' - '+(t.end||'')+'</span> <span style="cursor:pointer" onclick="event.stopPropagation();rhRemoveShift(\''+s.id+'\')">✕</span></div>';}).join(''):'')
+           +(sh.length?sh.map(s=>{const t=rhShiftInfo(s);return '<div class="chip" draggable="true" ondragstart="rhDragShift(event,\''+s.id+'\')" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px auto;display:block;cursor:grab">'+(t.label||'')+'<br><span style="font-size:10px">'+(t.start||'')+' - '+(t.end||'')+'</span> <span style="cursor:pointer" onclick="event.stopPropagation();rhRemoveShift(\''+s.id+'\')">✕</span></div>';}).join(''):'')
            +sess.map(rhBadgeChip).join('')
            +(!sh.length&&!sess.length?'<span style="color:#cbd5e1;font-size:18px">＋</span>':'')
            +'</td>';}).join('');
@@ -1445,7 +1445,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'</tbody></table></div></div>';
     } else if(view==='jour'){ ph+=rhDayView(emps,tpls,cid); }
     else { ph+=rhMonthView(emps,tpls,cid); }
-    ph+=helpBox([['Créer vos shifts favoris','définissez vos créneaux types (Matin 9h-15h, Soir 18h-23h…) avec une couleur.'],['Planifier en 2 clics','cliquez un favori puis une case du planning pour poser le créneau ; la croix le retire.'],['Changer de vue','Jour pour voir qui travaille, Semaine pour planifier, Mois pour la vision globale.'],['Suivre les heures','le total de chaque employé se compare à son contrat ; le détail est dans « Historique heures ».']]);
+    ph+=helpBox([['Ajouter un shift','cliquez sur une cellule vide pour créer un nouveau shift (horaires libres).'],['Shifts favoris','définissez vos créneaux types (Matin 9h-15h, Soir 18h-23h…) puis posez-les en 1 clic ; la croix retire un créneau, le glisser-déposer le déplace.'],['Changer de vue','Jour pour voir qui travaille, Semaine pour planifier, Mois pour la vision globale.'],['Badgeuse','les cases orange sont les pointages réels de la tablette ; ils remontent aussi dans « Historique heures ».']]);
     m.innerHTML=ph;
   } else if(clientView==='rh_heures'){
     const emps=state.employees.filter(e=>e.clientId===cid);const filtered=histEmp?emps.filter(e=>e.id===histEmp):emps;
@@ -3064,7 +3064,22 @@ function formEmp(id){const e=id?state.employees.find(x=>x.id===id):null;const jo
 function rhArchiveEmp(id){const e=state.employees.find(x=>x.id===id);if(!e)return;
   if(e.active===false){e.active=true;renderClient('rh_etab');toast('Employé réactivé');return;}
   openConfirm('Archiver '+e.name+' ?','Il n\'apparaîtra plus sur la tablette ni dans les plannings.',()=>{e.active=false;renderClient('rh_etab');toast('Employé archivé');});}
-function shiftHours(t){const p=s=>{const a=s.split(':');return (+a[0])+(+a[1])/60;};return Math.round((p(t.end)-p(t.start))*10)/10;}
+function shiftHours(t){const p=s=>{const a=s.split(':');return (+a[0])+(+a[1])/60;};let d=p(t.end)-p(t.start);if(d<0)d+=24;return Math.round(d*10)/10;}
+function rhShiftInfo(s){
+  if(s.templateId){const t=(state.shiftTemplates||[]).find(function(x){return x.id===s.templateId;})||{};return {label:t.label||'',start:t.start||'',end:t.end||'',color:t.color||'#64748b',h:(t.start&&t.end)?shiftHours(t):0};}
+  return {label:s.label||'Shift',start:s.start||'',end:s.end||'',color:s.color||'#2563eb',h:(s.start&&s.end)?shiftHours(s):0};}
+function formShiftAdhoc(empId,day){
+  const e=state.employees.find(function(x){return x.id===empId;})||{};
+  const mon=rhMonday(planDate||new Date());const dd=new Date(mon);dd.setDate(mon.getDate()+day);
+  openForm('Nouveau shift — '+(e.name||'')+' · '+dd.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}),[
+    {key:'label',label:'Libellé (optionnel)',value:'',ph:'Ex. Service midi'},
+    {key:'start',label:'Heure de début',type:'time',value:'11:00'},
+    {key:'end',label:'Heure de fin',type:'time',value:'15:00'},
+    {key:'color',label:'Couleur',type:'color',value:'#2563eb'}
+  ],function(v){
+    if(!v.start||!v.end){toast('Indiquez les heures de début et de fin');return;}
+    state.shifts.push({id:'sh'+Date.now(),clientId:CID,empId:empId,day:day,week:rhWeekKey(planDate||new Date()),label:(v.label||'').trim(),start:v.start,end:v.end,color:v.color});
+    renderClient('rh_planning');toast('Shift créé');});}
 let planView='semaine',planDate=null;
 let planFilter={job:'',emp:''};
 function rhSetPlanFilter(k,v){planFilter[k]=v;renderClient('rh_planning');}
@@ -3106,7 +3121,7 @@ function rhPlanLabel(){if(!planDate)planDate=new Date();const v=planView||'semai
 function rhDayView(emps,tpls,cid){const di=rhDayIdxOf(planDate);const wk=rhWeekKey(planDate);const wShifts=rhShiftsOf(cid,wk);
   const dk=rhDateKey(planDate);const sessions=rhBadgeSessions(cid).filter(function(s){return s.date===dk;});
   const rows=emps.map(function(e){const sh=wShifts.filter(function(s){return s.empId===e.id&&s.day===di;});const j=state.jobs.find(function(x){return x.id===e.jobId;})||{};
-    let h=0;const chips=sh.map(function(s){const t=tpls.find(function(x){return x.id===s.templateId;})||{};if(t.start)h+=shiftHours(t);return '<span class="chip" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px 4px 2px 0;display:inline-block">'+escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'')+' <span style="cursor:pointer" onclick="rhRemoveShift(\''+s.id+'\')">✕</span></span>';}).join('');
+    let h=0;const chips=sh.map(function(s){const t=rhShiftInfo(s);h+=t.h;return '<span class="chip" style="background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';margin:2px 4px 2px 0;display:inline-block">'+escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'')+' <span style="cursor:pointer" onclick="rhRemoveShift(\''+s.id+'\')">✕</span></span>';}).join('');
     const sess=sessions.filter(function(s){return s.empId===e.id||s.name===e.name;});
     return '<tr><td class="tname">'+escH(e.name)+'<div class="tsub">'+escH(j.name||'')+'</div></td><td>'+(chips||'<span class="tsub">Repos</span>')+'</td><td>'+(sess.length?sess.map(rhBadgeChip).join(' '):'<span class="tsub">—</span>')+'</td><td style="text-align:right"><b>'+(h?h+' h':'—')+'</b></td><td style="text-align:right"><button class="btn ghost sm" onclick="rhAssign(\''+e.id+'\','+di+')">＋ Ajouter</button></td></tr>';}).join('');
   const working=emps.filter(function(e){return wShifts.some(function(s){return s.empId===e.id&&s.day===di;});}).length;
@@ -3117,7 +3132,7 @@ function rhMonthView(emps,tpls,cid){const y=planDate.getFullYear(),mo=planDate.g
   for(let w=0;w<6;w++){for(let d=0;d<7;d++){const di=(cur.getDay()+6)%7;const inMonth=cur.getMonth()===mo;
     const wkCell=rhWeekKey(cur);
     const dayShifts=state.shifts.filter(function(s){return s.clientId===cid&&s.week===wkCell&&s.day===di&&emps.some(function(e){return e.id===s.empId;});});
-    const chips=dayShifts.slice(0,3).map(function(s){const e=emps.find(function(x){return x.id===s.empId;});const t=tpls.find(function(x){return x.id===s.templateId;})||{};if(!e)return '';return '<div style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';border-radius:4px;padding:1px 4px;margin-top:2px">'+escH((e.name||'').split(' ')[0])+' '+(t.start||'')+'</div>';}).filter(Boolean).join('');
+    const chips=dayShifts.slice(0,3).map(function(s){const e=emps.find(function(x){return x.id===s.empId;});const t=rhShiftInfo(s);if(!e)return '';return '<div style="font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:'+((t.color||'#64748b')+'22')+';color:'+(t.color||'#475569')+';border-radius:4px;padding:1px 4px;margin-top:2px">'+escH((e.name||'').split(' ')[0])+' '+(t.start||'')+'</div>';}).filter(Boolean).join('');
     const more=dayShifts.length>3?'<div style="font-size:10px;color:#94a3b8;margin-top:2px">+'+(dayShifts.length-3)+' autres</div>':'';
     const dd=cur.getDate();const cdate=y+'-'+String(mo+1).padStart(2,'0')+'-'+String(dd).padStart(2,'0');const isT=_sameDay(cur,today);
     cells+='<div onclick="rhMonthPick(\''+cdate+'\')" style="min-height:86px;border:1px solid var(--line);border-radius:8px;padding:5px;cursor:pointer;background:'+(inMonth?'#fff':'#f8fafc')+';'+(isT?'outline:2px solid #0e7c58;outline-offset:-1px;':'')+'"><div style="font-size:12px;font-weight:700;color:'+(inMonth?'#0b1220':'#cbd5e1')+'">'+dd+'</div>'+chips+more+'</div>';
@@ -3125,7 +3140,9 @@ function rhMonthView(emps,tpls,cid){const y=planDate.getFullYear(),mo=planDate.g
   return '<div class="panel"><div class="pb"><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px">'+days.map(function(d){return '<div class="tsub" style="text-align:center;font-weight:700">'+d+'</div>';}).join('')+'</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px">'+cells+'</div><div class="tsub" style="margin-top:10px">Chaque jour affiche les créneaux planifiés de sa semaine. Cliquez un jour pour l\'ouvrir en vue Jour.</div></div></div>';}
 function rhMonthPick(cdate){planDate=new Date(cdate+'T12:00:00');planView='jour';renderClient('rh_planning');}
 function rhSelTpl(id){planSelTpl=planSelTpl===id?null:id;renderClient('rh_planning');}
-function rhAssign(empId,day){if(!planSelTpl){toast('Sélectionnez d\'abord un shift favori');return;}state.shifts.push({id:'sh'+Date.now(),clientId:CID,empId:empId,day:day,week:rhWeekKey(planDate||new Date()),templateId:planSelTpl});renderClient('rh_planning');toast('Shift assigné');}
+function rhAssign(empId,day){
+  if(planSelTpl){state.shifts.push({id:'sh'+Date.now(),clientId:CID,empId:empId,day:day,week:rhWeekKey(planDate||new Date()),templateId:planSelTpl});renderClient('rh_planning');toast('Shift assigné');return;}
+  formShiftAdhoc(empId,day);}
 function rhRemoveShift(id){const i=state.shifts.findIndex(x=>x.id===id);if(i>=0)state.shifts.splice(i,1);renderClient('rh_planning');}
 function rhDragShift(ev,id){try{ev.dataTransfer.setData('text/plain',id);ev.dataTransfer.effectAllowed='move';}catch(e){}ev.stopPropagation();}
 function rhDropShift(ev,empId,day){ev.preventDefault();ev.stopPropagation();
@@ -3144,12 +3161,12 @@ function formShiftTpl(id){state.shiftTemplates=state.shiftTemplates||[];const t=
     else{state.shiftTemplates.push({id:'tpl'+Date.now(),clientId:CID,label:v.label.trim(),start:v.start,end:v.end,color:v.color});}
     renderClient('rh_planning');toast('Shift favori enregistré');});}
 function rhDelTpl(id){openConfirm('Supprimer le favori','Supprimer ce shift favori ? Les créneaux déjà posés avec ce favori seront retirés du planning.',function(){state.shiftTemplates=state.shiftTemplates.filter(function(t){return t.id!==id;});state.shifts=state.shifts.filter(function(s){return s.templateId!==id;});if(planSelTpl===id)planSelTpl=null;renderClient('rh_planning');toast('Favori supprimé');});}
-function rhPlannedHours(id){rhMigrateShifts();const wk=rhWeekKey(new Date());let tot=0;(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).forEach(function(s){const t=(state.shiftTemplates||[]).find(function(x){return x.id===s.templateId;});if(t)tot+=shiftHours(t);});return Math.round(tot*10)/10;}
+function rhPlannedHours(id){rhMigrateShifts();const wk=rhWeekKey(new Date());let tot=0;(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).forEach(function(s){tot+=rhShiftInfo(s).h;});return Math.round(tot*10)/10;}
 function rhPlannedDays(id){rhMigrateShifts();const wk=rhWeekKey(new Date());const set={};(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).forEach(function(s){set[s.day]=1;});return Object.keys(set).length;}
 function rhHeuresDetail(id){const e=state.employees.find(function(x){return x.id===id;});if(!e)return;const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
   rhMigrateShifts();const wk=rhWeekKey(new Date());
   const sh=(state.shifts||[]).filter(function(s){return s.clientId===CID&&s.empId===id&&s.week===wk;}).sort(function(a,b){return a.day-b.day;});
-  let tot=0;const rows=sh.map(function(s){const t=(state.shiftTemplates||[]).find(function(x){return x.id===s.templateId;})||{};const h=t.start?shiftHours(t):0;tot+=h;return '<tr><td>'+days[s.day]+'</td><td>'+escH(t.label||'')+'</td><td>'+(t.start||'')+'–'+(t.end||'')+'</td><td style="text-align:right">'+h+' h</td></tr>';}).join('');
+  let tot=0;const rows=sh.map(function(s){const t=rhShiftInfo(s);const h=t.h;tot+=h;return '<tr><td>'+days[s.day]+'</td><td>'+escH(t.label||'')+'</td><td>'+(t.start||'')+'–'+(t.end||'')+'</td><td style="text-align:right">'+h+' h</td></tr>';}).join('');
   openInfoHTML('Détail de la semaine — '+e.name, sh.length?('<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left">Jour</th><th style="text-align:left">Shift</th><th style="text-align:left">Horaires</th><th style="text-align:right">Heures</th></tr></thead><tbody>'+rows+'</tbody></table><div class="progline" style="margin-top:10px"><div class="lbl">Total planifié</div><div style="font-weight:800">'+(Math.round(tot*10)/10)+' h</div></div>'):'<div class="empty" style="padding:20px">Aucun créneau planifié pour cet employé cette semaine.</div>');}
 function fmtHM(min){return Math.floor(min/60)+'h '+String(Math.round(min%60)).padStart(2,'0');}
 function prevMonthLabel(){const d=new Date();d.setMonth(d.getMonth()-1);return d.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}
@@ -3172,10 +3189,10 @@ function rhPlanExport(){const cid=CID;if(!planDate)planDate=new Date();
   const body=emps.map(function(e){let tot=0,bMin=0;
     const cells=days.map(function(d,di){const dd=new Date(mon);dd.setDate(mon.getDate()+di);const dk=rhDateKey(dd);
       const sh=wShifts.filter(function(s){return s.empId===e.id&&s.day===di;});
-      sh.forEach(function(s){const t=tpls.find(function(x){return x.id===s.templateId;});if(t)tot+=shiftHours(t);});
+      sh.forEach(function(s){tot+=rhShiftInfo(s).h;});
       const sess=sessions.filter(function(s){return (s.empId===e.id||s.name===e.name)&&s.date===dk;});
       sess.forEach(function(s){if(s.min)bMin+=s.min;});
-      const parts=sh.map(function(s){const t=tpls.find(function(x){return x.id===s.templateId;})||{};return escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'');})
+      const parts=sh.map(function(s){const t=rhShiftInfo(s);return escH(t.label||'')+' '+(t.start||'')+'-'+(t.end||'');})
         .concat(sess.map(function(s){return '<span style="color:#b45309">⏱ '+fmtDur(s.min)+' ('+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+')</span>';}));
       return '<td>'+(parts.length?parts.join('<br>'):'—')+'</td>';}).join('');
     totP+=tot;totB+=bMin;
