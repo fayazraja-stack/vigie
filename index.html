@@ -129,13 +129,23 @@
   td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:13.5px}
   tr:last-child td{border-bottom:0}tbody tr:hover{background:#fafbfc}
   .tname{font-weight:700}.tsub{font-size:12px;color:var(--muted)}
-  .pwk th{padding:4px 8px}
-  .pwk td{padding:3px 5px;font-size:12.5px}
-  .pwk td .chip{padding:2px 7px;font-size:10.5px;line-height:1.3;gap:4px;border-radius:8px}
-  .pwk .tname{font-size:12.5px;line-height:1.25}
-  .pwk .tsub{font-size:10.5px}
+  .pwk th{padding:9px 10px}
+  .pwk td{padding:9px 8px;font-size:13px}
+  .pwk tbody tr{height:66px}
+  .pwk td .chip{padding:5px 10px;font-size:11.5px;line-height:1.35;gap:5px;border-radius:9px}
+  .pwk .tname{font-size:13.5px;line-height:1.3}
+  .pwk .tsub{font-size:11px}
+  .pwk .bdgchip{background:#F0FBFF;border:1.5px solid #22B8CF;color:#0B7285;border-radius:9px;padding:4px 9px;margin:2px auto 0;font-size:11px;display:inline-block;white-space:nowrap;font-weight:700}
+  .pwk .bdgchip:hover{background:#DDF4FA}
   .pwk thead th{position:sticky;top:0;background:#fff;z-index:2}
   .planwrap{max-height:calc(100vh - 252px);overflow:auto}
+  .actwrap{position:relative;display:inline-block}
+  .actmenu{display:none;position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 34px rgba(15,23,42,.16);min-width:262px;z-index:60;overflow:hidden}
+  .actmenu.on{display:block}
+  .actmenu .it{display:flex;align-items:center;gap:11px;padding:13px 15px;cursor:pointer;font-size:14px;font-weight:600;color:var(--ink)}
+  .actmenu .it:hover{background:#f6f8fb}
+  .actmenu .it+.it{border-top:1px solid var(--line)}
+  .actmenu .it .ic{width:22px;text-align:center;font-size:15px}
   .bars{display:flex;align-items:flex-end;gap:8px;height:150px;padding-top:14px}
   .bars .bar{flex:1;background:var(--brand-l);border-radius:6px 6px 0 0;position:relative;min-height:4px}
   .bars .bar .cap{position:absolute;top:-18px;left:0;right:0;text-align:center;font-size:10px;font-weight:700;color:var(--slate)}
@@ -1503,7 +1513,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     const emps=state.employees.filter(e=>e.clientId===cid&&e.active!==false);const tpls=state.shiftTemplates.filter(t=>t.clientId===cid);const days=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
     if(!planDate)planDate=new Date();const view=planView||'semaine';
     const jobsF=state.jobs.filter(j=>state.employees.some(e=>e.clientId===cid&&e.jobId===j.id));
-    let ph=topbar('Planning','Vue jour, semaine ou mois — cliquez une case vide pour créer un shift','<button class="btn ghost" onclick="formEmp()">＋ Employé</button> <button class="btn ghost" onclick="rhPlanExport()">↓ Exporter PDF</button>')
+    let ph=topbar('Planning','Vue jour, semaine ou mois — cliquez une case vide pour créer un shift','<button class="btn ghost" onclick="formEmp()">＋ Employé</button> <button class="btn ghost" onclick="rhPlanExport()">↓ Exporter PDF</button> <span class="actwrap"><button class="btn" onclick="rhActToggle(event)">⚙ Actions</button><div class="actmenu" id="rh_actmenu"><div class="it" onclick="rhActGo(\'tpl\')"><span class="ic">⭐</span> Créer un shift favori</div><div class="it" onclick="rhActGo(\'dup\')"><span class="ic">⧉</span> Dupliquer la semaine</div><div class="it" onclick="rhActGo(\'mail\')"><span class="ic">✉</span> Envoyer le planning par email</div></div></span>')
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><span class="seg-mini">'+[['jour','Jour'],['semaine','Semaine'],['mois','Mois']].map(v=>'<button class="'+(view===v[0]?'active':'')+'" onclick="rhSetPlanView(\''+v[0]+'\')">'+v[1]+'</button>').join('')+'</span>'
      +(view==='semaine'?'<select onchange="rhSetPlanFilter(\'job\',this.value)" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:12.5px"><option value="">Tous les postes</option>'+jobsF.map(j=>'<option value="'+j.id+'"'+(planFilter.job===j.id?' selected':'')+'>'+escH(j.name)+'</option>').join('')+'</select>'
        +'<select onchange="rhSetPlanFilter(\'emp\',this.value)" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:10px;font-size:12.5px"><option value="">Tous les employés</option>'+emps.map(e=>'<option value="'+e.id+'"'+(planFilter.emp===e.id?' selected':'')+'>'+escH(e.name)+'</option>').join('')+'</select>':'')
@@ -1512,7 +1522,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
      +(tpls.length?tpls.map(t=>'<span class="chip" style="cursor:pointer;background:'+(planSelTpl===t.id?t.color:t.color+'22')+';color:'+(planSelTpl===t.id?'#fff':t.color)+'" onclick="rhSelTpl(\''+t.id+'\')">'+escH(t.label)+' '+t.start+'-'+t.end+'</span>').join(''):'<span class="tsub">Aucun favori.</span>')
      +'<button class="btn ghost sm" onclick="formShiftTpl()">＋ Nouveau favori</button>'
      +(planSelTpl?'<button class="btn ghost sm" onclick="formShiftTpl(\''+planSelTpl+'\')">Modifier</button><button class="btn ghost sm" onclick="rhDelTpl(\''+planSelTpl+'\')">Suppr.</button>':'')
-     +'<span class="tsub" style="font-size:11px;margin-left:auto">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez une case vide pour créer un shift · cases orange = badgeuse')+'</span>'
+     +'<span class="tsub" style="font-size:11px;margin-left:auto">'+(planSelTpl?'Favori sélectionné — cliquez une case pour l\'assigner.':'Cliquez une case vide pour créer un shift · cases cyan = pointages badgeuse')+'</span>'
      +'</div></div></div>';
     if(view==='semaine'){
       const wk=rhWeekKey(planDate);const mon=rhMonday(planDate);const today=new Date();
@@ -1543,7 +1553,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'</tbody></table></div></div>';
     } else if(view==='jour'){ ph+=rhDayView(emps,tpls,cid); }
     else { ph+=rhMonthView(emps,tpls,cid); }
-    ph+=helpBox([['Ajouter un shift','cliquez sur une cellule vide pour créer un nouveau shift (horaires libres).'],['Shifts favoris','définissez vos créneaux types (Matin 9h-15h, Soir 18h-23h…) puis posez-les en 1 clic ; la croix retire un créneau, le glisser-déposer le déplace.'],['Changer de vue','Jour pour voir qui travaille, Semaine pour planifier, Mois pour la vision globale.'],['Badgeuse','les cases orange sont les pointages réels de la tablette ; ils remontent aussi dans « Historique heures ».']]);
+    ph+=helpBox([['Ajouter un shift','cliquez sur une cellule vide pour créer un nouveau shift (horaires libres).'],['Shifts favoris','définissez vos créneaux types (Matin 9h-15h, Soir 18h-23h…) puis posez-les en 1 clic ; la croix retire un créneau, le glisser-déposer le déplace.'],['Changer de vue','Jour pour voir qui travaille, Semaine pour planifier, Mois pour la vision globale.'],['Badgeuse','les cases cyan sont les pointages réels de la tablette (survolez-les pour le détail, cliquez pour voir les photos) ; ils remontent aussi dans « Historique heures ».']]);
     m.innerHTML=ph;
   } else if(clientView==='rh_heures'){
     const emps=state.employees.filter(e=>e.clientId===cid);
@@ -3361,7 +3371,8 @@ function rhEditCreneau(inId,outId){const bi=(state.badges||[]).find(b=>b.id===in
 function rhDelCreneau(inId,outId){openConfirm('Supprimer ce créneau','Les pointages arrivée et départ de ce créneau seront définitivement supprimés.',function(){
   state.badges=(state.badges||[]).filter(b=>b.id!==inId&&b.id!==outId);renderClient('rh_heures');toast('Créneau supprimé');});}
 function rhBadgeChip(s){const ph=s.photoIn||s.photoOut;
-  return '<div onclick="'+(ph?'event.stopPropagation();rhBadgeDetail(\''+s.inId+'\')':'')+'" style="background:#fff3e0;border:1px solid #fbbf77;border-radius:8px;padding:1px 6px;margin:1px auto 0;font-size:10px;color:#b45309;display:inline-block;white-space:nowrap'+(ph?';cursor:pointer':'')+'"'+(ph?' title="Voir les photos de pointage"':'')+'><b>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+'</b> <span style="color:#c2681a">'+fmtTime(s.inAt)+'-'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'+(ph?' 📷':'')+'</div>';}
+  const tip=escH((s.name||'Salarié')+' — shift pointé par le salarié sur la badgeuse : arrivée '+fmtTime(s.inAt)+(s.outAt?', départ '+fmtTime(s.outAt):', départ non pointé')+' · '+fmtDur(s.min)+(ph?' · cliquez pour voir les photos':''));
+  return '<div class="bdgchip" onclick="'+(ph?'event.stopPropagation();rhBadgeDetail(\''+s.inId+'\')':'event.stopPropagation()')+'" title="'+tip+'"'+(ph?' style="cursor:pointer"':'')+'>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+' <span style="font-weight:600;opacity:.85">'+fmtTime(s.inAt)+'–'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'+(ph?' 📷':'')+'</div>';}
 function rhPhotoZoom(url,title){openInfoHTML(title||'Photo de pointage','<img src="'+escH(url)+'" style="width:100%;border-radius:14px;display:block">',460);}
 function rhDayPhotos(empId,dk){
   const e=(state.employees||[]).find(function(x){return x.id===empId;})||{};
@@ -3390,6 +3401,60 @@ function rhBadgeDetail(inId){const s=rhBadgeSessions(CID).find(function(x){retur
    +'<div class="tsub" style="text-align:center;font-size:12px;margin-top:3px">'+s.inAt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+'</div>',540);}
 function rhMonday(d){const x=new Date(d);const wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);x.setHours(0,0,0,0);return x;}
 function rhDayIdxOf(d){return (d.getDay()+6)%7;}
+/* --- Menu Actions du planning --- */
+function rhActToggle(ev){if(ev)ev.stopPropagation();const m=document.getElementById('rh_actmenu');if(m)m.classList.toggle('on');}
+document.addEventListener('click',function(e){const m=document.getElementById('rh_actmenu');if(m&&m.classList.contains('on')&&!m.parentNode.contains(e.target))m.classList.remove('on');});
+function rhActGo(a){const m=document.getElementById('rh_actmenu');if(m)m.classList.remove('on');
+  if(a==='tpl')formShiftTpl();
+  else if(a==='dup')rhDupWeek();
+  else if(a==='mail')rhPlanEmail();}
+function rhDupWeek(){
+  const base=planDate||new Date();const wk=rhWeekKey(base);
+  const src=rhShiftsOf(CID,wk);
+  if(!src.length){toast('Aucun shift à dupliquer sur cette semaine');return;}
+  const nextMon=new Date(rhMonday(base));nextMon.setDate(nextMon.getDate()+7);
+  const nk=rhWeekKey(nextMon);const existing=rhShiftsOf(CID,nk);
+  const go=function(){
+    src.forEach(function(sh){const c=JSON.parse(JSON.stringify(sh));
+      c.id='sh'+Date.now()+Math.random().toString(36).slice(2,6);c.week=nk;state.shifts.push(c);});
+    planDate=nextMon;renderClient('rh_planning');
+    toast('✓ '+src.length+' shift(s) copiés sur la semaine du '+nextMon.toLocaleDateString('fr-FR'));};
+  openConfirm('Dupliquer la semaine',
+    'Copier les '+src.length+' shift(s) de cette semaine vers la semaine du '+nextMon.toLocaleDateString('fr-FR')+' ?'
+    +(existing.length?' Attention : cette semaine contient déjà '+existing.length+' shift(s), les nouveaux s\'ajouteront par-dessus.':''),go);}
+function rhPlanEmail(){
+  const base=planDate||new Date();const wk=rhWeekKey(base);const mon=rhMonday(base);
+  const sun=new Date(mon);sun.setDate(sun.getDate()+6);
+  const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+  const emps=state.employees.filter(function(e){return e.clientId===CID&&e.active!==false;});
+  const shifts=rhShiftsOf(CID,wk);
+  if(!shifts.length){toast('Aucun shift sur cette semaine');return;}
+  const est=state.clients.find(function(c){return c.id===CID;})||{};
+  const isMail=function(x){return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(x||'').trim());};
+  const mails=emps.map(function(e){return String(e.contactInfo||'').trim();}).filter(isMail);
+  let body='Planning du '+mon.toLocaleDateString('fr-FR')+' au '+sun.toLocaleDateString('fr-FR')+'\n'+(est.name||'')+'\n\n';
+  emps.forEach(function(e){
+    const sh=shifts.filter(function(s){return s.empId===e.id;}).sort(function(a,b){return a.day-b.day;});
+    if(!sh.length)return;
+    let tot=0;body+=e.name+'\n';
+    sh.forEach(function(s){const t=rhShiftInfo(s);tot+=t.h;
+      body+='  '+days[s.day]+' : '+(t.start||'')+' - '+(t.end||'')+(t.label?'  ('+t.label+')':'')+'\n';});
+    body+='  Total : '+(Math.round(tot*10)/10)+' h\n\n';});
+  body+='Planning envoyé depuis Vigie.';
+  const subj='Planning semaine du '+mon.toLocaleDateString('fr-FR')+(est.name?' — '+est.name:'');
+  const href='mailto:'+mails.join(',')+'?subject='+encodeURIComponent(subj)+'&body='+encodeURIComponent(body);
+  openInfoHTML('Envoyer le planning par email',
+   '<div style="font-size:13.5px;color:#334155;line-height:1.55;margin-bottom:12px">'
+   +(mails.length?('<b>'+mails.length+' destinataire(s)</b> trouvé(s) parmi vos employés : '+escH(mails.join(', ')))
+     :'<b>Aucune adresse email</b> n\'est renseignée sur vos fiches employés. Ajoutez-les dans <b>Établissement → Employés → Modifier → Contact</b>, ou saisissez les destinataires vous-même dans votre messagerie.')
+   +'</div>'
+   +'<div style="border:1px solid var(--line);border-radius:12px;padding:12px;background:#f8fafc;max-height:34vh;overflow:auto"><pre style="margin:0;font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap;line-height:1.5">'+escH(body)+'</pre></div>'
+   +'<div class="tsub" style="font-size:12px;margin:12px 0">Le bouton ouvre votre messagerie avec le message pré-rempli. Pour joindre la version PDF, utilisez « ↓ Exporter PDF » puis attachez le fichier.</div>'
+   +'<div style="display:flex;gap:8px"><button class="btn ghost" style="flex:1" onclick="rhPlanCopy()">⧉ Copier le texte</button><a class="btn" style="flex:1;text-align:center" href="'+escH(href)+'">✉ Ouvrir ma messagerie</a></div>'
+   +'<textarea id="rh_mailtxt" style="position:absolute;left:-9999px">'+escH(body)+'</textarea>',600);}
+function rhPlanCopy(){const t=document.getElementById('rh_mailtxt');if(!t)return;
+  if(navigator.clipboard)navigator.clipboard.writeText(t.value);else{t.select();document.execCommand('copy');}
+  toast('Planning copié — collez-le dans votre email');}
 function rhSetPlanView(v){planView=v;renderClient('rh_planning');}
 function rhPlanToday(){planDate=new Date();renderClient('rh_planning');}
 function rhPlanNav(dir){if(!planDate)planDate=new Date();const v=planView||'semaine';const d=new Date(planDate);if(v==='jour')d.setDate(d.getDate()+dir);else if(v==='semaine')d.setDate(d.getDate()+7*dir);else d.setMonth(d.getMonth()+dir);planDate=d;renderClient('rh_planning');}
