@@ -1288,6 +1288,7 @@ const CLIENT_NAV=[
   {v:'rh_heures',ic:'🕐',t:'Historique heures',sub:1,mod:'rh'},
   {cat:'Gestion'},
   {v:'food',ic:'',t:'Food Cost',mod:'food'},
+  {v:'stock',ic:'📦',t:'Contrôle de stock',mod:'stock'},
   {cat:'Fidélisation',mod:'fid'},
   {v:'fid',ic:'🎮',t:'Jeux',sub:1,mod:'fid'},
   {v:'fid_stats',ic:'📊',t:'Statistiques',sub:1,mod:'fid'},
@@ -1303,14 +1304,15 @@ const NAV_GROUPS=[
   {t:'HACCP',e:'📋',bg:'#16a34a',mod:'haccp',kids:['h_zones','h_equip','h_friteuses','h_dlc','h_four','h_docs','h_suivi','h_report']},
   {t:'RH & Planning',e:'👥',bg:'#3b82f6',mod:'rh',kids:['rh_etab','rh_planning','rh_heures']},
   {t:'Food Cost',e:'💲',bg:'#8b5cf6',mod:'food',v:'food'},
+  {t:'Stock',e:'📦',bg:'#d97706',mod:'stock',v:'stock'},
   {t:'Fidélisation',e:'❤️',bg:'#ec4899',mod:'fid',kids:['fid','fid_stats','crm']},
   {t:'Tablette',e:'📱',bg:'#475569',kids:['tablet']},
   {t:'Paramètres du compte',e:'⚙️',bg:'#334155',v:'config_est'},
   {t:'Wiki & Aide',e:'📖',bg:'#f59e0b',kids:['wiki','support']},
 ];
 let NAV_OPEN={};
-const ALL_MODULES=['haccp','rh','food','fid'];
-const MODULE_LABELS={haccp:'HACCP & hygiène',rh:'RH & Planning',food:'Food Cost',fid:'Fidélisation'};
+const ALL_MODULES=['haccp','rh','food','fid','stock'];
+const MODULE_LABELS={haccp:'HACCP & hygiène',rh:'RH & Planning',food:'Food Cost',fid:'Fidélisation',stock:'Contrôle de stock'};
 /* ===== Catalogue de déploiement (sélection rapide) ===== */
 let EQUIP_CATALOG=[
   {key:'frigo',name:'Frigo positif',cat:'froidpos',min:0,max:4,icon:''},
@@ -1368,6 +1370,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     const cleanDone=state.postes.filter(p=>p.clientId===cid&&p.done).length,cleanTot=state.postes.filter(p=>p.clientId===cid).length;
     m.innerHTML='<div class="topbar"><div><h1>Vue d\'ensemble</h1><div class="sub">'+c.name+' · '+fmtDate(now())+'</div></div><div class="actions"><button class="btn ghost" onclick="clientNav(\'h_report\')"> Rapport</button><button class="btn" onclick="go(\'app_terrain\')"> Tablette</button></div></div>'
     +'<div class="kpis">'+kpi('Conformité HACCP',conform+'%',today.length+' relevés',conform>=90?'up':'down')+kpi('Relevés du jour',today.length+' / '+expected,'chaîne du froid',today.length>=expected?'up':'down')+kpi('Alertes ouvertes',alerts.length,alerts.length?'à traiter':'tout bon',alerts.length?'down':'up')+kpi('Nettoyages',cleanDone+' / '+cleanTot,'postes du jour','up')+'</div>'
+    +(modOn('stock')&&typeof stkVal==='function'?'<div class="panel" style="margin-bottom:16px;cursor:pointer" onclick="clientNav(\'stock\')"><div class="pb" style="display:flex;align-items:center;gap:14px;padding:13px 18px"><span style="width:38px;height:38px;border-radius:11px;background:#fdf6e3;display:grid;place-items:center;font-size:18px">📦</span><div style="flex:1"><b>Stock : '+stkEur(stkVal())+'</b><div class="tsub">'+stkProds().length+' produit(s)'+(stkUnder().length?' · <b style="color:#d97706">'+stkUnder().length+' sous le seuil</b>':' · aucun produit sous le seuil')+'</div></div><span style="color:#94a3b8;font-weight:800">›</span></div></div>':'')
     +'<div class="grid3" style="margin-bottom:16px">'
      +'<div class="panel"><div class="ph"><h3> HACCP</h3><span class="chip '+(conform>=90?'ok':'bad')+'">'+conform+'%</span></div><div class="pb"><div class="progline"><div class="lbl">Températures</div><div class="track"><div class="fill" style="width:'+Math.round(100*today.length/Math.max(1,expected))+'%;background:var(--brand)"></div></div><div class="pv">'+today.length+'/'+expected+'</div></div><div class="progline"><div class="lbl">Nettoyages</div><div class="track"><div class="fill" style="width:'+Math.round(100*cleanDone/cleanTot)+'%;background:var(--brand)"></div></div><div class="pv">'+cleanDone+'/'+cleanTot+'</div></div><div class="progline"><div class="lbl">Non-conformités</div><div class="track"><div class="fill" style="width:'+(alerts.length?100:0)+'%;background:var(--bad)"></div></div><div class="pv">'+alerts.length+'</div></div></div></div>'
      +'<div class="panel"><div class="ph"><h3> RH & Planning</h3><span class="chip blue">aujourd\'hui</span></div><div class="pb"><div class="progline"><div class="lbl">Présents</div><div class="track"><div class="fill" style="width:83%;background:var(--blue)"></div></div><div class="pv">5/6</div></div><div class="progline"><div class="lbl">Congés en attente</div><div class="track"><div class="fill" style="width:33%;background:var(--warn)"></div></div><div class="pv">2</div></div><div class="progline"><div class="lbl">Heures / prévu</div><div class="track"><div class="fill" style="width:100%;background:var(--blue)"></div></div><div class="pv">+2h</div></div></div></div>'
@@ -1594,6 +1597,12 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     m.innerHTML=topbar('Paramètres du compte','Gérez vos informations de connexion et votre sécurité','')
     +'<div id="cfga_body"></div>';
     cfgaRender();
+  } else if(clientView==='stock'){
+    state.stockProducts=state.stockProducts||[];state.stockMoves=state.stockMoves||[];state.stockInvs=state.stockInvs||[];
+    m.innerHTML=topbar('Contrôle de stock','Quantités, valeur, inventaires et alertes de votre stock','<button class="btn ghost" onclick="stkStateCsv()">⇩ Excel</button> <button class="btn ghost" onclick="stkStatePdf()">↓ PDF</button>')
+    +'<div style="margin-bottom:16px"><span class="seg-mini">'+[['dash','Vue d\'ensemble'],['prods','Produits'],['moves','Mouvements'],['invs','Inventaires']].map(t=>'<button class="'+(STK_TAB===t[0]?'active':'')+'" onclick="STK_TAB=\''+t[0]+'\';renderClient(\'stock\')">'+t[1]+'</button>').join('')+'</span></div>'
+    +'<div id="stk_body"></div>';
+    stkRenderTab();
   } else if(clientView==='tablet'){
     const tm=state.tabletMods||{};const tOn=function(k){return tm[k]!==false;};
     const sw=function(k,on){return '<span class="switch '+(on?'on':'')+'" onclick="tbCfgToggle(\''+k+'\')"><span class="tk"></span></span>';};
@@ -1607,6 +1616,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +modRow('badge','Badgeuse','Pointage arrivée / départ')
       +modRow('haccp','HACCP','Hygiène & sécurité alimentaire')
       +(modOn('fid')?modRow('fid','Fidélité','Validation des lots gagnés (scan QR)'):'')
+      +(modOn('stock')?modRow('stock','Stock','Inventaires, réceptions et sorties de stock'):'')
       +modRow('active','Tablette active','La tablette est accessible','background:#f8fafc')
       +'</div></div>'
     +'<div class="panel"><div class="ph"><h3>Accès tablette</h3></div><div class="pb">'
@@ -2996,6 +3006,7 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     +(tm.badge!==false?'<div class="modcard" onclick="tbGo(\'badge\')"><div class="k">● Module</div><h3>Badgeuse</h3><p>Pointage arrivée / départ des employés.</p><div class="arr">Ouvrir →</div></div>':'')
     +(tm.haccp!==false?'<div class="modcard" onclick="tbGo(\'identify\')"><div class="k">● Module</div><h3>HACCP</h3><p>Hygiène & sécurité alimentaire.</p><div class="arr">Ouvrir →</div></div>':'')
     +(modOn('fid')&&tm.fid!==false?'<div class="modcard" onclick="tbGo(\'fidval\')"><div class="k">● Module</div><h3>Fidélité</h3><p>Valider le lot gagné d\'un client (scan ou code).</p><div class="arr">Ouvrir →</div></div>':'')
+    +(modOn('stock')&&tm.stock!==false?'<div class="modcard" onclick="tbGo(\'stockid\')"><div class="k">● Module</div><h3>Stock</h3><p>Inventaires, réceptions et sorties de stock.</p><div class="arr">Ouvrir →</div></div>':'')
     +'</div>';
   } else if(s==='fidval'){
     if(!modOn('fid')){b.innerHTML='<div class="empty" style="padding:40px 20px">Le module Fidélité n\'est pas activé pour cet établissement.</div>';return;}
@@ -3014,6 +3025,38 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
   } else if(s==='identify'){
     b.innerHTML='<div class="tb-title-k">Module HACCP</div><div class="tb-title">Identification</div><div class="emp-grid">'
     +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>'<div class="emp" onclick="tbLogin(\''+e.id+'\')"><div class="av">'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl"><span class="chip muted">'+e.role+'</span></div></div>').join('')+'</div>';
+  } else if(s==='stockid'){
+    b.innerHTML='<div class="tb-title-k">Module Stock</div><div class="tb-title">Identification</div><div class="emp-grid">'
+    +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>'<div class="emp" onclick="tbStockLogin(\''+e.id+'\')"><div class="av">'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl"><span class="chip muted">'+e.role+'</span></div></div>').join('')+'</div>';
+  } else if(s==='stockmenu'){
+    const su=(state.employees.find(e=>e.id===tbStockUser)||{});
+    b.innerHTML='<div class="tb-title-k">Stock · '+escH(su.name||'')+'</div><div class="tb-title">Que voulez-vous faire ?</div><div class="modgrid">'
+    +'<div class="modcard" onclick="tbGo(\'stockinv\')"><div class="k">● Stock</div><h3>📋 Inventaire</h3><p>Compter les produits et recaler le stock.</p><div class="arr">Ouvrir →</div></div>'
+    +'<div class="modcard" onclick="tbGo(\'stockin\')"><div class="k">● Stock</div><h3>➕ Réception</h3><p>Ajouter une quantité reçue au stock.</p><div class="arr">Ouvrir →</div></div>'
+    +'<div class="modcard" onclick="tbGo(\'stockout\')"><div class="k">● Stock</div><h3>➖ Sortie / Perte</h3><p>Retirer une quantité du stock.</p><div class="arr">Ouvrir →</div></div>'
+    +'</div>';
+  } else if(s==='stockin'||s==='stockout'){
+    const isIn=s==='stockin';const prods=stkProds();
+    b.innerHTML='<div class="tb-title-k">Stock</div><div class="tb-title">'+(isIn?'Réception — entrée de stock':'Sortie de stock')+'</div>'
+    +'<div style="max-width:480px;margin:0 auto">'
+    +(prods.length?('<div class="field"><label>Produit</label><select id="tbs_prod">'+prods.map(p=>'<option value="'+p.id+'">'+escH(p.name)+' — '+stkQty(p.id)+' '+p.unit+'</option>').join('')+'</select></div>'
+    +'<div class="field"><label>Quantité</label><input id="tbs_qty" type="number" step="0.01" inputmode="decimal" style="font-size:24px;text-align:center;padding:14px"></div>'
+    +'<div class="field"><label>Motif</label><select id="tbs_motif">'+(isIn?STK_MOTIFS_IN:STK_MOTIFS_OUT).map(m=>'<option>'+m+'</option>').join('')+'</select></div>'
+    +'<button class="btn block" style="'+(isIn?'':'background:#e11d48;border-color:#e11d48')+'" onclick="tbStockMove(\''+(isIn?'in':'out')+'\')">'+(isIn?'＋ Ajouter au stock':'− Retirer du stock')+'</button>')
+    :'<div class="empty" style="padding:30px;text-align:center">Aucun produit de stock. Créez-les depuis le back-office (module Stock).</div>')+'</div>';
+  } else if(s==='stockinv'){
+    state.stockInvs=state.stockInvs||[];
+    let inv=(state.stockInvs||[]).find(i=>i.clientId===cid&&i.status==='open');
+    if(!inv){const su=(state.employees.find(e=>e.id===tbStockUser)||{});inv=stkInvStart(su.name||'Tablette');}
+    if(!inv){b.innerHTML='<div class="empty" style="padding:30px;text-align:center">Aucun produit de stock. Créez-les depuis le back-office (module Stock).</div>';return;}
+    const done=(inv.lines||[]).filter(l=>l.counted!=null).length;
+    b.innerHTML='<div class="tb-title-k">Stock · Inventaire du '+new Date(inv.startedAt).toLocaleDateString('fr-FR')+'</div><div class="tb-title" style="margin-bottom:8px">Comptage ('+done+'/'+inv.lines.length+')</div>'
+    +'<div style="max-width:560px;margin:0 auto">'
+    +'<div style="max-height:calc(100vh - 300px);min-height:220px;overflow:auto;border:1px solid var(--line);border-radius:14px;background:#fff">'
+    +inv.lines.map((l,i)=>{const p=stkProds(true).find(x=>x.id===l.prodId)||{};
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #f1f5f9"><div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+escH(p.name||'?')+'</div><div class="tsub" style="font-size:11px">théorique : '+l.theo+' '+(p.unit||'')+'</div></div>'
+      +'<input type="number" step="0.01" inputmode="decimal" value="'+(l.counted!=null?l.counted:'')+'" onchange="stkInvSet(\''+inv.id+'\','+i+',this.value)" style="width:92px;padding:9px;border:1.5px solid '+(l.counted!=null?'#0e9f6e':'#e2e8f0')+';border-radius:10px;text-align:center;font-size:16px"><span class="tsub" style="width:34px">'+(p.unit||'')+'</span></div>';}).join('')
+    +'</div><button class="btn block" style="margin-top:14px" onclick="if(stkInvValidate(\''+inv.id+'\'))tbRender(\'stockmenu\')">✓ Valider l\'inventaire ('+done+' compté'+(done>1?'s':'')+')</button></div>';
   } else if(s==='haccp'){
     const emp=state.employees.find(e=>e.id===tbUser);
     const tempPending=eqs.filter(e=>!todayRel(cid).some(r=>r.equipId===e.id)).length;
@@ -3126,7 +3169,9 @@ function tbDelDoc(id){const d=state.documents.find(x=>x.id===id);if(!d)return;
     try{if(d.path&&SB)await SB.storage.from('docs').remove([d.path]);}catch(e){}
     const i=state.documents.findIndex(x=>x.id===id);if(i>=0)state.documents.splice(i,1);tbRender('documents');toast('Document supprimé');});}
 function tbSavePerte(){const p=document.getElementById('pe_prod').value.trim();if(!p){toast('Indiquez le produit');return;}
-  state.pertes.unshift({id:'pe'+Date.now(),clientId:CID,produit:p,motif:document.getElementById('pe_motif').value,qte:document.getElementById('pe_qte').value.trim()||'—',at:new Date(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
+  const peBy=(state.employees.find(e=>e.id===tbUser)||{}).name||'—';const peQte=document.getElementById('pe_qte').value.trim()||'—';
+  state.pertes.unshift({id:'pe'+Date.now(),clientId:CID,produit:p,motif:document.getElementById('pe_motif').value,qte:peQte,at:new Date(),by:peBy});
+  try{stockAfterPerte(p,peQte,peBy);}catch(e){}
   toast(' Perte enregistrée');tbArchTab='perte';tbRender('archives');}
 
 /* ===== RH & Planning ===== */
@@ -3440,8 +3485,10 @@ function tbTestOil(id){const f=state.friteuses.find(x=>x.id===id);if(!f)return;
   state.huileTests.unshift({id:'ht'+Date.now(),clientId:CID,friteuse:f.name,polarity:val,at:new Date(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—',status:bad?'alerte':'ok'});
   tbRender('oil');toast(bad?' '+f.name+' : '+val+'% — huile à changer':'✓ '+f.name+' : '+val+'% — conforme');}
 function tbSaveRecep(){const p=document.getElementById('rc_prod').value.trim();if(!p){toast('Indiquez le produit');return;}const temp=parseFloat(document.getElementById('rc_temp').value);
-  state.reception.unshift({id:'r'+Date.now(),clientId:CID,fournisseur:document.getElementById('rc_four').value,produit:p,lot:document.getElementById('rc_lot').value.trim()||'—',dlc:document.getElementById('rc_dlc').value||new Date(Date.now()+7*864e5).toISOString().slice(0,10),temp:isNaN(temp)?null:temp,conforme:isNaN(temp)?true:temp<=4,at:new Date(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
-  toast(' Réception enregistrée');tbHome();}
+  const rcBy=(state.employees.find(e=>e.id===tbUser)||{}).name||'—';const rcFour=document.getElementById('rc_four').value;
+  state.reception.unshift({id:'r'+Date.now(),clientId:CID,fournisseur:rcFour,produit:p,lot:document.getElementById('rc_lot').value.trim()||'—',dlc:document.getElementById('rc_dlc').value||new Date(Date.now()+7*864e5).toISOString().slice(0,10),temp:isNaN(temp)?null:temp,conforme:isNaN(temp)?true:temp<=4,at:new Date(),by:rcBy});
+  toast(' Réception enregistrée');tbHome();
+  try{stockAfterReception(p,rcFour,rcBy);}catch(e){}}
 function tbSaveTrace(){const p=document.getElementById('tr_prod').value.trim();if(!p){toast('Indiquez le produit');return;}
   state.tracabilite.unshift({id:'tr'+Date.now(),clientId:CID,produit:p,lot:document.getElementById('tr_lot').value.trim()||'—',at:new Date(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
   toast('✓ Ouverture tracée : '+p);tbHome();}
@@ -3569,6 +3616,191 @@ function docDelFile(id){const d=state.documents.find(function(x){return x.id===i
     try{if(d.path&&SB)await SB.storage.from('docs').remove([d.path]);}catch(e){}
     const i=state.documents.findIndex(function(x){return x.id===id;});if(i>=0)state.documents.splice(i,1);
     renderClient('h_docs');toast('Fichier supprimé');});}
+/* ===== Contrôle de stock ===== */
+let STK_TAB='dash',STK_F={q:'',cat:'',type:'',prod:'',period:'month'},STK_INV_OPEN=null;
+const STK_UNITS=['kg','g','L','cl','pièce','carton','sachet','bouteille','barquette'];
+const STK_MOTIFS_IN=['Livraison','Retour','Correction','Autre'];
+const STK_MOTIFS_OUT=['Consommation','Casse','Offert','Transfert','Correction','Autre'];
+function stkProds(all){return (state.stockProducts||[]).filter(p=>p.clientId===CID&&(all||!p.archived));}
+function stkQty(pid){let q=0;(state.stockMoves||[]).forEach(m=>{if(m.clientId===CID&&m.prodId===pid){if(m.type==='out')q-=m.qty;else q+=m.qty;}});return Math.round(q*100)/100;}
+function stkVal(){let v=0;stkProds().forEach(p=>{v+=Math.max(0,stkQty(p.id))*(p.price||0);});return v;}
+function stkUnder(){return stkProds().filter(p=>(p.minQty||0)>0&&stkQty(p.id)<p.minQty);}
+function stkBy(){if(typeof tbStockUser!=='undefined'&&tbStockUser){const e=state.employees.find(x=>x.id===tbStockUser);if(e)return e.name;}return 'Back-office';}
+function stkMove(prodId,type,qty,motif,origin,note,refId,by){state.stockMoves=state.stockMoves||[];
+  let q=Number(qty)||0;if(type!=='adjust')q=Math.abs(q);
+  state.stockMoves.unshift({id:'sm'+Date.now()+Math.random().toString(36).slice(2,5),clientId:CID,prodId:prodId,type:type,qty:Math.round(q*100)/100,motif:motif||'',origin:origin||'manuel',by:by||stkBy(),at:new Date().toISOString(),note:note||'',refId:refId||''});}
+function stkEur(n){return (Math.round(n*100)/100).toLocaleString('fr-FR',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+function stkCats(){const s={};stkProds(true).forEach(p=>{if(p.cat)s[p.cat]=1;});return Object.keys(s).sort();}
+function stkOriginChip(o){const map={manuel:['Manuel','#f1f5f9','#334155'],reception:['Réception','#e9fbf1','#0e9f6e'],perte:['Perte','#fde7ec','#e11d48'],dlc:['DLC','#fde7ec','#e11d48'],inventaire:['Inventaire','#eef2ff','#4f46e5']};const x=map[o]||map.manuel;return '<span class="chip" style="background:'+x[1]+';color:'+x[2]+';font-size:10.5px">'+x[0]+'</span>';}
+function stkRenderTab(){const b=document.getElementById('stk_body');if(!b)return;const prods=stkProds();
+  if(STK_TAB==='dash'){
+    const under=stkUnder();const now=new Date();
+    const pertesM=(state.stockMoves||[]).filter(m=>m.clientId===CID&&m.type==='out'&&(m.origin==='perte'||m.origin==='dlc')&&new Date(m.at).getMonth()===now.getMonth()&&new Date(m.at).getFullYear()===now.getFullYear());
+    const pertesVal=pertesM.reduce((s,m)=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};return s+m.qty*(p.price||0);},0);
+    const lastInv=(state.stockInvs||[]).filter(i=>i.clientId===CID&&i.status==='done').sort((a,b)=>(b.closedAt||'').localeCompare(a.closedAt||''))[0];
+    b.innerHTML='<div class="kpis" style="grid-template-columns:repeat(4,1fr)">'+kpi('Valeur du stock',stkEur(stkVal()),prods.length+' produits actifs','up')+kpi('Produits sous seuil',under.length,under.length?'à commander':'tout est au-dessus des seuils',under.length?'down':'up')+kpi('Pertes du mois',stkEur(pertesVal),pertesM.length+' sortie(s) perte/DLC','up')+kpi('Dernier inventaire',lastInv?new Date(lastInv.closedAt).toLocaleDateString('fr-FR'):'—',lastInv?('écart '+stkEur(lastInv.valEcart||0)):'aucun inventaire validé','up')+'</div>'
+    +'<div class="grid2">'
+    +'<div class="panel"><div class="ph"><h3>⚠ Produits sous le seuil ('+under.length+')</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Produit</th><th>Stock</th><th>Seuil</th><th>Fournisseur</th></tr></thead><tbody>'
+     +(under.length?under.map(p=>'<tr><td class="tname">'+escH(p.name)+'</td><td><b style="color:#e11d48">'+stkQty(p.id)+' '+p.unit+'</b></td><td class="tsub">'+p.minQty+' '+p.unit+'</td><td class="tsub">'+escH(p.supplier||'—')+'</td></tr>').join(''):'<tr><td colspan="4" class="empty" style="padding:22px;text-align:center">Aucun produit sous le seuil.</td></tr>')+'</tbody></table></div></div>'
+    +'<div class="panel"><div class="ph"><h3>Derniers mouvements</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Date</th><th>Produit</th><th>Mvt</th><th>Origine</th></tr></thead><tbody>'
+     +((state.stockMoves||[]).filter(m=>m.clientId===CID).slice(0,8).map(m=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};return '<tr><td class="tsub">'+new Date(m.at).toLocaleDateString('fr-FR')+'</td><td class="tname">'+escH(p.name||'?')+'</td><td><b style="color:'+(m.type==='out'?'#e11d48':m.type==='adjust'?'#4f46e5':'#0e9f6e')+'">'+(m.type==='out'?'−'+m.qty:m.type==='adjust'?(m.qty>0?'+':'')+m.qty:'+'+m.qty)+' '+(p.unit||'')+'</b></td><td>'+stkOriginChip(m.origin)+'</td></tr>';}).join('')||'<tr><td colspan="4" class="empty" style="padding:22px;text-align:center">Aucun mouvement pour le moment.</td></tr>')+'</tbody></table></div></div>'
+    +'</div>'
+    +helpBox([['Entrées automatiques','chaque réception fournisseur validée sur la tablette ou au BO propose l\'ajout des quantités au stock.'],['Sorties automatiques','les pertes déclarées et les DLC dépassées décrémentent le stock des produits liés.'],['Inventaire','lancez un inventaire (onglet Inventaires) pour recaler le stock théorique sur le comptage réel.']]);
+  } else if(STK_TAB==='prods'){
+    const cats=stkCats();const q=(STK_F.q||'').toLowerCase();
+    const list=stkProds(STK_F.cat==='__arch').filter(p=>(STK_F.cat==='__arch'?p.archived:(!STK_F.cat||p.cat===STK_F.cat))&&(!q||p.name.toLowerCase().indexOf(q)>-1));
+    b.innerHTML='<div class="panel"><div class="ph"><div><h3>Produits ('+stkProds().length+')</h3><div class="sub">'+stkProds(true).filter(p=>p.archived).length+' archivé(s)</div></div><div class="actions"><button class="btn ghost sm" onclick="stkImportFood()">⇩ Importer de Food Cost</button><button class="btn sm" onclick="stkProdForm()">＋ Nouveau produit</button></div></div>'
+    +'<div class="pb" style="padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap"><input placeholder="🔍 Rechercher…" value="'+escH(STK_F.q)+'" oninput="STK_F.q=this.value;stkRenderTab()" style="flex:1;min-width:160px;padding:8px 11px;border:1px solid var(--line);border-radius:10px">'
+    +'<select onchange="STK_F.cat=this.value;stkRenderTab()" style="padding:8px 11px;border:1px solid var(--line);border-radius:10px"><option value="">Toutes les catégories</option>'+cats.map(c=>'<option '+(STK_F.cat===c?'selected':'')+'>'+escH(c)+'</option>').join('')+'<option value="__arch"'+(STK_F.cat==='__arch'?' selected':'')+'>🗃 Archivés</option></select></div>'
+    +'<div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Valeur</th><th>Prix/unité</th><th>Seuil</th><th>Fournisseur</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
+    +(list.length?list.map(p=>{const qy=stkQty(p.id);const low=(p.minQty||0)>0&&qy<p.minQty;
+      return '<tr'+(p.archived?' style="opacity:.55"':'')+'><td class="tname">'+escH(p.name)+(p.foodIngId?' <span class="chip" style="background:#f0e9fd;color:#7c3aed;font-size:9.5px" title="Lié à Food Cost">FC</span>':'')+'</td><td class="tsub">'+escH(p.cat||'—')+'</td>'
+      +'<td><b style="color:'+(qy<0?'#e11d48':low?'#d97706':'#0b1220')+'">'+qy+' '+p.unit+'</b>'+(low?' <span class="chip warn" style="font-size:9.5px">sous seuil</span>':'')+(qy<0?' <span class="chip bad" style="font-size:9.5px">négatif</span>':'')+'</td>'
+      +'<td>'+stkEur(Math.max(0,qy)*(p.price||0))+'</td><td class="tsub">'+stkEur(p.price||0)+'</td><td class="tsub">'+(p.minQty||0)+' '+p.unit+'</td><td class="tsub">'+escH(p.supplier||'—')+'</td>'
+      +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="stkProdForm(\''+p.id+'\')">✎</button> <button class="btn ghost sm" onclick="stkArchive(\''+p.id+'\')">'+(p.archived?'↩':'🗃')+'</button></td></tr>';}).join('')
+     :'<tr><td colspan="8" class="empty" style="padding:26px;text-align:center">Aucun produit. Créez vos produits ou importez vos ingrédients Food Cost.</td></tr>')+'</tbody></table></div></div>';
+  } else if(STK_TAB==='moves'){
+    const now=new Date();
+    const list=(state.stockMoves||[]).filter(m=>{if(m.clientId!==CID)return false;
+      if(STK_F.prod&&m.prodId!==STK_F.prod)return false;
+      if(STK_F.type&&m.type!==STK_F.type)return false;
+      if(STK_F.period==='month'){const d=new Date(m.at);if(d.getMonth()!==now.getMonth()||d.getFullYear()!==now.getFullYear())return false;}
+      return true;});
+    b.innerHTML='<div class="panel"><div class="ph"><h3>Mouvements ('+list.length+')</h3><div class="actions"><button class="btn ghost sm" onclick="stkMovesCsv()">⇩ Excel</button><button class="btn sm" style="background:#0e9f6e;border-color:#0e9f6e" onclick="stkEntryForm()">＋ Entrée</button><button class="btn sm" style="background:#e11d48;border-color:#e11d48" onclick="stkOutForm()">− Sortie</button></div></div>'
+    +'<div class="pb" style="padding:12px 18px;border-bottom:1px solid var(--line);display:flex;gap:10px;flex-wrap:wrap">'
+    +'<select onchange="STK_F.period=this.value;stkRenderTab()" style="padding:8px 11px;border:1px solid var(--line);border-radius:10px"><option value="month"'+(STK_F.period==='month'?' selected':'')+'>Mois en cours</option><option value="all"'+(STK_F.period==='all'?' selected':'')+'>Tout l\'historique</option></select>'
+    +'<select onchange="STK_F.prod=this.value;stkRenderTab()" style="padding:8px 11px;border:1px solid var(--line);border-radius:10px"><option value="">Tous les produits</option>'+stkProds(true).map(p=>'<option value="'+p.id+'"'+(STK_F.prod===p.id?' selected':'')+'>'+escH(p.name)+'</option>').join('')+'</select>'
+    +'<select onchange="STK_F.type=this.value;stkRenderTab()" style="padding:8px 11px;border:1px solid var(--line);border-radius:10px"><option value="">Entrées + sorties</option><option value="in"'+(STK_F.type==='in'?' selected':'')+'>Entrées</option><option value="out"'+(STK_F.type==='out'?' selected':'')+'>Sorties</option><option value="adjust"'+(STK_F.type==='adjust'?' selected':'')+'>Recalages</option></select></div>'
+    +'<div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Date</th><th>Produit</th><th>Mouvement</th><th>Motif</th><th>Origine</th><th>Auteur</th><th>Note</th></tr></thead><tbody>'
+    +(list.length?list.map(m=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};
+      return '<tr><td class="tsub" style="white-space:nowrap">'+new Date(m.at).toLocaleDateString('fr-FR')+' '+new Date(m.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</td><td class="tname">'+escH(p.name||'?')+'</td><td><b style="color:'+(m.type==='out'?'#e11d48':m.type==='adjust'?'#4f46e5':'#0e9f6e')+'">'+(m.type==='out'?'−'+m.qty:m.type==='adjust'?(m.qty>0?'+':'')+m.qty:'+'+m.qty)+' '+(p.unit||'')+'</b></td><td class="tsub">'+escH(m.motif||'—')+'</td><td>'+stkOriginChip(m.origin)+'</td><td class="tsub">'+escH(m.by||'—')+'</td><td class="tsub">'+escH(m.note||'')+'</td></tr>';}).join('')
+     :'<tr><td colspan="7" class="empty" style="padding:26px;text-align:center">Aucun mouvement sur cette période.</td></tr>')+'</tbody></table></div></div>';
+  } else {
+    const invs=(state.stockInvs||[]).filter(i=>i.clientId===CID).sort((a,b)=>(b.startedAt||'').localeCompare(a.startedAt||''));
+    const open=invs.find(i=>i.status==='open');
+    if(STK_INV_OPEN){stkInvCount(STK_INV_OPEN);return;}
+    b.innerHTML='<div class="panel"><div class="ph"><h3>Inventaires</h3><div class="actions">'+(open?'<button class="btn sm" onclick="STK_INV_OPEN=\''+open.id+'\';stkRenderTab()">▶ Reprendre l\'inventaire en cours</button>':'<button class="btn sm" onclick="stkInvStart()">＋ Lancer un inventaire</button>')+'</div></div>'
+    +'<div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Date</th><th>Statut</th><th>Produits comptés</th><th>Écart valeur</th><th>Par</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
+    +(invs.length?invs.map(i=>{const n=(i.lines||[]).filter(l=>l.counted!=null).length;
+      return '<tr><td class="tname">'+new Date(i.startedAt).toLocaleDateString('fr-FR')+'</td><td>'+(i.status==='open'?'<span class="chip warn">En cours</span>':'<span class="chip ok">Validé</span>')+'</td><td class="tsub">'+n+' / '+(i.lines||[]).length+'</td><td>'+(i.status==='done'?'<b style="color:'+((i.valEcart||0)<0?'#e11d48':'#0e9f6e')+'">'+stkEur(i.valEcart||0)+'</b>':'—')+'</td><td class="tsub">'+escH(i.by||'—')+'</td>'
+      +'<td style="text-align:right;white-space:nowrap">'+(i.status==='open'?'<button class="btn ghost sm" onclick="STK_INV_OPEN=\''+i.id+'\';stkRenderTab()">Compter</button>':'<button class="btn ghost sm" onclick="stkInvPdf(\''+i.id+'\')">↓ PDF</button> <button class="btn ghost sm" onclick="stkInvView(\''+i.id+'\')">Écarts</button>')+'</td></tr>';}).join('')
+     :'<tr><td colspan="6" class="empty" style="padding:26px;text-align:center">Aucun inventaire. Lancez le premier pour fiabiliser votre stock.</td></tr>')+'</tbody></table></div></div>';
+  }
+}
+function stkProdForm(id){const p=id?stkProds(true).find(x=>x.id===id):null;
+  const fours=['Aucun'].concat((state.fournisseurs||[]).filter(f=>f.clientId===CID).map(f=>f.nom));
+  openForm(id?'Modifier le produit':'Nouveau produit',[
+    {key:'name',label:'Nom du produit',value:p?p.name:''},
+    {key:'cat',label:'Catégorie',value:p?(p.cat||''):'',ph:'Ex. Viandes, Boissons, Emballages…'},
+    {key:'unit',label:'Unité',type:'select',options:STK_UNITS,value:p?p.unit:'kg'},
+    {key:'price',label:'Prix d\'achat par unité (€)',type:'number',value:p?p.price:'',ph:'Ex. 2.50'},
+    {key:'minQty',label:'Seuil minimum (alerte)',type:'number',value:p?p.minQty:0},
+    {key:'supplier',label:'Fournisseur',type:'select',options:fours,value:p&&p.supplier?p.supplier:'Aucun'}
+  ],function(v){if(!v.name.trim()){toast('Nom requis');return;}
+    const o={name:v.name.trim(),cat:(v.cat||'').trim(),unit:v.unit,price:Number(String(v.price).replace(',','.'))||0,minQty:Number(String(v.minQty).replace(',','.'))||0,supplier:v.supplier==='Aucun'?'':v.supplier};
+    if(p){Object.assign(p,o);if(p.foodIngId){const g=(state.foodIng||[]).find(x=>x.id===p.foodIngId);if(g&&o.price){g.priceHT=Math.round(o.price*(g.purchQty||1)*100)/100;}}}
+    else state.stockProducts.push(Object.assign({id:'sp'+Date.now(),clientId:CID,archived:false,foodIngId:''},o));
+    renderClient('stock');toast('Produit enregistré');});}
+function stkImportFood(){state.foodIng=state.foodIng||[];
+  const done=stkProds(true).map(p=>p.foodIngId).filter(Boolean);
+  const cand=(state.foodIng||[]).filter(g=>g.clientId===CID&&done.indexOf(g.id)<0);
+  if(!cand.length){toast('Tous vos ingrédients Food Cost sont déjà importés');return;}
+  openConfirm('Importer de Food Cost',cand.length+' ingrédient(s) Food Cost seront créés comme produits de stock (prix ramené à l\'unité d\'achat). Continuer ?',function(){
+    cand.forEach(g=>{const pq=g.purchQty||1;state.stockProducts.push({id:'sp'+Date.now()+Math.random().toString(36).slice(2,4),clientId:CID,name:g.name,cat:g.group||(g.cat==='nonalim'?'Emballages':'Alimentaire'),unit:g.purchUnit||g.unit||'kg',price:Math.round(((g.priceHT!=null?g.priceHT:g.price)||0)/pq*100)/100,minQty:0,supplier:g.fournisseur||'',archived:false,foodIngId:g.id});});
+    renderClient('stock');toast('✓ '+cand.length+' produit(s) importé(s)');});}
+function stkArchive(id){const p=stkProds(true).find(x=>x.id===id);if(!p)return;
+  if(p.archived){p.archived=false;renderClient('stock');toast('Produit réactivé');return;}
+  const hasMoves=(state.stockMoves||[]).some(m=>m.prodId===id);
+  openConfirm('Archiver '+p.name,'Le produit n\'apparaîtra plus dans les saisies'+(hasMoves?' (son historique de mouvements est conservé)':'')+'.',function(){p.archived=true;renderClient('stock');toast('Produit archivé');});}
+function _stkQtyForm(title,motifs,cb){const prods=stkProds();if(!prods.length){toast('Créez d\'abord des produits');return;}
+  openForm(title,[
+    {key:'prod',label:'Produit',type:'select',options:prods.map(p=>p.name+' ('+stkQty(p.id)+' '+p.unit+')')},
+    {key:'qty',label:'Quantité',type:'number',value:'',ph:'Ex. 5'},
+    {key:'motif',label:'Motif',type:'select',options:motifs},
+    {key:'note',label:'Commentaire (optionnel)',value:''}
+  ],function(v){const idx=prods.map(p=>p.name+' ('+stkQty(p.id)+' '+p.unit+')').indexOf(v.prod);const p=prods[idx];
+    const qy=Number(String(v.qty).replace(',','.'));if(!p||!qy||qy<=0){toast('Quantité invalide');return;}
+    cb(p,qy,v.motif,v.note);});}
+function stkEntryForm(){_stkQtyForm('Entrée de stock',STK_MOTIFS_IN,function(p,qy,motif,note){stkMove(p.id,'in',qy,motif,'manuel',note);renderClient('stock');toast('+'+qy+' '+p.unit+' — '+p.name);});}
+function stkOutForm(){_stkQtyForm('Sortie de stock',STK_MOTIFS_OUT,function(p,qy,motif,note){stkMove(p.id,'out',qy,motif,'manuel',note);renderClient('stock');toast('−'+qy+' '+p.unit+' — '+p.name);});}
+function stkInvStart(by){const prods=stkProds();if(!prods.length){toast('Créez d\'abord des produits');return null;}
+  const inv={id:'si'+Date.now(),clientId:CID,startedAt:new Date().toISOString(),closedAt:null,status:'open',by:by||stkBy(),lines:prods.map(p=>({prodId:p.id,theo:stkQty(p.id),counted:null})),valEcart:0};
+  state.stockInvs=state.stockInvs||[];state.stockInvs.unshift(inv);
+  STK_INV_OPEN=inv.id;if(clientView==='stock')stkRenderTab();
+  return inv;}
+function stkInvCount(id){const b=document.getElementById('stk_body');const inv=(state.stockInvs||[]).find(i=>i.id===id);if(!b||!inv){STK_INV_OPEN=null;return;}
+  b.innerHTML='<div class="panel"><div class="ph"><div><h3>Inventaire du '+new Date(inv.startedAt).toLocaleDateString('fr-FR')+'</h3><div class="sub">Saisissez les quantités réellement comptées — laissez vide pour ne pas recaler un produit</div></div><div class="actions"><button class="btn ghost sm" onclick="STK_INV_OPEN=null;stkRenderTab()">‹ Retour</button><button class="btn sm" onclick="stkInvValidate(\''+inv.id+'\')">✓ Valider l\'inventaire</button></div></div>'
+  +'<div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Produit</th><th>Stock théorique</th><th>Quantité comptée</th><th>Écart</th></tr></thead><tbody>'
+  +inv.lines.map((l,i)=>{const p=stkProds(true).find(x=>x.id===l.prodId)||{};const ec=(l.counted!=null)?Math.round((l.counted-l.theo)*100)/100:null;
+    return '<tr><td class="tname">'+escH(p.name||'?')+'</td><td class="tsub">'+l.theo+' '+(p.unit||'')+'</td>'
+    +'<td><input type="number" step="0.01" value="'+(l.counted!=null?l.counted:'')+'" onchange="stkInvSet(\''+inv.id+'\','+i+',this.value)" style="width:110px;padding:8px;border:1px solid var(--line);border-radius:9px;text-align:center"> '+(p.unit||'')+'</td>'
+    +'<td>'+(ec==null?'—':'<b style="color:'+(ec<0?'#e11d48':ec>0?'#0e9f6e':'#64748b')+'">'+(ec>0?'+':'')+ec+'</b>')+'</td></tr>';}).join('')+'</tbody></table></div></div>';}
+function stkInvSet(id,i,val){const inv=(state.stockInvs||[]).find(x=>x.id===id);if(!inv)return;
+  inv.lines[i].counted=(val===''?null:Number(String(val).replace(',','.')));
+  if(clientView==='stock'&&document.getElementById('stk_body')&&STK_INV_OPEN)stkInvCount(id);
+  else if(typeof tbCurrent!=='undefined'&&tbCurrent==='stockinv')tbRender('stockinv');}
+let tbStockUser=null;
+function tbStockLogin(id){tbStockUser=id;tbGo('stockmenu');}
+function tbStockMove(type){const pid=(document.getElementById('tbs_prod')||{}).value;const q=Number(String((document.getElementById('tbs_qty')||{}).value||'').replace(',','.'));const motif=(document.getElementById('tbs_motif')||{}).value||'';
+  if(!pid||!q||q<=0){toast('Saisissez une quantité');return;}
+  const su=(state.employees.find(e=>e.id===tbStockUser)||{});
+  stkMove(pid,type,q,motif,'manuel','','',su.name||'Tablette');
+  const p=stkProds(true).find(x=>x.id===pid)||{};
+  toast((type==='in'?'＋':'−')+q+' '+(p.unit||'')+' — '+(p.name||''));
+  tbRender('stockmenu');}
+function stkInvValidate(id,fromTablet){const inv=(state.stockInvs||[]).find(x=>x.id===id);if(!inv)return;
+  let val=0,n=0;
+  inv.lines.forEach(l=>{if(l.counted==null)return;const diff=Math.round((l.counted-l.theo)*100)/100;
+    const p=stkProds(true).find(x=>x.id===l.prodId)||{};val+=diff*(p.price||0);
+    if(diff!==0){stkMove(l.prodId,'adjust',diff,'Recalage inventaire','inventaire','',inv.id,inv.by);}n++;});
+  if(!n){toast('Saisissez au moins un comptage');return;}
+  inv.status='done';inv.closedAt=new Date().toISOString();inv.valEcart=Math.round(val*100)/100;
+  STK_INV_OPEN=null;
+  if(clientView==='stock')renderClient('stock');
+  toast('✓ Inventaire validé — écart '+stkEur(inv.valEcart));return true;}
+function stkInvView(id){const inv=(state.stockInvs||[]).find(x=>x.id===id);if(!inv)return;
+  openInfoHTML('Écarts — inventaire du '+new Date(inv.startedAt).toLocaleDateString('fr-FR'),
+   '<div style="max-height:55vh;overflow:auto"><table style="width:100%;border-collapse:collapse">'
+   +'<tr><th style="text-align:left;padding:6px;font-size:11px;color:#64748b">PRODUIT</th><th style="padding:6px;font-size:11px;color:#64748b">THÉORIQUE</th><th style="padding:6px;font-size:11px;color:#64748b">COMPTÉ</th><th style="padding:6px;font-size:11px;color:#64748b">ÉCART</th></tr>'
+   +inv.lines.filter(l=>l.counted!=null).map(l=>{const p=stkProds(true).find(x=>x.id===l.prodId)||{};const ec=Math.round((l.counted-l.theo)*100)/100;
+     return '<tr style="border-top:1px solid #eef2f7"><td style="padding:6px;font-weight:700;font-size:13px">'+escH(p.name||'?')+'</td><td style="padding:6px;text-align:center;font-size:13px">'+l.theo+'</td><td style="padding:6px;text-align:center;font-size:13px">'+l.counted+'</td><td style="padding:6px;text-align:center;font-weight:800;color:'+(ec<0?'#e11d48':ec>0?'#0e9f6e':'#64748b')+'">'+(ec>0?'+':'')+ec+' '+(p.unit||'')+'</td></tr>';}).join('')
+   +'</table></div><div style="margin-top:12px;font-weight:800">Écart total valorisé : <span style="color:'+((inv.valEcart||0)<0?'#e11d48':'#0e9f6e')+'">'+stkEur(inv.valEcart||0)+'</span></div>',600);}
+function _stkPrint(title,body){const w=window.open('','_blank');const est=state.clients.find(c=>c.id===CID)||{};
+  w.document.write('<html><head><title>'+escH(title)+'</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:28px;color:#0b1220}h1{font-size:19px;margin:0}table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:14px}th,td{border:1px solid #cbd5e1;padding:5px 7px;text-align:left}th{background:#f1f5f9}.sub{color:#64748b;font-size:12px;margin-top:4px}</style></head><body><h1>'+escH(title)+'</h1><div class="sub">'+escH(est.name||CUR||'')+' — édité le '+new Date().toLocaleDateString('fr-FR')+'</div>'+body+'<scr'+'ipt>window.print()</scr'+'ipt></body></html>');
+  w.document.close();}
+function stkStatePdf(){const prods=stkProds();
+  _stkPrint('État du stock valorisé','<table><tr><th>Produit</th><th>Catégorie</th><th>Quantité</th><th>Prix/unité</th><th>Valeur</th><th>Seuil</th></tr>'
+  +prods.map(p=>{const qy=stkQty(p.id);return '<tr><td>'+escH(p.name)+'</td><td>'+escH(p.cat||'')+'</td><td>'+qy+' '+p.unit+'</td><td>'+stkEur(p.price||0)+'</td><td>'+stkEur(Math.max(0,qy)*(p.price||0))+'</td><td>'+(p.minQty||0)+'</td></tr>';}).join('')
+  +'<tr><th colspan="4">VALEUR TOTALE</th><th colspan="2">'+stkEur(stkVal())+'</th></tr></table>');}
+function _stkCsv(name,lines){const csv='﻿'+lines.map(r=>r.map(c=>{c=String(c==null?'':c);return (c.indexOf(';')>-1||c.indexOf('"')>-1)?('"'+c.replace(/"/g,'""')+'"'):c;}).join(';')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=name;a.click();}
+function stkStateCsv(){_stkCsv('stock_'+new Date().toISOString().slice(0,10)+'.csv',[['Produit','Catégorie','Unité','Quantité','Prix unitaire (€)','Valeur (€)','Seuil','Fournisseur']].concat(stkProds().map(p=>{const qy=stkQty(p.id);return [p.name,p.cat||'',p.unit,String(qy).replace('.',','),String(p.price||0).replace('.',','),String(Math.round(Math.max(0,qy)*(p.price||0)*100)/100).replace('.',','),p.minQty||0,p.supplier||''];})));toast('Export Excel téléchargé');}
+function stkMovesCsv(){_stkCsv('mouvements_stock.csv',[['Date','Produit','Type','Quantité','Motif','Origine','Auteur','Note']].concat((state.stockMoves||[]).filter(m=>m.clientId===CID).map(m=>{const p=stkProds(true).find(x=>x.id===m.prodId)||{};return [new Date(m.at).toLocaleString('fr-FR'),p.name||'?',m.type==='in'?'Entrée':m.type==='out'?'Sortie':'Recalage',String(m.qty).replace('.',','),m.motif||'',m.origin||'',m.by||'',m.note||''];})));toast('Export Excel téléchargé');}
+function stkInvPdf(id){const inv=(state.stockInvs||[]).find(x=>x.id===id);if(!inv)return;
+  _stkPrint('Rapport d\'inventaire du '+new Date(inv.startedAt).toLocaleDateString('fr-FR'),
+  '<div class="sub">Réalisé par : '+escH(inv.by||'—')+' — validé le '+(inv.closedAt?new Date(inv.closedAt).toLocaleString('fr-FR'):'')+'</div>'
+  +'<table><tr><th>Produit</th><th>Théorique</th><th>Compté</th><th>Écart</th><th>Écart valorisé</th></tr>'
+  +inv.lines.filter(l=>l.counted!=null).map(l=>{const p=stkProds(true).find(x=>x.id===l.prodId)||{};const ec=Math.round((l.counted-l.theo)*100)/100;return '<tr><td>'+escH(p.name||'?')+'</td><td>'+l.theo+' '+(p.unit||'')+'</td><td>'+l.counted+' '+(p.unit||'')+'</td><td>'+(ec>0?'+':'')+ec+'</td><td>'+stkEur(ec*(p.price||0))+'</td></tr>';}).join('')
+  +'<tr><th colspan="4">ÉCART TOTAL</th><th>'+stkEur(inv.valEcart||0)+'</th></tr></table>');}
+function stkMatch(name){const n=(name||'').toLowerCase().trim();if(!n)return null;
+  return stkProds().find(p=>p.name.toLowerCase().trim()===n)||stkProds().find(p=>p.name.toLowerCase().indexOf(n)>-1||n.indexOf(p.name.toLowerCase())>-1)||null;}
+function stockAfterReception(produit,fournisseur,by){if(!modOn('stock'))return;const p=stkMatch(produit);if(!p)return;
+  openInfoHTML('Ajouter au stock ?','<div style="font-size:13.5px;color:#334155;line-height:1.5;margin-bottom:12px">Réception de <b>'+escH(produit)+'</b>'+(fournisseur?' ('+escH(fournisseur)+')':'')+' — quelle quantité ajouter au stock de « '+escH(p.name)+' » ?</div>'
+  +'<div style="display:flex;gap:8px;align-items:center"><input id="stk_rq" type="number" step="0.01" placeholder="Quantité" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:16px;text-align:center"><span style="font-weight:700">'+p.unit+'</span></div>'
+  +'<div style="display:flex;gap:8px;margin-top:12px"><button class="btn ghost" style="flex:1" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">Ignorer</button><button class="btn" style="flex:1" onclick="stkRecepConfirm(\''+p.id+'\',\''+escH(fournisseur||'')+'\',\''+escH(by||'')+'\')">＋ Ajouter au stock</button></div>',420);}
+function stkRecepConfirm(pid,fourn,by){const q=Number(String((document.getElementById('stk_rq')||{}).value||'').replace(',','.'));if(!q||q<=0){toast('Quantité invalide');return;}
+  stkMove(pid,'in',q,'Livraison'+(fourn?' '+fourn:''),'reception','',by||'');
+  document.getElementById('info_mask').classList.remove('on');toast('✓ +'+q+' ajouté au stock');}
+function stkFromDlc(dlcId){const d=(state.dlc||[]).find(x=>x.id===dlcId);if(!d)return;
+  const p=stkMatch(d.produit);if(!p){toast('Aucun produit de stock correspondant');return;}
+  openForm('Perte DLC — '+p.name,[{key:'qty',label:'Quantité à sortir du stock ('+p.unit+')',type:'number',value:1}],function(v){
+    const q=Number(String(v.qty).replace(',','.'));if(!q||q<=0){toast('Quantité invalide');return;}
+    stkMove(p.id,'out',q,'DLC dépassée — '+d.produit,'dlc','',d.id);d.stocked=true;
+    renderClient(clientView);toast('Stock : −'+q+' '+p.unit+' (perte DLC)');});}
+function stockAfterPerte(produit,qteStr,by){if(!modOn('stock'))return;const p=stkMatch(produit);if(!p)return;
+  const q=parseFloat(String(qteStr||'').replace(',','.'))||1;
+  stkMove(p.id,'out',q,'Perte déclarée','perte','',by||'');
+  toast('Stock : −'+q+' '+p.unit+' — '+p.name);}
 /* ===== Wiki & Tutoriels ===== */
 let WIKI_ART='start',WIKI_Q='';
 const WIKI_CATS=[
@@ -3577,6 +3809,7 @@ const WIKI_CATS=[
  {k:'rh',t:'RH & Planning',e:'👥',c:'#3b82f6'},
  {k:'fid',t:'Fidélisation',e:'❤️',c:'#ec4899'},
  {k:'food',t:'Food Cost',e:'💲',c:'#8b5cf6'},
+ {k:'stock',t:'Stock',e:'📦',c:'#d97706'},
  {k:'tab',t:'Tablette',e:'📱',c:'#475569'},
  {k:'faq',t:'FAQ',e:'❓',c:'#f59e0b'},
 ];
@@ -3597,7 +3830,8 @@ const WIKI_ARTS=[
  {id:'stats',cat:'fid',t:'Statistiques & données clients',s:'KPI, graphiques et exports.',b:function(){return _wl(['<b>Statistiques</b> : participations, joueurs uniques, lots gagnés, taux de gain, taux de récupération + graphiques d\'évolution et de répartition.','<b>Données clients</b> : toutes les participations (nom, email, téléphone, résultat, lot, statut) avec exports Excel et PDF.','Les lots remis sont comptabilisés pour votre comptable (export gratuités).']);}},
  {id:'valider',cat:'fid',t:'Valider un lot en caisse',s:'Scan QR ou code manuel sur la tablette.',b:function(){return _wl(['Tablette → module <b>Fidélité</b> (visible si votre abonnement l\'inclut).','Scannez le QR du client avec la caméra, ou saisissez son code à 8 caractères.','La validation vérifie les conditions (délais, établissement) et passe le lot en « récupéré ».']);}},
  {id:'food',cat:'food',t:'Fiches techniques & marges',s:'Coût matière et rentabilité.',b:function(){return _wl(['Créez vos ingrédients avec leurs prix d\'achat, puis composez vos recettes.','Vigie calcule le coût matière, la marge et alerte quand le ratio dépasse 30 %.','Ajoutez une photo à chaque fiche pour la cuisine.']);}},
- {id:'tabmods',cat:'tab',t:'Modules de la tablette',s:'Badgeuse, HACCP, Fidélité.',b:function(){return _wl(['<b>Badgeuse</b> : pointage arrivée/départ, remonte dans le planning et l\'historique.','<b>HACCP</b> : les 6 briques terrain (températures, nettoyage, huiles, DLC, réceptions, traçabilité).','<b>Fidélité</b> : validation des lots gagnés par scan ou code.','Chaque module peut être masqué depuis le back-office sans toucher à l\'abonnement.']);}},
+ {id:'stockmod',cat:'stock',t:'Gérer votre stock',s:'Produits, mouvements, inventaires et alertes.',b:function(){return _wl(['<b>Produits</b> : créez vos fiches (unité, prix, seuil mini, fournisseur) ou importez vos ingrédients Food Cost en un clic.','<b>Mouvements</b> : chaque entrée et sortie est tracée (qui, quand, pourquoi) ; les réceptions fournisseurs proposent l\'ajout automatique, les pertes déclarées décrémentent le stock.','<b>Inventaires</b> : comptez depuis la tablette ou le BO, les écarts sont calculés et le stock théorique est recalé à la validation.','<b>Alertes</b> : un produit sous son seuil minimum remonte sur la Vue d\'ensemble.','<b>Exports</b> : état du stock valorisé et journal des mouvements en Excel/PDF pour votre comptable.']);}},
+ {id:'tabmods',cat:'tab',t:'Modules de la tablette',s:'Badgeuse, HACCP, Fidélité, Stock.',b:function(){return _wl(['<b>Badgeuse</b> : pointage arrivée/départ, remonte dans le planning et l\'historique.','<b>HACCP</b> : les 6 briques terrain (températures, nettoyage, huiles, DLC, réceptions, traçabilité).','<b>Fidélité</b> : validation des lots gagnés par scan ou code.','<b>Stock</b> : inventaires guidés, réceptions et sorties, avec identification de l\'employé.','Chaque module peut être masqué depuis le back-office sans toucher à l\'abonnement.']);}},
  {id:'faq1',cat:'faq',t:'Questions fréquentes',s:'Les réponses aux questions les plus courantes.',b:function(){return _wh('La tablette ne charge pas ?')+_wl(['Vérifiez le lien (onglet Tablette) et la connexion internet, puis rechargez la page.'])+_wh('Un employé a oublié de badger ?')+_wl(['Historique heures → Détail → « Ajouter un créneau » pour saisir les heures manuellement.'])+_wh('Le logo n\'apparaît pas sur un jeu ?')+_wl(['Paramètres du compte → Paramétrage : le logo global s\'applique aux jeux sans logo propre.'])+_wh('Comment nous joindre ?')+_wl(['Wiki & Aide → <b>Contacter le support</b> : ouvrez un ticket (avec captures d\'écran), réponse directement dans votre espace.']);}},
 ];
 function wikiRender(){const nav=document.getElementById('wiki_nav');if(!nav)return;
@@ -3822,7 +4056,7 @@ function suiviTable(cid){
   if(suiviTab==='temp'){const rs=cRel(cid).filter(r=>empOk(r.by));return wrap(['Source','Date','Créneau','Équipement','Temp.','État','Par'],rs.map(r=>{const e=eqById(r.equipId)||{};const h=r.at.getHours();return '<tr><td><span class="chip muted"> manuel</span></td><td>'+r.at.toLocaleDateString('fr-FR')+'</td><td class="tsub">'+(h<14?' matin':' soir')+'</td><td class="tname">'+(e.icon||'')+' '+(e.name||'')+'</td><td class="tname" style="color:'+(r.status==='alerte'?'var(--bad)':'var(--ink)')+'">'+r.value+'°</td><td>'+(r.status==='alerte'?'<span class="chip bad">alerte</span>':'<span class="chip ok">ok</span>')+'</td><td>'+r.by+'</td></tr>';}).join(''));}
   if(suiviTab==='clean'){const rs=state.postes.filter(p=>p.clientId===cid&&p.done&&empOk(p.by));return wrap(['Zone','Tâche','Date','Par'],rs.map(t=>'<tr><td>'+t.zone+'</td><td class="tname">'+t.name+'</td><td>'+(t.at?t.at.toLocaleDateString('fr-FR'):'—')+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='oil'){const rs=state.huileTests.filter(t=>t.clientId===cid&&empOk(t.by));return wrap(['Friteuse','Polarité','Date','État','Par'],rs.map(t=>'<tr><td class="tname"> '+t.friteuse+'</td><td>'+t.polarity+'%</td><td>'+t.at.toLocaleDateString('fr-FR')+'</td><td>'+(t.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>')+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
-  if(suiviTab==='dlc'){const rs=state.dlc.filter(d=>d.clientId===cid&&empOk(d.by));return wrap(['Produit','Ouvert/produit le','DLC','Reste','Par'],rs.map(d=>{const rest=Math.ceil((d.dlcAt-Date.now())/864e5);return '<tr><td class="tname">'+d.produit+'</td><td>'+d.ouvertAt.toLocaleDateString('fr-FR')+'</td><td>'+d.dlcAt.toLocaleDateString('fr-FR')+'</td><td>'+(rest<=1?'<span class="chip bad">'+rest+'j</span>':rest<=2?'<span class="chip warn">'+rest+'j</span>':'<span class="chip ok">'+rest+'j</span>')+'</td><td>'+(d.by||'—')+'</td></tr>';}).join(''));}
+  if(suiviTab==='dlc'){const rs=state.dlc.filter(d=>d.clientId===cid&&empOk(d.by));return wrap(['Produit','Ouvert/produit le','DLC','Reste','Par',''],rs.map(d=>{const rest=Math.ceil((d.dlcAt-Date.now())/864e5);const exp=rest<=0;const canStk=exp&&modOn('stock')&&typeof stkMatch==='function'&&stkMatch(d.produit)&&!d.stocked;return '<tr><td class="tname">'+d.produit+'</td><td>'+d.ouvertAt.toLocaleDateString('fr-FR')+'</td><td>'+d.dlcAt.toLocaleDateString('fr-FR')+'</td><td>'+(rest<=1?'<span class="chip bad">'+rest+'j</span>':rest<=2?'<span class="chip warn">'+rest+'j</span>':'<span class="chip ok">'+rest+'j</span>')+'</td><td>'+(d.by||'—')+'</td><td style="text-align:right">'+(canStk?'<button class="btn ghost sm" style="color:#e11d48" onclick="stkFromDlc(\''+d.id+'\')" title="Sortir du stock en perte DLC">📦→ Perte</button>':(d.stocked?'<span class="chip muted" style="font-size:9.5px">stock déduit</span>':''))+'</td></tr>';}).join(''));}
   if(suiviTab==='prod'){const rs=state.tracabilite.filter(t=>t.clientId===cid&&empOk(t.by));return wrap(['Produit','N° lot','Date','Par'],rs.map(t=>'<tr><td class="tname">'+t.produit+'</td><td class="tsub">'+(t.lot||'—')+'</td><td>'+t.at.toLocaleDateString('fr-FR')+' '+fmtTime(t.at)+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='recep'){const rs=state.reception.filter(r=>r.clientId===cid&&empOk(r.by));return wrap(['Date','Fournisseur','Produit','N° lot','Temp.','Conforme','Par'],rs.map(r=>'<tr><td>'+r.at.toLocaleDateString('fr-FR')+'</td><td>'+r.fournisseur+'</td><td class="tname">'+r.produit+'</td><td class="tsub">'+r.lot+'</td><td>'+(r.temp!=null?r.temp+'°':'—')+'</td><td>'+(r.conforme?'<span class="chip ok">✓</span>':'<span class="chip bad">non</span>')+'</td><td>'+(r.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='perte'){const rs=state.pertes.filter(p=>p.clientId===cid&&empOk(p.by));return wrap(['Produit','Motif','Quantité','Date','Par'],rs.map(p=>'<tr><td class="tname">'+p.produit+'</td><td>'+p.motif+'</td><td>'+p.qte+'</td><td>'+p.at.toLocaleDateString('fr-FR')+'</td><td>'+(p.by||'—')+'</td></tr>').join(''));}
@@ -3986,7 +4220,7 @@ async function enterAdmin(){
   await loadAdminData();
   go('admin');
 }
-const _ADMIN_COLLS=['equip','releves','postes','friteuses','fournisseurs','dlc','dlcCats','dlcProducts','reception','tracabilite','pertes','huileTests','documents','docFolders','zones','employees','jobs','conges','shifts','recipes','games'];
+const _ADMIN_COLLS=['equip','releves','postes','friteuses','fournisseurs','dlc','dlcCats','dlcProducts','reception','tracabilite','pertes','huileTests','documents','docFolders','zones','employees','jobs','conges','shifts','recipes','games','stockProducts','stockMoves','stockInvs'];
 async function loadAdminData(){
   const {data:ests}=await SB.from('establishments').select('*').order('created_at',{ascending:false});
   state.clients=(ests||[]).map(e=>({id:'c_'+e.est_code,est_code:e.est_code,name:e.name,commercial:e.commercial_name||'',type:e.type||'',city:e.city||'',plan:e.plan||'Starter',status:e.status||'actif',since:(e.start_date||e.created_at||'').slice(0,10),contact:e.contact||'',owner_email:e.owner_email||'',address:e.address||'',postal_code:e.postal_code||'',legal_name:e.legal_name||'',siret:e.siret||'',tva:e.tva||'',phone:e.phone||'',contact_email:e.contact_email||'',price:(e.price!=null?e.price:''),start_date:e.start_date||'',network:e.network||'',modules:Array.isArray(e.modules)?e.modules:ALL_MODULES.slice()}));
@@ -4145,6 +4379,7 @@ function starterState(site, sel){
     dlcProducts:dlcProducts,
     zones:[{id:'z1',clientId:cid,name:'Cuisine'},{id:'z2',clientId:cid,name:'Salle'},{id:'z3',clientId:cid,name:'Sanitaires'}],
     docFolders:[{id:'fld1',clientId:cid,name:'Documents HACCP'}], documents:[],
+    stockProducts:[], stockMoves:[], stockInvs:[],
     employees:[],
     jobs:[
       {id:'j1',clientId:cid,name:'Cuisine',color:'#2563eb'},
