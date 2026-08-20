@@ -172,6 +172,10 @@
   .fa-intro h2{color:#fff;font-size:20px}.fa-intro p{font-size:13px;color:#94a3b8;max-width:640px;margin-top:4px}
   .tablet{width:900px;max-width:96vw;margin:0 auto;background:#000;border-radius:30px;padding:12px;box-shadow:0 40px 80px rgba(0,0,0,.5)}
   .tab-screen{background:#faf7f6;border-radius:20px;overflow:hidden;height:660px;display:flex;flex-direction:column;position:relative}
+  body.tblink #app_terrain{padding:0;min-height:100vh}
+  body.tblink .tablet{width:100%;max-width:none;margin:0;background:none;border-radius:0;padding:0;box-shadow:none}
+  body.tblink .tab-screen{height:100vh;height:100dvh;border-radius:0}
+  body.tblink .fa-intro{display:none}
   .tb-head{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #eee;background:#fff}
   .tb-head .logo2{font-weight:900;color:var(--brand);font-size:18px;letter-spacing:-.5px}
   .tb-head .tb-back{border:0;background:#f1f5f9;border-radius:10px;padding:8px 14px;font-weight:700;font-size:13px;display:flex;gap:6px;align-items:center}
@@ -1621,8 +1625,12 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'<div class="panel"><div class="pb" id="sup_list" style="min-height:280px"><div class="empty" style="padding:50px 20px;text-align:center">Chargement…</div></div></div>';
     supLoad();
   } else if(clientView==='wiki'){
-    m.innerHTML=topbar('Wiki & Aide','Tutoriels & support','')
-    +'<div class="cardgrid">'+[['','Guide HACCP','Bonnes pratiques & obligations'],['','Relevés de température','Comment bien relever'],['','Plan de nettoyage','Configurer zones & tâches'],['','Utiliser la tablette','Prise en main terrain'],['','Contacter le support','Réponse sous 2h'],['','Tutoriels vidéo','Tous les modules']].map(x=>'<div class="minicard" style="cursor:pointer" onclick="toast(\''+x[1]+' (démo)\')"><div class="mt">'+x[0]+' '+x[1]+'</div><div class="ms">'+x[2]+'</div></div>').join('')+'</div>';
+    m.innerHTML='<div class="topbar"><div style="display:flex;align-items:center;gap:14px"><div style="width:52px;height:52px;border-radius:14px;background:#0b1220;display:grid;place-items:center;font-size:24px">📖</div><div><h1>Wiki & Tutoriels</h1><div class="sub">Tout ce qu\'il faut savoir pour maîtriser votre espace Vigie.</div></div></div></div>'
+    +'<div style="display:flex;gap:16px;align-items:flex-start">'
+    +'<div style="flex:0 0 258px;max-width:258px" id="wiki_nav"></div>'
+    +'<div class="panel" style="flex:1;min-width:0"><div class="pb" id="wiki_body" style="padding:26px 30px"></div></div>'
+    +'</div>';
+    wikiRender();
   }
 }
 function topbar(t,s,a){return '<div class="topbar"><div><h1>'+t+'</h1><div class="sub">'+s+'</div></div><div class="actions">'+(a||'')+'</div></div>';}
@@ -3561,6 +3569,52 @@ function docDelFile(id){const d=state.documents.find(function(x){return x.id===i
     try{if(d.path&&SB)await SB.storage.from('docs').remove([d.path]);}catch(e){}
     const i=state.documents.findIndex(function(x){return x.id===id;});if(i>=0)state.documents.splice(i,1);
     renderClient('h_docs');toast('Fichier supprimé');});}
+/* ===== Wiki & Tutoriels ===== */
+let WIKI_ART='start',WIKI_Q='';
+const WIKI_CATS=[
+ {k:'prise',t:'Prise en main',e:'🚀',c:'#0b1220'},
+ {k:'haccp',t:'HACCP',e:'📋',c:'#16a34a'},
+ {k:'rh',t:'RH & Planning',e:'👥',c:'#3b82f6'},
+ {k:'fid',t:'Fidélisation',e:'❤️',c:'#ec4899'},
+ {k:'food',t:'Food Cost',e:'💲',c:'#8b5cf6'},
+ {k:'tab',t:'Tablette',e:'📱',c:'#475569'},
+ {k:'faq',t:'FAQ',e:'❓',c:'#f59e0b'},
+];
+const _wh=function(t){return '<h3 style="font-size:16px;margin:18px 0 8px">'+t+'</h3>';};
+const _wl=function(items){return '<ul style="margin:0;padding-left:2px;list-style:none">'+items.map(function(i){return '<li style="display:flex;gap:8px;margin:5px 0;font-size:13.5px;line-height:1.55;color:#334155"><span style="color:#94a3b8">·</span><span>'+i+'</span></li>';}).join('')+'</ul>';};
+const WIKI_ARTS=[
+ {id:'start',cat:'prise',t:'Bienvenue sur Vigie',s:'Comprendre la structure de votre espace et où trouver quoi.',b:function(){return '<p style="font-size:13.5px;line-height:1.6;color:#334155">Vigie regroupe dans un seul tableau de bord tous les outils dont votre restaurant a besoin : HACCP et hygiène, planning et badgeuse RH, food cost, fidélisation client et gestion de la tablette de terrain.</p>'+_wh('Structure du tableau de bord')+_wl(['La barre latérale gauche liste les modules auxquels vous avez accès. Cliquez sur une catégorie pour la déplier.','La Vue d\'ensemble affiche les indicateurs clés du jour.','Le sélecteur d\'établissement (en haut) permet de basculer si vous en gérez plusieurs.','« Paramètres du compte » regroupe logo, mot de passe, email et notifications.'])+_wh('Modules disponibles')+_wl(['<b>HACCP</b> : zones, équipements, friteuses, DLC, fournisseurs, documents, suivi et rapports.','<b>RH & Planning</b> : établissement, planning, historique des heures badgées.','<b>Fidélisation</b> : jeux, statistiques, données clients.','<b>Food Cost</b> : ingrédients, fiches techniques, marges.','<b>Tablette</b> : lien d\'accès, code établissement, modules activés.']);}},
+ {id:'compte',cat:'prise',t:'Gérer votre compte',s:'Logo, mot de passe, email et notifications.',b:function(){return _wh('Paramètres du compte')+_wl(['<b>Paramétrage</b> : ajoutez votre logo — il s\'applique automatiquement aux jeux de fidélité et à la tablette.','<b>Mot de passe</b> : saisissez l\'actuel puis le nouveau ; la modification est immédiate.','<b>Email</b> : un lien de confirmation est envoyé sur la nouvelle adresse.','<b>Sessions</b> : déconnectez les autres appareils en un clic.']);}},
+ {id:'tablink',cat:'prise',t:'Installer la tablette',s:'Le lien unique qui ouvre votre tablette de terrain.',b:function(){return '<p style="font-size:13.5px;line-height:1.6;color:#334155">Onglet <b>Tablette → Lien & Paramètres</b> : copiez le lien « Accès par navigateur » et ouvrez-le dans Chrome sur la tablette. Aucune connexion requise — le lien contient votre code établissement, fixe et propre à votre compte.</p>'+_wh('Bon à savoir')+_wl(['Ajoutez un code PIN pour verrouiller l\'accès en salle.','Désactivez un module (Badgeuse, HACCP, Fidélité) pour le masquer de la tablette.','« Tablette active » coupe l\'accès instantanément si besoin.','Ajoutez la page à l\'écran d\'accueil de la tablette pour un vrai plein écran.']);}},
+ {id:'temp',cat:'haccp',t:'Relevés de température',s:'Chaîne du froid et équipements chauds.',b:function(){return _wl(['Déclarez vos équipements dans <b>HACCP → Équipements</b> avec leurs seuils min/max.','Sur la tablette : HACCP → Chaîne du froid → saisissez chaque relevé.','Une température hors seuil déclenche une alerte et une action corrective à renseigner.','Tout remonte en temps réel dans <b>Suivi HACCP</b> et dans les rapports PDF.']);}},
+ {id:'clean',cat:'haccp',t:'Plan de nettoyage',s:'Zones, tâches et signatures.',b:function(){return _wl(['Configurez vos zones et tâches dans <b>HACCP → Zones & Tâches</b>.','Sur la tablette, l\'employé s\'identifie puis signe chaque nettoyage effectué.','Le back-office garde l\'historique signé (qui, quoi, quand).']);}},
+ {id:'dlc',cat:'haccp',t:'Étiquettes DLC & traçabilité',s:'Étiquetage secondaire et ouvertures produits.',b:function(){return _wl(['Créez vos produits et durées (ouvert / décongelé / fabriqué) dans <b>Étiquettes DLC</b>.','La tablette imprime l\'étiquette et calcule la DLC automatiquement.','Les ouvertures et productions maison sont tracées dans <b>Traçabilité</b>.']);}},
+ {id:'rapports',cat:'haccp',t:'Rapports & exports',s:'PDF prêts pour un contrôle.',b:function(){return _wl(['<b>Paramétrage rapports</b> choisit le contenu de vos rapports.','Chaque module propose son export PDF ou Excel (planning, heures, lots offerts, participations…).','En cas de contrôle sanitaire, exportez le rapport HACCP de la période demandée.']);}},
+ {id:'etab',cat:'rh',t:'Paramétrer votre établissement',s:'Postes, employés, congés et conventions.',b:function(){return _wl(['<b>Paramètres établissement</b> : convention collective, alertes heures légales, justification des badgeages, mode de décompte des congés.','<b>Postes</b> : créez vos postes avec une couleur (reprise dans le planning).','<b>Employés</b> : fiche complète (poste, contrat, contact, date d\'embauche), archivage réversible.','<b>Congés</b> : soldes CP / RTT / repos compensatoires, avec calcul automatique de l\'acquisition CP.']);}},
+ {id:'planning',cat:'rh',t:'Construire un planning',s:'Shifts favoris, glisser-déposer, export PDF.',b:function(){return _wl(['Créez des <b>shifts favoris</b> (Matin 9h-15h, Soir 18h-23h…) puis posez-les en 1 clic.','Cliquez une case vide pour créer un shift libre, glissez-déposez pour déplacer, ✕ pour retirer.','Les cases orange sont les pointages réels de la badgeuse.','Vues Jour / Semaine / Mois et export PDF datés.']);}},
+ {id:'heures',cat:'rh',t:'Badgeuse & historique des heures',s:'Pointages réels, corrections et récapitulatifs.',b:function(){return _wl(['Sur la tablette, chaque employé touche son nom : 1er badge = arrivée, 2e = départ.','<b>Historique heures</b> affiche le total par employé et par mois.','Cliquez « Détail » pour corriger un créneau, en supprimer ou en ajouter un manuellement.','Les heures badgées apparaissent aussi sur le planning, en face du planifié.']);}},
+ {id:'jeux',cat:'fid',t:'Créer et gérer vos jeux',s:'Roue, ticket à gratter, machine à sous, boîtes cadeaux.',b:function(){return _wl(['<b>Fidélisation → Jeux</b> : créez un jeu, choisissez son type et personnalisez le design (logo, couleurs, fond).','Onglet <b>Lots</b> : probabilités en %, total 100 %, lot « Perdu » automatique, test de probabilités sur 1000 tirages.','Onglet <b>Conditions</b> : montant minimum, délai minimum et délai maximum de récupération.','Onglet <b>Général</b> : actions marketing (avis Google, Instagram…) exigées avant de jouer.','Partagez le lien ou le QR du jeu ; le client gagne, laisse ses coordonnées et reçoit son QR de lot.']);}},
+ {id:'stats',cat:'fid',t:'Statistiques & données clients',s:'KPI, graphiques et exports.',b:function(){return _wl(['<b>Statistiques</b> : participations, joueurs uniques, lots gagnés, taux de gain, taux de récupération + graphiques d\'évolution et de répartition.','<b>Données clients</b> : toutes les participations (nom, email, téléphone, résultat, lot, statut) avec exports Excel et PDF.','Les lots remis sont comptabilisés pour votre comptable (export gratuités).']);}},
+ {id:'valider',cat:'fid',t:'Valider un lot en caisse',s:'Scan QR ou code manuel sur la tablette.',b:function(){return _wl(['Tablette → module <b>Fidélité</b> (visible si votre abonnement l\'inclut).','Scannez le QR du client avec la caméra, ou saisissez son code à 8 caractères.','La validation vérifie les conditions (délais, établissement) et passe le lot en « récupéré ».']);}},
+ {id:'food',cat:'food',t:'Fiches techniques & marges',s:'Coût matière et rentabilité.',b:function(){return _wl(['Créez vos ingrédients avec leurs prix d\'achat, puis composez vos recettes.','Vigie calcule le coût matière, la marge et alerte quand le ratio dépasse 30 %.','Ajoutez une photo à chaque fiche pour la cuisine.']);}},
+ {id:'tabmods',cat:'tab',t:'Modules de la tablette',s:'Badgeuse, HACCP, Fidélité.',b:function(){return _wl(['<b>Badgeuse</b> : pointage arrivée/départ, remonte dans le planning et l\'historique.','<b>HACCP</b> : les 6 briques terrain (températures, nettoyage, huiles, DLC, réceptions, traçabilité).','<b>Fidélité</b> : validation des lots gagnés par scan ou code.','Chaque module peut être masqué depuis le back-office sans toucher à l\'abonnement.']);}},
+ {id:'faq1',cat:'faq',t:'Questions fréquentes',s:'Les réponses aux questions les plus courantes.',b:function(){return _wh('La tablette ne charge pas ?')+_wl(['Vérifiez le lien (onglet Tablette) et la connexion internet, puis rechargez la page.'])+_wh('Un employé a oublié de badger ?')+_wl(['Historique heures → Détail → « Ajouter un créneau » pour saisir les heures manuellement.'])+_wh('Le logo n\'apparaît pas sur un jeu ?')+_wl(['Paramètres du compte → Paramétrage : le logo global s\'applique aux jeux sans logo propre.'])+_wh('Comment nous joindre ?')+_wl(['Wiki & Aide → <b>Contacter le support</b> : ouvrez un ticket (avec captures d\'écran), réponse directement dans votre espace.']);}},
+];
+function wikiRender(){const nav=document.getElementById('wiki_nav');if(!nav)return;
+  const q=(WIKI_Q||'').toLowerCase();
+  let h='<div class="panel" style="padding:12px"><input placeholder="🔍 Rechercher…" value="'+escH(WIKI_Q)+'" oninput="WIKI_Q=this.value;wikiRender()" style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--line);border-radius:10px;font-size:13px;margin-bottom:10px">';
+  WIKI_CATS.forEach(function(c){
+    const arts=WIKI_ARTS.filter(function(a){return a.cat===c.k&&(!q||(a.t+' '+a.s).toLowerCase().indexOf(q)>-1);});
+    if(!arts.length)return;
+    h+='<div style="display:flex;align-items:center;gap:7px;margin:12px 4px 5px"><span style="width:22px;height:22px;border-radius:7px;background:'+c.c+';display:grid;place-items:center;font-size:11px">'+c.e+'</span><span style="font-size:10.5px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#64748b">'+c.t+'</span></div>';
+    arts.forEach(function(a){h+='<div onclick="WIKI_ART=\''+a.id+'\';wikiRender()" style="padding:7px 10px;border-radius:9px;font-size:13px;cursor:pointer;'+(WIKI_ART===a.id?'background:#eef2f7;font-weight:700':'color:#334155')+'">'+a.t+'</div>';});
+  });
+  h+='</div>';nav.innerHTML=h;
+  const art=WIKI_ARTS.find(function(a){return a.id===WIKI_ART;})||WIKI_ARTS[0];
+  const cat=WIKI_CATS.find(function(c){return c.k===art.cat;})||{};
+  const body=document.getElementById('wiki_body');
+  if(body)body.innerHTML='<span class="chip" style="background:#f1f5f9;font-size:10px;letter-spacing:1px;text-transform:uppercase">'+cat.t+'</span>'
+   +'<h2 style="font-size:26px;margin:10px 0 6px">'+art.t+'</h2><div class="tsub" style="font-size:14px">'+art.s+'</div><hr style="border:none;border-top:1px solid var(--line);margin:16px 0">'+art.b();}
 /* ===== Support tickets ===== */
 const SUP_CATS=['Question','Bug / problème technique','Idée / amélioration','Facturation','Autre'];
 function supChip(st){return st==='closed'?'<span class="chip muted">Fermé</span>':st==='answered'?'<span class="chip ok">Répondu</span>':'<span class="chip" style="background:#dbeafe;color:#2563eb">Ouvert</span>';}
@@ -3570,28 +3624,61 @@ async function supLoad(){const box=document.getElementById('sup_list');if(!box)r
     if(error)throw error;
     if(!data||!data.length){box.innerHTML='<div style="text-align:center;padding:56px 20px"><div style="font-size:44px;color:#cbd5e1">💬</div><div style="color:#94a3b8;margin:10px 0 14px">Aucun ticket pour le moment.</div><a style="font-weight:700;cursor:pointer" onclick="supNewTicket()">Ouvrir votre premier ticket</a></div>';return;}
     box.innerHTML=data.map(function(t){const nr=(t.replies||[]).length;
-      return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="supOpenTicket(\''+t.id+'\')"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:15px">'+escH(t.subject)+'</b>'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div><div class="tsub" style="margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(t.message)+'</div>'+(nr?'<div class="tsub" style="margin-top:4px;color:#16a34a;font-weight:700">💬 '+nr+' réponse'+(nr>1?'s':'')+'</div>':'')+'</div>';}).join('');
+      const na=(t.attachments||[]).length;
+      return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer" onclick="supOpenTicket(\''+t.id+'\')"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b style="font-size:15px">'+escH(t.subject)+'</b>'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div><div class="tsub" style="margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escH(t.message)+'</div><div class="tsub" style="margin-top:4px">'+(na?'<span style="margin-right:10px">📎 '+na+' pièce'+(na>1?'s':'')+' jointe'+(na>1?'s':'')+'</span>':'')+(nr?'<span style="color:#16a34a;font-weight:700">💬 '+nr+' réponse'+(nr>1?'s':'')+'</span>':'')+'</div></div>';}).join('');
     window._SUP_ROWS=data;
   }catch(e){box.innerHTML='<div class="empty" style="padding:40px">Impossible de charger les tickets ('+escH(e.message||'erreur')+').</div>';}}
+async function supUpload(fileList,est){const out=[];const files=Array.prototype.slice.call(fileList||[]).slice(0,5);
+  for(const f of files){
+    if(f.size>5*1024*1024){toast('Fichier trop lourd (>5 Mo) : '+f.name);continue;}
+    let blob=f,ext=(f.name.split('.').pop()||'bin').toLowerCase(),ct=f.type||'application/octet-stream',isImg=/^image\//.test(f.type);
+    if(isImg){try{blob=await foodResizeImage(f,1200,0.85);ext='jpg';ct='image/jpeg';}catch(e){}}
+    const path=(est||CUR||'x')+'/support/'+Date.now()+'_'+Math.random().toString(36).slice(2,7)+'.'+ext;
+    const {error}=await SB.storage.from('docs').upload(path,blob,{contentType:ct});
+    if(error){toast('Erreur upload '+f.name+' : '+(error.message||''));continue;}
+    const {data}=SB.storage.from('docs').getPublicUrl(path);
+    out.push({name:f.name,url:(data&&data.publicUrl)||'',path:path,img:isImg});
+  }
+  return out;}
+function supAtts(list){if(!list||!list.length)return '';
+  return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'+list.map(function(a){
+    return a.img?'<a href="'+escH(a.url)+'" target="_blank" rel="noopener"><img src="'+escH(a.url)+'" style="width:74px;height:74px;object-fit:cover;border-radius:10px;border:1px solid #e2e8f0"></a>'
+      :'<a href="'+escH(a.url)+'" target="_blank" rel="noopener" class="chip" style="background:#f1f5f9;text-decoration:none">📎 '+escH(a.name)+'</a>';}).join('')+'</div>';}
 function supNewTicket(){
-  openForm('Nouveau ticket support',[{key:'subject',label:'Sujet',ph:'Ex. Problème d\'impression des étiquettes'},{key:'cat',label:'Catégorie',type:'select',options:SUP_CATS,value:SUP_CATS[0]},{key:'msg',label:'Votre message',type:'textarea',ph:'Décrivez votre question ou votre problème…'}],async function(v){
-    if(!v.subject.trim()||!v.msg.trim()){toast('Sujet et message obligatoires');return;}
-    try{let email='';try{const {data:{user}}=await SB.auth.getUser();email=(user&&user.email)||'';}catch(e){}
-      const c=state.clients.find(function(x){return x.id===CID;})||{};
-      const {error}=await SB.from('support_tickets').insert({est_code:CUR,est_name:c.name||CUR,email:email,subject:v.subject.trim(),category:v.cat,message:v.msg.trim()});
-      if(error)throw error;
-      toast('✓ Ticket envoyé — notre équipe vous répond ici');if(clientView==='support')supLoad();
-    }catch(e){toast('Erreur : '+(e.message||e));}});}
+  openInfoHTML('Nouveau ticket support',
+   '<div class="field"><label>Sujet</label><input id="sup_subj" placeholder="Ex. Problème d\'impression des étiquettes"></div>'
+   +'<div class="field"><label>Catégorie</label><select id="sup_cat">'+SUP_CATS.map(function(c){return '<option>'+c+'</option>';}).join('')+'</select></div>'
+   +'<div class="field"><label>Votre message</label><textarea id="sup_msg" rows="4" placeholder="Décrivez votre question ou votre problème…"></textarea></div>'
+   +'<div class="field"><label>Pièces jointes (optionnel)</label><input id="sup_files" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"><div class="tsub" style="font-size:11px;margin-top:4px">Photos, captures d\'écran, PDF, documents — 5 fichiers max, 5 Mo chacun</div><div id="sup_fprev" class="tsub" style="margin-top:6px"></div></div>'
+   +'<button class="btn block" id="sup_send" onclick="supSubmitTicket()" style="margin-top:6px">Envoyer le ticket</button>',560);
+  setTimeout(function(){const fi=document.getElementById('sup_files');if(fi)fi.onchange=function(){const p=document.getElementById('sup_fprev');if(p)p.textContent=Array.prototype.map.call(fi.files,function(f){return f.name;}).join(' · ');};},0);}
+async function supSubmitTicket(){
+  const subj=(document.getElementById('sup_subj')||{}).value||'',cat=(document.getElementById('sup_cat')||{}).value||'',msg=(document.getElementById('sup_msg')||{}).value||'';
+  if(!subj.trim()||!msg.trim()){toast('Sujet et message obligatoires');return;}
+  const btn=document.getElementById('sup_send');if(btn){btn.disabled=true;btn.textContent='Envoi en cours…';}
+  try{
+    const fi=document.getElementById('sup_files');
+    const atts=await supUpload(fi&&fi.files,CUR);
+    let email='';try{const {data:{user}}=await SB.auth.getUser();email=(user&&user.email)||'';}catch(e){}
+    const c=state.clients.find(function(x){return x.id===CID;})||{};
+    const {error}=await SB.from('support_tickets').insert({est_code:CUR,est_name:c.name||CUR,email:email,subject:subj.trim(),category:cat,message:msg.trim(),attachments:atts});
+    if(error)throw error;
+    const mask=document.getElementById('info_mask');if(mask)mask.classList.remove('on');
+    toast('✓ Ticket envoyé — notre équipe vous répond ici');if(clientView==='support')supLoad();
+  }catch(e){toast('Erreur : '+(e.message||e));if(btn){btn.disabled=false;btn.textContent='Envoyer le ticket';}}}
 function supOpenTicket(id){const t=(window._SUP_ROWS||[]).find(function(x){return x.id===id;});if(!t)return;
-  const thread=[{from:'client',text:t.message,at:t.created_at}].concat(t.replies||[]);
+  const thread=[{from:'client',text:t.message,at:t.created_at,attachments:t.attachments||[]}].concat(t.replies||[]);
   openInfoHTML(t.subject,
    '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div>'
-   +thread.map(function(r){const me=r.from!=='support';return '<div style="margin-bottom:10px;text-align:'+(me?'right':'left')+'"><div style="display:inline-block;max-width:85%;text-align:left;background:'+(me?'#0b1220':'#f1f5f9')+';color:'+(me?'#fff':'#0b1220')+';padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap">'+escH(r.text)+'</div><div class="tsub" style="font-size:10.5px;margin-top:3px">'+(me?'Vous':'Support Vigie')+' · '+supDT(r.at)+'</div></div>';}).join('')
-   +(t.status!=='closed'?'<div style="display:flex;gap:8px;margin-top:14px"><input id="sup_reply" placeholder="Répondre…" style="flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:10px" onkeydown="if(event.key===\'Enter\')supReply(\''+t.id+'\')"><button class="btn" onclick="supReply(\''+t.id+'\')">Envoyer</button></div>':'<div class="tsub" style="margin-top:12px;text-align:center">Ticket fermé.</div>'),560);}
-async function supReply(id){const inp=document.getElementById('sup_reply');const txt=(inp&&inp.value||'').trim();if(!txt)return;
+   +thread.map(function(r){const me=r.from!=='support';return '<div style="margin-bottom:10px;text-align:'+(me?'right':'left')+'"><div style="display:inline-block;max-width:85%;text-align:left;background:'+(me?'#0b1220':'#f1f5f9')+';color:'+(me?'#fff':'#0b1220')+';padding:9px 13px;border-radius:14px;font-size:13.5px;line-height:1.5;white-space:pre-wrap">'+escH(r.text)+supAtts(r.attachments)+'</div><div class="tsub" style="font-size:10.5px;margin-top:3px">'+(me?'Vous':'Support Vigie')+' · '+supDT(r.at)+'</div></div>';}).join('')
+   +(t.status!=='closed'?'<div style="display:flex;gap:6px;margin-top:14px;align-items:center"><input id="sup_reply" placeholder="Répondre…" style="flex:1;min-width:0;padding:10px 12px;border:1px solid var(--line);border-radius:10px" onkeydown="if(event.key===\'Enter\')supReply(\''+t.id+'\')"><label class="btn ghost sm" style="cursor:pointer" title="Joindre un fichier">📎<input id="sup_rfiles" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none" onchange="var b=document.getElementById(\'sup_rbadge\');if(b)b.textContent=this.files.length?\'📎 \'+this.files.length:\'\'"></label><span id="sup_rbadge" class="tsub" style="font-weight:700"></span><button class="btn" onclick="supReply(\''+t.id+'\')">Envoyer</button></div>':'<div class="tsub" style="margin-top:12px;text-align:center">Ticket fermé.</div>'),560);}
+async function supReply(id){const inp=document.getElementById('sup_reply');const txt=(inp&&inp.value||'').trim();
+  const fi=document.getElementById('sup_rfiles');const hasF=fi&&fi.files&&fi.files.length;
+  if(!txt&&!hasF)return;
   const t=(window._SUP_ROWS||[]).find(function(x){return x.id===id;});if(!t)return;
-  const reps=(t.replies||[]).concat([{from:'client',text:txt,at:new Date().toISOString()}]);
-  try{const {error}=await SB.from('support_tickets').update({replies:reps,status:'open',updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;
+  try{const atts=hasF?await supUpload(fi.files,CUR):[];
+    const reps=(t.replies||[]).concat([{from:'client',text:txt||'(pièce jointe)',at:new Date().toISOString(),attachments:atts}]);
+    const {error}=await SB.from('support_tickets').update({replies:reps,status:'open',updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;
     t.replies=reps;t.status='open';supOpenTicket(id);supLoad();
   }catch(e){toast('Erreur : '+(e.message||e));}}
 /* — côté admin — */
@@ -3602,15 +3689,18 @@ async function supAdmLoad(){const box=document.getElementById('supadm_list');if(
     const rows=(window._SUPADM||[]).filter(function(t){return !f||t.status===f;});
     box.innerHTML=(rows.length?rows.map(function(t){
       return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>'+escH(t.subject)+'</b>'+supChip(t.status)+(t.category?'<span class="chip" style="background:#f1f5f9">'+escH(t.category)+'</span>':'')+'<span class="chip" style="background:#eef2f7">'+escH(t.est_name||t.est_code)+'</span><span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div>'
-      +'<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">'+escH(t.message)+'</div>'
-      +((t.replies||[]).length?'<div style="margin-top:8px;border-left:3px solid #e2e8f0;padding-left:10px">'+(t.replies||[]).map(function(r){return '<div class="tsub" style="margin-bottom:4px"><b>'+(r.from==='support'?'Support':'Client')+'</b> · '+supDT(r.at)+' — '+escH(r.text)+'</div>';}).join('')+'</div>':'')
-      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><input id="supadm_r_'+t.id+'" placeholder="Répondre au client…" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--line);border-radius:10px"><button class="btn sm" onclick="supAdmReply(\''+t.id+'\')">Répondre</button>'
+      +'<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">'+escH(t.message)+'</div>'+supAtts(t.attachments)
+      +((t.replies||[]).length?'<div style="margin-top:8px;border-left:3px solid #e2e8f0;padding-left:10px">'+(t.replies||[]).map(function(r){return '<div class="tsub" style="margin-bottom:4px"><b>'+(r.from==='support'?'Support':'Client')+'</b> · '+supDT(r.at)+' — '+escH(r.text)+supAtts(r.attachments)+'</div>';}).join('')+'</div>':'')
+      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><input id="supadm_r_'+t.id+'" placeholder="Répondre au client…" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--line);border-radius:10px"><label class="btn ghost sm" style="cursor:pointer" title="Joindre un fichier">📎<input id="supadm_f_'+t.id+'" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none" onchange="var b=document.getElementById(\'supadm_b_'+t.id+'\');if(b)b.textContent=this.files.length?\'📎 \'+this.files.length:\'\'"></label><span id="supadm_b_'+t.id+'" class="tsub" style="font-weight:700"></span><button class="btn sm" onclick="supAdmReply(\''+t.id+'\')">Répondre</button>'
       +(t.status!=='closed'?'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'closed\')">Fermer</button>':'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'open\')">Rouvrir</button>')+'</div></div>';}).join(''):'<div class="empty" style="padding:40px;text-align:center">Aucun ticket'+(f?' « '+f+' »':'')+'.</div>');
   }catch(e){box.innerHTML='<div class="empty" style="padding:40px">Erreur : '+escH(e.message||'')+'</div>';}}
-async function supAdmReply(id){const inp=document.getElementById('supadm_r_'+id);const txt=(inp&&inp.value||'').trim();if(!txt)return;
+async function supAdmReply(id){const inp=document.getElementById('supadm_r_'+id);const txt=(inp&&inp.value||'').trim();
+  const fi=document.getElementById('supadm_f_'+id);const hasF=fi&&fi.files&&fi.files.length;
+  if(!txt&&!hasF)return;
   const t=(window._SUPADM||[]).find(function(x){return x.id===id;});if(!t)return;
-  const reps=(t.replies||[]).concat([{from:'support',text:txt,at:new Date().toISOString()}]);
-  try{const {error}=await SB.from('support_tickets').update({replies:reps,status:'answered',updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;toast('Réponse envoyée');supAdmLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
+  try{const atts=hasF?await supUpload(fi.files,t.est_code):[];
+    const reps=(t.replies||[]).concat([{from:'support',text:txt||'(pièce jointe)',at:new Date().toISOString(),attachments:atts}]);
+    const {error}=await SB.from('support_tickets').update({replies:reps,status:'answered',updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;toast('Réponse envoyée');supAdmLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
 async function supAdmStatus(id,st){try{const {error}=await SB.from('support_tickets').update({status:st,updated_at:new Date().toISOString()}).eq('id',id);if(error)throw error;supAdmLoad();}catch(e){toast('Erreur : '+(e.message||e));}}
 function docDupFolder(id){const f=state.docFolders.find(function(x){return x.id===id;});if(!f)return;
   const nf={id:'fld'+Date.now(),clientId:CID,name:f.name+' (copie)'};
@@ -4004,6 +4094,7 @@ async function startTabletLink(code){
     SYNC.lastStr=JSON.stringify(serializeState());
     const intro=document.getElementById('tb_intro');if(intro)intro.style.display='none';
     document.body.style.background='#0b1220';
+    document.body.classList.add('tblink');
     go('app_terrain');tbInit();
     SYNCTIMER=setInterval(function(){const s=JSON.stringify(serializeState());if(s!==SYNC.lastStr){SYNC.lastStr=s;estSave();}},1500);
   }catch(e){document.body.innerHTML='<div style="padding:80px 20px;text-align:center">Connexion impossible — vérifiez votre réseau puis rechargez la page.</div>';}
