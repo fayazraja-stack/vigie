@@ -627,6 +627,7 @@ window.VIGIE_SYNC = {
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 
 <script>
 /* ============ DATA ============ */
@@ -1489,10 +1490,9 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'<div id="fid_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
     fidLoad();
   } else if(clientView==='crm'){
-    m.innerHTML=topbar('Données clients','Coordonnées collectées via vos jeux — exportable','<button class="btn ghost" onclick="crmExport()">↓ Export Excel</button>')
-    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="crm_search" placeholder="Rechercher (nom, email, téléphone…)" oninput="crmFilter()"></div></div>'
+    m.innerHTML=topbar('Données clients','Consultez toutes les participations et gérez les gains','<button class="btn ghost" onclick="crmExport()">↓ Export Excel</button> <button class="btn ghost" onclick="crmPdf()">↓ Export PDF</button>')
     +'<div id="crm_body"><div class="empty" style="padding:24px">Chargement…</div></div>'
-    +helpBox([['Collecte automatique','chaque joueur qui gagne un lot renseigne nom, téléphone et email avant de voir son gain.'],['Exploitez la base','exportez en Excel pour vos campagnes SMS ou emailing.'],['Suivi des lots','la colonne statut indique si le lot a déjà été remis en caisse.']]);
+    +helpBox([['Collecte automatique','chaque joueur renseigne nom, téléphone et email — qu\'il gagne ou qu\'il perde.'],['QR du lot','le bouton QR de chaque ligne en attente réaffiche le QR code du gagnant pour valider sa remise.'],['Exploitez la base','exportez en Excel pour vos campagnes SMS / emailing, ou en PDF pour vos archives.']]);
     crmLoad();
   } else if(clientView==='tablet'){
     m.innerHTML=topbar('Tablette','Lien & paramètres de la tablette terrain','<button class="btn" onclick="go(\'app_terrain\')"> Ouvrir la tablette</button>')
@@ -1552,22 +1552,73 @@ function fidExportLeads(){const leads=FID_WINS.filter(function(w){return w.custo
 let CRM_ROWS=[];
 async function crmLoad(){
   const body=document.getElementById('crm_body');if(!body)return;if(!SB||!CUR){body.innerHTML='<div class="empty" style="padding:24px">Indisponible.</div>';return;}
-  try{const {data}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(2000);
-    CRM_ROWS=(data||[]).filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});crmRender();
+  try{
+    const {data}=await SB.from('fid_wins').select('*').eq('est_code',CUR).order('created_at',{ascending:false}).limit(2000);
+    CRM_ROWS=data||[];
+    const {data:gs}=await SB.from('fid_games').select('id,name').eq('est_code',CUR);
+    CRM_GAMES=gs||[];
+    crmRender();
   }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b91c1c">Erreur : '+escH(e.message||e)+'</div>';}
+}
+let CRM_GAMES=[];let CRM_F={q:'',game:'',status:''};
+function crmGameName(id){const g=CRM_GAMES.find(function(x){return x.id===id;});return g?g.name:'';}
+function crmSetF(k,v){CRM_F[k]=v;crmRender();}
+function crmFiltered(){
+  const q=(CRM_F.q||'').toLowerCase().trim();
+  return CRM_ROWS.filter(function(w){
+    if(CRM_F.game&&w.game_id!==CRM_F.game)return false;
+    if(CRM_F.status==='pending'&&w.status!=='pending')return false;
+    if(CRM_F.status==='redeemed'&&w.status!=='redeemed')return false;
+    if(CRM_F.status==='lost'&&w.status!=='lost')return false;
+    if(q){const s=((w.customer_name||'')+' '+(w.customer_email||'')+' '+(w.customer_phone||'')+' '+(w.prize||'')+' '+(w.token||'')).toLowerCase();if(s.indexOf(q)<0)return false;}
+    return true;});
 }
 function crmRender(){
   const body=document.getElementById('crm_body');if(!body)return;
-  if(!CRM_ROWS.length){body.innerHTML='<div class="empty" style="padding:40px 20px">Aucune donnée client pour le moment. Les coordonnées saisies par les joueurs (nom, téléphone, email) apparaîtront ici automatiquement.</div>';return;}
-  body.innerHTML='<div class="panel"><div class="ph"><h3>'+CRM_ROWS.length+' contact(s)</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot gagné</th><th>Statut</th><th>Date</th></tr></thead><tbody id="crm_tbody">'
-   +CRM_ROWS.map(function(w){return '<tr data-s="'+escH(((w.customer_name||'')+' '+(w.customer_email||'')+' '+(w.customer_phone||'')).toLowerCase())+'"><td class="tname">'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td><td>'+escH(w.prize||'')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">lot remis</span>':'<span class="chip warn">à remettre</span>')+'</td><td class="tsub">'+veFmtDate(w.claimed_at||w.created_at)+'</td></tr>';}).join('')
-   +'</tbody></table></div></div>';
+  const all=CRM_ROWS;
+  const parts=all.length, gagnes=all.filter(function(w){return w.status!=='lost';}).length,
+        recup=all.filter(function(w){return w.status==='redeemed';}).length, att=all.filter(function(w){return w.status==='pending';}).length;
+  const rows=crmFiltered();
+  const chipRes=function(w){return w.status==='lost'?'<span class="chip muted">PERDU</span>':'<span class="chip ok">GAGNÉ</span>';};
+  const chipSt=function(w){return w.status==='redeemed'?'<span class="chip ok">RÉCUPÉRÉ</span>':w.status==='pending'?'<span class="chip warn">EN ATTENTE</span>':'<span class="chip muted">PERDU</span>';};
+  let html='<div class="kpis">'
+   +kpi('Total participations',parts,'parties enregistrées','up')
+   +kpi('Lots gagnés',gagnes,'au total','up')
+   +kpi('Lots récupérés',recup,'validés en caisse','up')
+   +kpi('En attente',att,'à remettre','up')+'</div>';
+  html+='<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Filtres</h3></div><div class="pb"><div style="display:flex;gap:10px;flex-wrap:wrap">'
+   +'<div style="flex:1;min-width:180px"><label style="font-size:11px;color:#94a3b8;font-weight:700">RECHERCHE</label><input value="'+escH(CRM_F.q)+'" placeholder="Rechercher…" oninput="crmSetF(\'q\',this.value)" style="width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px"></div>'
+   +'<div style="min-width:170px"><label style="font-size:11px;color:#94a3b8;font-weight:700">JEU</label><select onchange="crmSetF(\'game\',this.value)" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les jeux</option>'+CRM_GAMES.map(function(g){return '<option value="'+g.id+'"'+(CRM_F.game===g.id?' selected':'')+'>'+escH(g.name)+'</option>';}).join('')+'</select></div>'
+   +'<div style="min-width:170px"><label style="font-size:11px;color:#94a3b8;font-weight:700">STATUT</label><select onchange="crmSetF(\'status\',this.value)" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px"><option value="">Tous les statuts</option><option value="pending"'+(CRM_F.status==='pending'?' selected':'')+'>En attente</option><option value="redeemed"'+(CRM_F.status==='redeemed'?' selected':'')+'>Récupéré</option><option value="lost"'+(CRM_F.status==='lost'?' selected':'')+'>Perdu</option></select></div>'
+   +'</div></div></div>';
+  html+='<div class="panel"><div class="ph"><h3>Participations ('+rows.length+')</h3><div class="sub">Consultez toutes les participations et gérez les gains</div><button class="btn ghost sm" onclick="crmExport()">Exporter CSV</button></div><div class="pb" style="padding:0;overflow:auto">'
+   +(rows.length?('<table><thead><tr><th>Date</th><th>Jeu</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Résultat</th><th>Lot</th><th>Statut</th><th></th></tr></thead><tbody>'
+     +rows.map(function(w){
+       return '<tr><td class="tsub">'+veFmtDate(w.created_at)+'</td><td>'+escH(crmGameName(w.game_id))+'</td><td class="tname">'+escH(w.customer_name||'—')+'</td><td class="tsub">'+escH(w.customer_email||'—')+'</td><td class="tsub">'+escH(w.customer_phone||'—')+'</td>'
+        +'<td>'+chipRes(w)+'</td><td>'+(w.status==='lost'?'—':escH(w.prize||''))+'</td><td>'+chipSt(w)+'</td>'
+        +'<td>'+(w.status==='pending'?'<button class="btn ghost sm" title="QR du lot" onclick="crmShowQR(\''+escH(w.token)+'\',\''+escH((w.prize||'').replace(/'/g,''))+'\')">QR</button>':'')+'</td></tr>';}).join('')
+     +'</tbody></table>'):'<div class="empty" style="padding:36px 20px">Aucune participation ne correspond aux filtres.</div>')
+   +'</div></div>';
+  body.innerHTML=html;
 }
-function crmFilter(){const q=((document.getElementById('crm_search')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#crm_tbody tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
-function crmExport(){if(!CRM_ROWS.length){toast('Aucune donnée à exporter');return;}
-  const rows=[['Nom','Email','Telephone','Lot','Statut','Date']];
-  CRM_ROWS.forEach(function(w){rows.push([w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
-  const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='base-clients.csv';a.click();}
+function crmShowQR(token,prize){const link=fidBase()+'?lot='+token;
+  openInfoHTML('QR du lot — '+prize,'<div style="text-align:center">'+qrImg(link,190)+'<div class="tsub" style="margin-top:8px;font-family:ui-monospace,monospace;letter-spacing:2px">Code : <b>'+escH(token)+'</b></div><div class="tsub" style="font-size:12px;margin-top:8px">Scannez ou ouvrez ce lien pour valider la remise du lot.</div></div>');}
+function crmExport(){const rows=crmFiltered();if(!rows.length){toast('Aucune donnée à exporter');return;}
+  const out=[['Date','Jeu','Prenom','Email','Telephone','Resultat','Lot','Statut','Code']];
+  rows.forEach(function(w){out.push([veFmtDate(w.created_at),crmGameName(w.game_id),w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.status==='lost'?'Perdu':'Gagne',w.status==='lost'?'':(w.prize||''),w.status==='redeemed'?'Recupere':w.status==='pending'?'En attente':'Perdu',w.token||'']);});
+  const csv='\ufeff'+out.map(function(r){return r.map(csvCell).join(';');}).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='participations-clients.csv';a.click();}
+function crmPdf(){const rows=crmFiltered();if(!rows.length){toast('Aucune donn\u00e9e \u00e0 exporter');return;}
+  const est=(state.clients.find(function(c){return c.est_code===CUR;})||{});
+  const trs=rows.map(function(w){
+    const res=w.status==='lost'?'Perdu':'Gagn\u00e9';
+    const st=w.status==='redeemed'?'R\u00e9cup\u00e9r\u00e9':w.status==='pending'?'En attente':'Perdu';
+    return '<tr><td>'+veFmtDate(w.created_at)+'</td><td>'+escH(crmGameName(w.game_id))+'</td><td>'+escH(w.customer_name||'\u2014')+'</td><td>'+escH(w.customer_email||'\u2014')+'</td><td>'+escH(w.customer_phone||'\u2014')+'</td><td>'+res+'</td><td>'+(w.status==='lost'?'\u2014':escH(w.prize||''))+'</td><td>'+st+'</td><td style="font-family:monospace">'+escH(w.token||'')+'</td></tr>';}).join('');
+  const w=window.open('','_blank');if(!w){toast('Autorisez les pop-ups pour g\u00e9n\u00e9rer le PDF');return;}
+  w.document.write('<html><head><title>Participations \u2014 '+escH(est.name||CUR)+'</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:28px;color:#0b1220}h1{font-size:19px;margin:0}table{width:100%;border-collapse:collapse;font-size:11.5px;margin-top:16px}th,td{border:1px solid #cbd5e1;padding:5px 7px;text-align:left}th{background:#f1f5f9}.sub{color:#64748b;font-size:12px;margin-top:4px}</style></head><body>'
+   +'<h1>Donn\u00e9es clients \u2014 participations aux jeux</h1><div class="sub">'+escH(est.name||'')+' \u2014 \u00c9dit\u00e9 le '+new Date().toLocaleDateString('fr-FR')+' \u2014 '+rows.length+' participation(s)</div>'
+   +'<table><thead><tr><th>Date</th><th>Jeu</th><th>Pr\u00e9nom</th><th>Email</th><th>T\u00e9l\u00e9phone</th><th>R\u00e9sultat</th><th>Lot</th><th>Statut</th><th>Code</th></tr></thead><tbody>'+trs+'</tbody></table>'
+   +'<div class="sub" style="margin-top:16px">Document g\u00e9n\u00e9r\u00e9 par Vigie.</div></body></html>');
+  w.document.close();setTimeout(function(){try{w.print();}catch(e){}},400);}
 /* ---- Base de données client (admin, tous établissements) ---- */
 let ACRM_ROWS=[];
 function adminEstName(code){const c=(state.clients||[]).find(function(x){return x.est_code===code;});return c?cliName(c):code;}
@@ -1823,7 +1874,8 @@ function fidRenderBody(){
   let html='';
   if(clientView==='fid_stats'){
     const leads=FID_WINS.filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});
-    html='<div class="kpis">'+kpi('Jeux actifs',actifs,'sur '+FID_GAMES.length,'up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots remis',redeemed,'validés en caisse','up')+kpi('Contacts collectés',leads.length,'dans la base clients','up')+'</div>';
+    html='<div class="kpis">'+kpi('Total participations',FID_WINS.length,'parties enregistrées','up')+kpi('Lots gagnés',totalWins,'au total','up')+kpi('Lots récupérés',redeemed,'validés en caisse','up')+kpi('En attente',pending,'à remettre','up')+'</div>';
+    html+='<div class="kpis">'+kpi('Jeux actifs',actifs,'sur '+FID_GAMES.length,'up')+kpi('Contacts collectés',leads.length,'dans la base clients','up')+'</div>';
     html+='<div class="panel"><div class="ph"><h3>Détail par jeu</h3></div><div class="pb" style="padding:0">'+(FID_GAMES.length?('<table><thead><tr><th>Jeu</th><th>Type</th><th>Lots gagnés</th><th>Remis</th><th>En attente</th><th>Taux de remise</th></tr></thead><tbody>'
       +FID_GAMES.map(function(g){const ws=fidWinsFor(g.id);const rd=ws.filter(function(w){return w.status==='redeemed';}).length;const pd=ws.length-rd;const tx=ws.length?Math.round(rd/ws.length*100):0;const cfg=g.config||{};
         return '<tr><td class="tname">'+escH(g.name)+'</td><td><span class="chip muted">'+fidTypeName(cfg.gameType)+'</span></td><td>'+ws.length+'</td><td>'+rd+'</td><td>'+(pd?'<span class="chip warn">'+pd+'</span>':'0')+'</td><td><span class="chip '+(tx>=50?'ok':'muted')+'">'+tx+'%</span></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:30px">Aucun jeu pour le moment.</div>')+'</div></div>';
@@ -2524,6 +2576,7 @@ function tbBack(){const p=tbStack.pop();tbRender(p||'modules',true);}
 function tbHome(){tbStack=[];tbRender(tbUser?'haccp':'modules');}
 let tbCurrent='modules',tbCat='froid';
 function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body');const back=document.getElementById('tb_back');const foot=document.getElementById('tb_foot');
+  if(s!=='fidval'&&typeof tbFidScanStop==='function')tbFidScanStop(false);
   document.getElementById('tb_est').textContent=state.clients.find(c=>c.id===CID).name;
   back.style.display=(s==='modules')?'none':'inline-flex';
   foot.style.display=(s==='modules'||s==='identify')?'none':'flex';
@@ -2532,12 +2585,16 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     b.innerHTML='<div class="tb-title-k">Tablette opérationnelle</div><div class="tb-title">Choisissez un module</div><div class="modgrid">'
     +'<div class="modcard" onclick="tbGo(\'badge\')"><div class="k">● Module</div><h3>Badgeuse</h3><p>Pointage arrivée / départ des employés.</p><div class="arr">Ouvrir →</div></div>'
     +'<div class="modcard" onclick="tbGo(\'identify\')"><div class="k">● Module</div><h3>HACCP</h3><p>Hygiène & sécurité alimentaire.</p><div class="arr">Ouvrir →</div></div>'
-    +'<div class="modcard" onclick="tbGo(\'fidval\')"><div class="k">● Module</div><h3>Fidélité</h3><p>Valider le lot gagné d\'un client (code du QR).</p><div class="arr">Ouvrir →</div></div>'
+    +(modOn('fid')?'<div class="modcard" onclick="tbGo(\'fidval\')"><div class="k">● Module</div><h3>Fidélité</h3><p>Valider le lot gagné d\'un client (scan ou code).</p><div class="arr">Ouvrir →</div></div>':'')
     +'</div>';
   } else if(s==='fidval'){
+    if(!modOn('fid')){b.innerHTML='<div class="empty" style="padding:40px 20px">Le module Fidélité n\'est pas activé pour cet établissement.</div>';return;}
     b.innerHTML='<div class="tb-title-k">Fidélité</div><div class="tb-title" style="margin-bottom:18px">Valider un lot</div>'
-    +'<div style="max-width:520px;margin:0 auto"><div class="field"><label>Code du lot (présenté par le client)</label><input id="tbf_code" placeholder="EX. 7KQ2M9AB" autocomplete="off" style="text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:3px;font-size:20px;text-align:center;padding:14px" onkeydown="if(event.key===\'Enter\')tbFidCheck()"></div>'
-    +'<button class="btn block" onclick="tbFidCheck()">Vérifier le code</button>'
+    +'<div style="max-width:520px;margin:0 auto">'
+    +'<div id="tbf_scan" style="margin-bottom:16px;text-align:center"><button class="btn block" onclick="tbFidScanStart()">Scanner le QR code du client</button></div>'
+    +'<div style="text-align:center;color:var(--muted);font-size:12px;margin-bottom:12px">— ou saisissez le code manuellement —</div>'
+    +'<div class="field"><label>Code du lot (présenté par le client)</label><input id="tbf_code" placeholder="EX. 7KQ2M9AB" autocomplete="off" style="text-transform:uppercase;font-family:ui-monospace,monospace;letter-spacing:3px;font-size:20px;text-align:center;padding:14px" onkeydown="if(event.key===\'Enter\')tbFidCheck()"></div>'
+    +'<button class="btn ghost block" onclick="tbFidCheck()">Vérifier le code</button>'
     +'<div id="tbf_out" style="margin-top:16px"></div></div>';
   } else if(s==='badge'){
     b.innerHTML='<div class="tb-title-k">Badgeuse</div><div class="tb-title">Qui pointe ?</div><div class="emp-grid">'
@@ -2756,6 +2813,47 @@ function rhHeuresExport(){const cid=CID;const rows=state.employees.filter(e=>e.c
   _simplePdf('Historique des heures',new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})+' - Convention '+state.rhCfg.convention,['Employe','Poste','Total heures','Jours'],[40,210,360,470],[26,20,16,10],rows,'historique-heures-vigie.pdf');}
 function h6(go,k,title,desc,bg,cnt){return '<div class="h6" style="background:'+bg+'" onclick="tbGo(\''+go+'\')"><div class="ic">'+({temp:'',clean:'',oil:'',dlclabel:'',recep:'',trace:''})[go]+'</div><div class="k">'+k+'</div><h3>'+title+'</h3><p>'+desc+'</p><div class="arr">→</div>'+(cnt?'<div class="cnt"> '+cnt+'</div>':'')+'</div>';}
 function tbFidEst(){const c=state.clients.find(function(x){return x.id===CID;})||{};return c.est_code||window.CUR||'';}
+let TBF_STREAM=null,TBF_TMR=null;
+async function tbFidScanStart(){
+  const zone=document.getElementById('tbf_scan');if(!zone)return;
+  zone.innerHTML='<video id="tbf_video" playsinline muted style="width:100%;max-width:420px;border-radius:14px;background:#000;aspect-ratio:4/3;object-fit:cover"></video><canvas id="tbf_cv" hidden></canvas>'
+   +'<div style="margin-top:8px"><button class="btn ghost sm" onclick="tbFidScanStop(true)">Arrêter la caméra</button></div>'
+   +'<div id="tbf_scanmsg" class="tsub" style="margin-top:6px">Visez le QR code du client…</div>';
+  try{
+    TBF_STREAM=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const v=document.getElementById('tbf_video');if(!v){tbFidScanStop(false);return;}
+    v.srcObject=TBF_STREAM;await v.play();
+    let det=null;try{if('BarcodeDetector' in window)det=new BarcodeDetector({formats:['qr_code']});}catch(e){det=null;}
+    const cv=document.getElementById('tbf_cv');const ctx=cv?cv.getContext('2d',{willReadFrequently:true}):null;
+    const tick=async function(){
+      if(!TBF_STREAM)return;
+      const v2=document.getElementById('tbf_video');
+      if(!v2){tbFidScanStop(false);return;}
+      if(v2.readyState>=2){
+        let raw='';
+        try{
+          if(det){const codes=await det.detect(v2);if(codes&&codes.length)raw=codes[0].rawValue||'';}
+          else if(window.jsQR&&ctx){cv.width=v2.videoWidth;cv.height=v2.videoHeight;ctx.drawImage(v2,0,0);const d=ctx.getImageData(0,0,cv.width,cv.height);const c=jsQR(d.data,d.width,d.height);if(c)raw=c.data||'';}
+        }catch(e){}
+        if(raw){tbFidScanStop(true);tbFidScanned(raw);return;}
+      }
+      TBF_TMR=setTimeout(tick,250);
+    };
+    tick();
+  }catch(e){tbFidScanStop(false);zone.innerHTML='<div style="background:#fde7ec;border-radius:12px;padding:12px;color:#be123c;font-size:13px;text-align:center">Caméra indisponible ou accès refusé. Saisissez le code manuellement ci-dessous.</div><div style="margin-top:8px"><button class="btn ghost sm" onclick="tbFidScanStart()">Réessayer</button></div>';}
+}
+function tbFidScanStop(resetUi){
+  if(TBF_TMR){clearTimeout(TBF_TMR);TBF_TMR=null;}
+  if(TBF_STREAM){try{TBF_STREAM.getTracks().forEach(function(t){t.stop();});}catch(e){}TBF_STREAM=null;}
+  if(resetUi){const z=document.getElementById('tbf_scan');if(z)z.innerHTML='<button class="btn block" onclick="tbFidScanStart()">Scanner le QR code du client</button>';}
+}
+function tbFidScanned(raw){
+  let tok=String(raw||'').trim();
+  try{const u=new URL(tok);const p=u.searchParams.get('lot');if(p)tok=p;}catch(e){const m=tok.match(/[?&]lot=([A-Za-z0-9]+)/);if(m)tok=m[1];}
+  const el=document.getElementById('tbf_code');if(el)el.value=tok.toUpperCase();
+  if(window.toast)toast('QR code scanné');
+  tbFidCheck();
+}
 async function tbFidCheck(){
   const el=document.getElementById('tbf_code');const out=document.getElementById('tbf_out');if(!el||!out)return;
   const t=(el.value||'').trim().toUpperCase();if(!t){out.innerHTML='';return;}
