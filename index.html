@@ -3175,6 +3175,7 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     b.innerHTML='<div class="tb-title-k">Badgeuse</div><div class="tb-title">Qui pointe ?</div><div class="emp-grid">'
     +state.employees.filter(e=>e.clientId===cid&&e.active!==false).map(e=>{const open=rhOpenBadge(cid,e.id||e.name);
       return '<div class="emp" onclick="tbBadgeWho(\''+e.id+'\')"><div class="av"'+(open?' style="box-shadow:0 0 0 3px #34d399"':'')+'>'+e.ini+'</div><div class="nm">'+e.name.split(' ')[0]+'</div><div class="rl">'+(open?'<span class="chip ok">présent · '+fmtTime(new Date(open.at))+'</span>':'<span class="chip muted">'+e.role+'</span>')+'</div></div>';}).join('')+'</div>'
+    +tbHistBtn('badge')
     +'<div class="tsub" style="text-align:center;margin-top:14px">Touchez votre nom, puis choisissez Arrivée ou Départ. Les heures remontent automatiquement dans le planning et l\'historique.</div>';
   } else if(s==='badgeact'){
     const e=state.employees.find(x=>x.id===tbBadgeUser)||{};
@@ -3257,20 +3258,20 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
   } else if(s==='clean'){
     const tasks=state.postes.filter(p=>p.clientId===cid);const zones=[...new Set(tasks.map(t=>t.zone))];
     b.innerHTML='<div class="tb-title-k">Plan de nettoyage</div><div class="tb-title" style="margin-bottom:18px">Nettoyages des postes</div>'
-    +'<div style="max-width:760px;margin:0 auto">'+tbDateField(1)+'</div>'
+    +'<div style="max-width:760px;margin:0 auto">'+tbHistBtn('clean')+tbDateField(1)+'</div>'
     +zones.map(z=>'<div style="font-weight:800;color:var(--muted);font-size:13px;margin:14px 2px 8px"> '+z.toUpperCase()+'</div><div class="tlist">'+tasks.filter(t=>t.zone===z).map(t=>'<div class="row '+(t.done?'done':'')+'" onclick="tbToggleClean(\''+t.id+'\')"><div class="ic" style="background:'+(t.done?'#e7f7f0':'#f1f5f9')+'">'+(t.done?'✓':'○')+'</div><div><div class="nm">'+t.name+'</div><div class="sub">'+t.freq+(t.done?' · '+t.by:'')+'</div></div><div class="rt">'+(t.done?'<span class="chip ok">fait</span>':'<span class="chip warn">à faire</span>')+'</div></div>').join('')+'</div>').join('');
   } else if(s==='oil'){
     const oils=state.friteuses.filter(h=>h.clientId===cid);
     b.innerHTML='<div class="tb-title-k">Friteuses</div><div class="tb-title" style="margin-bottom:18px">Suivi des huiles</div>'
-    +'<div style="max-width:760px;margin:0 auto">'+tbDateField(1)+'</div><div class="tlist">'
+    +'<div style="max-width:760px;margin:0 auto">'+tbHistBtn('oil')+tbDateField(1)+'</div><div class="tlist">'
     +(oils.length?oils.map(h=>'<div class="row"><div><div class="nm">'+h.name+'</div><div class="sub">'+(h.marque||'')+' '+(h.capacite||'')+' · polarité '+h.polarity+'% · seuil 24%</div></div><div class="rt">'+(h.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>')+'<button class="btn sm" onclick="event.stopPropagation();tbTestOil(\''+h.id+'\')">Tester</button></div></div>').join(''):'<div style="text-align:center;color:var(--muted)">Aucune friteuse configurée — ajoutez-en dans le back-office.</div>')+'</div>';
   } else if(s==='dlclabel'){
     const prods=state.dlcProducts.filter(p=>p.clientId===cid&&p.active!==false);
     b.innerHTML='<div class="tb-title-k">Étiquetage DLC</div><div class="tb-title" style="margin-bottom:18px">Imprimer une étiquette</div>'
-    +'<div style="max-width:520px;margin:0 auto">'+tbDateField(1)+(prods.length?'<div class="field"><label>Produit</label><select id="dl_prod">'+prods.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('')+'</select></div><div class="field"><label>Type d\'étiquette</label><select id="dl_type"><option value="ouvert">Ouvert le</option><option value="decongele">Décongelé le</option><option value="fabrique">Fabriqué le</option></select></div><button class="btn block" onclick="tbPrintLabel()"> Imprimer l\'étiquette DLC</button>':'<div style="text-align:center;color:var(--muted)">Aucun produit configuré — ajoutez-en dans le back-office (Configuration DLC).</div>')+'</div>';
+    +'<div style="max-width:520px;margin:0 auto">'+tbHistBtn('dlc')+tbDateField(1)+(prods.length?'<div class="field"><label>Produit</label><select id="dl_prod">'+prods.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('')+'</select></div><div class="field"><label>Type d\'étiquette</label><select id="dl_type"><option value="ouvert">Ouvert le</option><option value="decongele">Décongelé le</option><option value="fabrique">Fabriqué le</option></select></div><button class="btn block" onclick="tbPrintLabel()"> Imprimer l\'étiquette DLC</button>':'<div style="text-align:center;color:var(--muted)">Aucun produit configuré — ajoutez-en dans le back-office (Configuration DLC).</div>')+'</div>';
   } else if(s==='recep'){
     b.innerHTML='<div class="tb-title-k">Livraisons</div><div class="tb-title" style="margin-bottom:18px">Réception marchandise</div>'
-    +'<div style="max-width:520px;margin:0 auto">'+tbDateField(1)+'<div class="field"><label>Fournisseur</label><select id="rc_four">'+state.fournisseurs.filter(f=>f.clientId===cid).map(f=>'<option>'+f.nom+'</option>').join('')+'<option>Autre</option></select></div><div class="field"><label>Produit</label><input id="rc_prod" placeholder="Ex. Mozzarella 5kg"></div><div class="field"><label>N° de lot</label><input id="rc_lot" placeholder="Ex. MZ-4471"></div><div class="field"><label>Température à réception (°C)</label><input id="rc_temp" type="number" step="0.1" placeholder="Ex. 3.0"></div><div class="field"><label>DLC</label><input id="rc_dlc" type="date"></div><button class="btn block" onclick="tbSaveRecep()">✓ Enregistrer la réception</button></div>';
+    +'<div style="max-width:520px;margin:0 auto">'+tbHistBtn('recep')+tbDateField(1)+'<div class="field"><label>Fournisseur</label><select id="rc_four">'+state.fournisseurs.filter(f=>f.clientId===cid).map(f=>'<option>'+f.nom+'</option>').join('')+'<option>Autre</option></select></div>'+tbProdField(cid,'rc')+'<div class="field"><label>N° de lot</label><input id="rc_lot" placeholder="Ex. MZ-4471"></div><div class="field"><label>Température à réception (°C)</label><input id="rc_temp" type="number" step="0.1" placeholder="Ex. 3.0"></div><div class="field"><label>DLC</label><input id="rc_dlc" type="date"></div><button class="btn block" onclick="tbSaveRecep()">✓ Enregistrer la réception</button></div>';
   } else if(s==='trace'){
     b.innerHTML=tbTraceScreen(cid);
   } else if(s==='archmenu'){
@@ -3290,6 +3291,8 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
      +(tbArchDate?'<button class="btn ghost sm" onclick="tbArchDate=\'\';tbRender(\'archives\')">✕</button>':'')
      +'<span style="margin-left:auto;display:flex;gap:10px;align-items:center"><span class="tsub" id="arch_count"></span><button class="btn ghost sm" onclick="tbGo(\'archexport\')">↓ Exporter en PDF</button></span></div>'
     +'<div class="tlist" style="max-width:760px;margin:0 auto">'+tbArchRows(cid)+'</div>';
+  } else if(s==='modhist'){
+    b.innerHTML=tbModHistScreen(cid);
   } else if(s==='temphist'){
     b.innerHTML=tbTempHistScreen(cid);
   } else if(s==='eqadd'){
@@ -3313,7 +3316,7 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     }
   } else if(s==='declareperte'){
     b.innerHTML='<div class="tb-title-k">Déclarer une perte</div><div class="tb-title" style="margin-bottom:18px">Casse / perte produit</div>'
-    +'<div style="max-width:520px;margin:0 auto">'+tbDateField(1)+'<div class="field"><label>Produit</label><input id="pe_prod" placeholder="Ex. Salade (lot abîmé)"></div><div class="field"><label>Motif</label><select id="pe_motif"><option>Non conforme à réception</option><option>DLC dépassée</option><option>Casse</option><option>Erreur de préparation</option><option>Panne équipement</option><option>Autre</option></select></div><div class="field"><label>Quantité</label><input id="pe_qte" placeholder="Ex. 2 kg / 3 unités"></div><button class="btn block danger" onclick="tbSavePerte()"> Enregistrer la perte</button></div>';
+    +'<div style="max-width:520px;margin:0 auto">'+tbHistBtn('perte')+tbDateField(1)+'<div class="field"><label>Produit</label><input id="pe_prod" placeholder="Ex. Salade (lot abîmé)"></div><div class="field"><label>Motif</label><select id="pe_motif"><option>Non conforme à réception</option><option>DLC dépassée</option><option>Casse</option><option>Erreur de préparation</option><option>Panne équipement</option><option>Autre</option></select></div><div class="field"><label>Quantité</label><input id="pe_qte" placeholder="Ex. 2 kg / 3 unités"></div><button class="btn block danger" onclick="tbSavePerte()"> Enregistrer la perte</button></div>';
   }
 }
 /* ===== Tablette : archives, documents, perte ===== */
@@ -3347,13 +3350,14 @@ let tbArchFrom='',tbArchTo='';
 function _dk(d){const x=new Date(d);if(isNaN(x))return '';return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
 function _fr(dk){if(!dk)return '';const p=dk.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 const ARCH_KINDS=[
- {k:'temp', t:'Relevés de températures',      heads:['Date','Heure','Période','Équipement','Valeur','Seuil','État','Action corrective','Par']},
- {k:'clean',t:'Plan de nettoyage',            heads:['Date','Heure','Zone','Tâche','Fréquence','Par']},
- {k:'oil',  t:'Contrôle des huiles',          heads:['Date','Heure','Friteuse','Polarité','État','Par']},
- {k:'dlc',  t:'Étiquettes DLC',               heads:['Date de pose','Heure','Produit','DLC','Par']},
- {k:'recep',t:'Réception des marchandises',   heads:['Date','Heure','Fournisseur','Produit','Lot','Température','Conformité','Par']},
- {k:'prod', t:'Traçabilité des productions',  heads:['Date','Heure','Produit','Lot','Photo','Par']},
- {k:'perte',t:'Pertes et casses',             heads:['Date','Heure','Produit','Motif','Quantité','Par']}
+ {k:'temp', t:'Relevés de températures',      main:3, heads:['Date','Heure','Période','Équipement','Valeur','Seuil','État','Action corrective','Par']},
+ {k:'clean',t:'Plan de nettoyage',            main:3, heads:['Date','Heure','Zone','Tâche','Fréquence','Par']},
+ {k:'oil',  t:'Contrôle des huiles',          main:2, heads:['Date','Heure','Friteuse','Polarité','État','Par']},
+ {k:'dlc',  t:'Étiquettes DLC',               main:2, heads:['Date de pose','Heure','Produit','DLC','Par']},
+ {k:'recep',t:'Réception des marchandises',   main:3, heads:['Date','Heure','Fournisseur','Produit','Lot','Température','Conformité','Par']},
+ {k:'prod', t:'Traçabilité des productions',  main:2, heads:['Date','Heure','Produit','Lot','Photo','Par']},
+ {k:'perte',t:'Pertes et casses',             main:2, heads:['Date','Heure','Produit','Motif','Quantité','Par']},
+ {k:'badge',t:'Pointages du personnel',       main:2, heads:['Date','Heure','Employé','Sens','Photo']}
 ];
 function _hm(d){const x=new Date(d);return isNaN(x)?'':String(x.getHours()).padStart(2,'0')+':'+String(x.getMinutes()).padStart(2,'0');}
 /* Liste les lignes d'un registre entre deux dates (bornes incluses). */
@@ -3374,6 +3378,8 @@ function tbArchRange(cid,kind,from,to,emp){
     out.push({at:x.at,bad:!x.conforme,row:[_fr(_dk(x.at)),_hm(x.at),x.fournisseur||'',x.produit||'',x.lot||'',(x.temp!=null?x.temp+' °C':'—'),(x.conforme?'Conforme':'NON CONFORME'),x.by||'']});});
   if(kind==='prod')(state.tracabilite||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
     out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.lot||'—',(tracePhotosOf(x).length||'—'),x.by||'']});});
+  if(kind==='badge')(state.badges||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.name))return;
+    out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.name||'',(x.type==='in'?'Arrivée':'Départ'),(x.photo?'Oui':'—')]});});
   if(kind==='perte')(state.pertes||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
     out.push({at:x.at,bad:true,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.motif||'',x.qte||'',x.by||'']});});
   out.sort(function(a,b){return new Date(a.at)-new Date(b.at);});
@@ -4093,11 +4099,70 @@ function tbTestOil(id){const f=state.friteuses.find(x=>x.id===id);if(!f)return;
   const val=Math.round((10+Math.random()*20));const bad=val>=24;f.polarity=val;f.status=bad?'alerte':'ok';
   state.huileTests.unshift({id:'ht'+Date.now(),clientId:CID,friteuse:f.name,polarity:val,at:tbAt(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—',status:bad?'alerte':'ok'});
   tbRender('oil');toast(bad?' '+f.name+' : '+val+'% — huile à changer':'✓ '+f.name+' : '+val+'% — conforme');}
-function tbSaveRecep(){const p=document.getElementById('rc_prod').value.trim();if(!p){toast('Indiquez le produit');return;}const temp=parseFloat(document.getElementById('rc_temp').value);
+function tbSaveRecep(){const p=tbProdName(CID,'rc');if(!p){toast('Choisissez un produit ou saisissez son nom');return;}const temp=parseFloat(document.getElementById('rc_temp').value);
   const rcBy=(state.employees.find(e=>e.id===tbUser)||{}).name||'—';const rcFour=document.getElementById('rc_four').value;
   state.reception.unshift({id:'r'+Date.now(),clientId:CID,fournisseur:rcFour,produit:p,lot:document.getElementById('rc_lot').value.trim()||'—',dlc:document.getElementById('rc_dlc').value||new Date(Date.now()+7*864e5).toISOString().slice(0,10),temp:isNaN(temp)?null:temp,conforme:isNaN(temp)?true:temp<=4,at:tbAt(),by:rcBy});
-  toast(' Réception enregistrée');tbHome();
+  prodSel.rc='';toast('✓ Réception enregistrée : '+p);tbHome();
   try{stockAfterReception(p,rcFour,rcBy);}catch(e){}}
+/* ============ SÉLECTION D'UN PRODUIT — liste DLC commune + saisie libre ============ */
+let prodSel={rc:'',tr:''};
+function tbCatalogProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid&&p.active!==false;});}
+function tbProdSet(ns,v){prodSel[ns]=v;tbRender(tbCurrent);}
+/* ns = préfixe des identifiants : 'rc' réception, 'tr' traçabilité */
+function tbProdField(cid,ns,label){
+  const prods=tbCatalogProds(cid);
+  const free=(prodSel[ns]==='__autre'||!prods.length);
+  return '<div class="field"><label>'+(label||'Produit')+'</label>'
+   +(prods.length?'<select onchange="tbProdSet(\''+ns+'\',this.value)">'
+     +'<option value=""'+(prodSel[ns]===''?' selected':'')+'>— Choisir un produit —</option>'
+     +prods.map(function(p){return '<option value="'+escH(p.id)+'"'+(prodSel[ns]===p.id?' selected':'')+'>'+escH(p.name)+'</option>';}).join('')
+     +'<option value="__autre"'+(prodSel[ns]==='__autre'?' selected':'')+'>✎ Autre produit (saisie libre)</option></select>':'')
+   +'</div>'
+   +(free?'<div class="field"><label>'+(prods.length?'Nom du produit':'Produit (saisie libre)')+'</label><input id="'+ns+'_prod" placeholder="Ex. Mozzarella 5 kg"></div>':'');}
+/* Nom retenu : celui de la liste, sinon la saisie libre. */
+function tbProdName(cid,ns){
+  const v=prodSel[ns];
+  if(v&&v!=='__autre'){const p=tbCatalogProds(cid).find(function(x){return x.id===v;});return p?p.name:'';}
+  const el=document.getElementById(ns+'_prod');return el?el.value.trim():'';}
+
+/* ============ HISTORIQUE GÉNÉRIQUE — un par module ============ */
+let mhKind='clean',mhDays=7,mhEmp='';
+function tbHistBtn(kind){return '<div style="display:flex;justify-content:center;margin-bottom:16px">'
+  +'<button class="btn ghost sm" onclick="tbOpenHist(\''+kind+'\')">🕘 Historique</button></div>';}
+function tbOpenHist(kind){mhKind=kind;mhDays=7;mhEmp='';tbGo('modhist');}
+function mhSet(k,v){if(k==='days')mhDays=Number(v);else mhEmp=v;tbRender('modhist');}
+function tbModHistScreen(cid){
+  const K=ARCH_KINDS.find(function(x){return x.k===mhKind;})||ARCH_KINDS[0];
+  const from=mhDays>0?_dk(new Date(Date.now()-(mhDays-1)*864e5)):'';
+  const rows=tbArchRange(cid,K.k,from,_dk(new Date()),mhEmp).slice().reverse();
+  const bad=rows.filter(function(r){return r.bad;}).length;
+  const byDay={};rows.forEach(function(r){const k=_dk(r.at);(byDay[k]=byDay[k]||[]).push(r);});
+  const days=Object.keys(byDay).sort().reverse();
+  const inp='padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;font-weight:700;font-size:14px;background:#fff;font-family:inherit;color:var(--ink)';
+  const mi=K.main||2;
+  let html='<div class="tb-title-k">Historique</div><div class="tb-title" style="margin-bottom:16px">'+escH(K.t)+'</div>'
+  +'<div style="max-width:760px;margin:0 auto">'
+  +'<div style="display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px">'
+   +'<select onchange="mhSet(\'emp\',this.value)" style="'+inp+';flex:1;min-width:190px"><option value="">Tous les employés</option>'
+   +(state.employees||[]).filter(function(e){return e.clientId===cid;}).map(function(e){return '<option'+(mhEmp===e.name?' selected':'')+'>'+escH(e.name)+'</option>';}).join('')+'</select>'
+   +'<select onchange="mhSet(\'days\',this.value)" style="'+inp+'">'
+   +[[7,'7 derniers jours'],[30,'30 derniers jours'],[90,'3 derniers mois'],[0,'Tout l\'historique']].map(function(o){return '<option value="'+o[0]+'"'+(mhDays===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>'
+  +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">'
+   +'<div style="border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff"><div class="tsub" style="font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase">Enregistrements</div><div style="font-size:23px;font-weight:800;letter-spacing:-.6px">'+rows.length+'</div></div>'
+   +'<div style="border:1px solid '+(bad?'#f7b8c6':'var(--line)')+';border-radius:14px;padding:12px 14px;background:'+(bad?'#fff5f7':'#fff')+'"><div class="tsub" style="font-size:10.5px;font-weight:800;letter-spacing:.7px;text-transform:uppercase">À surveiller</div><div style="font-size:23px;font-weight:800;letter-spacing:-.6px;color:'+(bad?'#be123c':'inherit')+'">'+bad+'</div></div></div>'
+  +'<div style="display:flex;justify-content:center;margin-bottom:14px"><button class="btn ghost sm" onclick="tbGo(\'archexport\')">📄 Exporter en PDF</button></div>';
+  if(!days.length)return html+'<div class="empty" style="padding:36px 20px;text-align:center;border:1px solid var(--line);border-radius:16px;background:#fff">Aucun enregistrement sur cette période.</div></div>';
+  html+=days.map(function(dk){
+    const list=byDay[dk];
+    const dLbl=new Date(dk+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+    return '<div style="font-weight:800;color:var(--muted);font-size:12px;letter-spacing:.6px;text-transform:uppercase;margin:16px 2px 8px">'+escH(dLbl)+' · '+list.length+'</div>'
+    +'<div class="tlist">'+list.map(function(r){
+      const main=r.row[mi]||'—';
+      const rest=r.row.filter(function(c,i){return i!==0&&i!==mi&&c&&c!=='—';}).join(' · ');
+      return '<div class="row"><div class="ic" style="background:'+(r.bad?'#fde7ec':'#e7f7f0')+'">'+(r.bad?'⚠':'✓')+'</div>'
+        +'<div><div class="nm">'+escH(main)+'</div><div class="sub">'+escH(rest)+'</div></div></div>';}).join('')+'</div>';}).join('');
+  return html+'</div>';}
+
 /* ============ PÉRIODE DU RELEVÉ (matin / maintenant / soir) ============ */
 let kpPeriod='now';
 const KP_PERIODS=[['matin','☀️','Matin',9],['now','✋','Maintenant',null],['soir','🌙','Soir',18]];
@@ -4252,22 +4317,13 @@ function tbDateField(compact){
     +'</div>';}
 
 /* ============ TRAÇABILITÉ PRODUITS — PHOTO + LISTE DLC ============ */
-let tbTracePhotos=[],tbTraceSel='',tbTraceFree='';
+let tbTracePhotos=[];
 const TRACE_MAX_PHOTOS=6;
 function tbTraceDelPhoto(i){tbTracePhotos.splice(i,1);tbRender('trace');}
-function tbTraceProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid&&p.active!==false;});}
 function tbTraceScreen(cid){
-  const prods=tbTraceProds(cid);
-  const free=(tbTraceSel==='__autre'||!prods.length);
   return '<div class="tb-title-k">Ouvertures produits</div><div class="tb-title" style="margin-bottom:18px">Traçabilité produits</div>'
-  +'<div style="max-width:520px;margin:0 auto">'+tbDateField(1)
-  +'<div class="field"><label>Produit ouvert / production maison</label>'
-   +(prods.length?'<select id="tr_sel" onchange="tbTraceSel=this.value;tbRender(\'trace\')">'
-     +'<option value=""'+(tbTraceSel===''?' selected':'')+'>— Choisir un produit —</option>'
-     +prods.map(function(p){return '<option value="'+escH(p.id)+'"'+(tbTraceSel===p.id?' selected':'')+'>'+escH(p.name)+'</option>';}).join('')
-     +'<option value="__autre"'+(tbTraceSel==='__autre'?' selected':'')+'>✎ Autre produit (saisie libre)</option></select>':'')
-   +'</div>'
-  +(free?'<div class="field"><label>'+(prods.length?'Nom du produit':'Produit (saisie libre)')+'</label><input id="tr_prod" value="'+escH(tbTraceFree)+'" oninput="tbTraceFree=this.value" placeholder="Ex. Pâte à pizza"></div>':'')
+  +'<div style="max-width:520px;margin:0 auto">'+tbHistBtn('prod')+tbDateField(1)
+  +tbProdField(cid,'tr','Produit ouvert / production maison')
   +'<div class="field"><label>N° de lot (si applicable)</label><input id="tr_lot" placeholder="Ex. PZ-0812"></div>'
   +'<div class="field"><label>Photos du produit'+(tbTracePhotos.length?' <span class="tsub" style="font-weight:600">('+tbTracePhotos.length+'/'+TRACE_MAX_PHOTOS+')</span>':'')+'</label>'
    +(tbTracePhotos.length
@@ -4313,9 +4369,7 @@ function tbTraceCam(){
       toast(tbTracePhotos.length>=TRACE_MAX_PHOTOS?('Maximum de '+TRACE_MAX_PHOTOS+' photos atteint'):('✓ Photo '+tbTracePhotos.length+' ajoutée'));};};}
 
 async function tbSaveTrace(){
-  let p='';
-  if(tbTraceSel&&tbTraceSel!=='__autre'){const pr=tbTraceProds(CID).find(function(x){return x.id===tbTraceSel;});p=pr?pr.name:'';}
-  else{const el=document.getElementById('tr_prod');p=el?el.value.trim():'';}
+  const p=tbProdName(CID,'tr');
   if(!p){toast('Choisissez un produit ou saisissez son nom');return;}
   let photos=[];
   if(tbTracePhotos.length){
@@ -4324,7 +4378,7 @@ async function tbSaveTrace(){
       const up=await tbUploadBadgePhoto(tbTracePhotos[i]);
       photos.push(up||tbTracePhotos[i]);}}
   state.tracabilite.unshift({id:'tr'+Date.now(),clientId:CID,produit:p,lot:(document.getElementById('tr_lot')||{}).value?document.getElementById('tr_lot').value.trim():'—',photo:photos[0]||'',photos:photos,at:tbAt(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
-  tbTracePhotos=[];tbTraceSel='';tbTraceFree='';
+  tbTracePhotos=[];prodSel.tr='';
   toast('✓ Ouverture tracée : '+p);tbHome();}
 
 /* ===== HACCP back-office : CRUD, Suivi unifié, formulaire modal ===== */
