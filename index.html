@@ -3926,7 +3926,7 @@ async function foodPhotoPick(ev){
     foodCollectLines();
     if(FOOD_EDIT.photoPath){try{await SB.storage.from('docs').remove([FOOD_EDIT.photoPath]);}catch(e){}}
     FOOD_EDIT.photo=(data&&data.publicUrl)||'';FOOD_EDIT.photoPath=path;
-    foodRecipeBody();toast('Photo ajoutée');
+    foodPhotoPersist('✓ Photo ajoutée et enregistrée');
   }catch(e){if(msg)msg.textContent='';toast('Erreur photo : '+(e.message||e));}
 }
 function foodResizeImage(file,maxDim,quality){return new Promise(function(res,rej){
@@ -3940,7 +3940,20 @@ function foodResizeImage(file,maxDim,quality){return new Promise(function(res,re
   }catch(e){rej(e);}};
   img.onerror=function(){URL.revokeObjectURL(url);rej(new Error('Image illisible'));};
   img.src=url;});}
-function foodPhotoRemove(){foodCollectLines();const p=FOOD_EDIT.photoPath;FOOD_EDIT.photo='';FOOD_EDIT.photoPath='';if(p&&SB){try{SB.storage.from('docs').remove([p]);}catch(e){}}foodRecipeBody();}
+function foodPhotoRemove(){foodCollectLines();const p=FOOD_EDIT.photoPath;FOOD_EDIT.photo='';FOOD_EDIT.photoPath='';
+  if(p&&SB){try{SB.storage.from('docs').remove([p]);}catch(e){}}
+  foodPhotoPersist('Photo retirée');}
+/* la photo est enregistrée tout de suite, sans passer par le bouton Enregistrer */
+function foodPhotoPersist(msg){
+  const e=FOOD_EDIT;if(!e){toast(msg);return;}
+  try{foodCollectLines();}catch(err){}
+  if(e.id&&e.mode!=='sub'){
+    const r=(state.recipes||[]).find(function(x){return x.id===e.id;});
+    if(r){r.photo=e.photo||'';r.photoPath=e.photoPath||'';r.updatedAt=new Date().toISOString();}
+    foodRecipeBody();toast(msg);return;}
+  if(!e.id&&e.mode!=='sub'&&String(e.name||'').trim()){
+    foodRecipeSave();return;}
+  foodRecipeBody();toast(msg+' — enregistrez la fiche pour la conserver');}
 function foodRecipeSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name||'').trim();const prix=Number(e.prix)||0;
   if(!nm){toast('Nom de la recette requis');return;}
   const lines=e.lines.filter(function(l){return l.refId;});
