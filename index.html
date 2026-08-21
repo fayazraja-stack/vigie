@@ -154,8 +154,9 @@
   .fcgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
   @media(max-width:1100px){.kpis.six{grid-template-columns:repeat(2,1fr)}.fcgrid{grid-template-columns:1fr}}
   .ingbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
-  .ingbar .dp-search{flex:1;min-width:180px;width:auto}
-  .ingsel{padding:9px 10px;border:1px solid #ccd6e0;border-radius:10px;font-size:12.5px;background:#fff;color:var(--ink);font-weight:600;max-width:185px}
+  .ingbar .dp-search{flex:1;min-width:165px;width:auto}
+  .ingacts{display:flex;gap:8px;align-items:center;flex-wrap:nowrap}
+  .ingsel{padding:9px 10px;border:1px solid #ccd6e0;border-radius:10px;font-size:12.5px;background:#fff;color:var(--ink);font-weight:600;max-width:170px}
   .ingscroll{max-height:calc(100vh - 340px);overflow:auto}
   .ingscroll thead th{position:sticky;top:0;background:#fff;z-index:2}
   .ingtbl th.s{cursor:pointer;user-select:none;white-space:nowrap}
@@ -1833,7 +1834,6 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       state.foodIngCats=state.foodIngCats||[];
       m.innerHTML+=ingToolbar()+'<div id="food_ing_zone"></div>';
     }
-    m.innerHTML+=foodHelp;
     if(tab==='ing')ingRefresh();else if(tab==='fiches')recRefresh();
   } else if(clientView==='fid'){
     m.innerHTML=topbar('Mes jeux','Créez et gérez vos jeux de fidélisation (roue, ticket à gratter)','<button class="btn" onclick="fidNewGame()">＋ Créer un jeu</button>')
@@ -3516,8 +3516,8 @@ function ingToolbar(){
   +'<select class="ingsel" onchange="ingFilt.type=this.value;ingPage=0;ingRefresh()">'+fcOpt('','Alim. et non alim.',ingFilt.type)+fcOpt('alim','Alimentaire',ingFilt.type)+fcOpt('nonalim','Non alimentaire',ingFilt.type)+'</select>'
   +(act?'<button class="btn ghost sm" onclick="ingClear()">✕ Réinitialiser</button>':'')
   +'<span style="flex:1;min-width:0"></span>'
-  +archToggleBtn('food','foodIng',CID)
-  +' <button class="btn" onclick="impOpen(\'ing\')">⤒ Importer un fichier</button> <button class="btn ghost sm" onclick="ingCsv()">⤓ Exporter</button> <button class="btn ghost sm" onclick="ingPrint()">🖨 Imprimer</button>'
+  +'<div class="ingacts">'+archToggleBtn('food','foodIng',CID)
+  +'<button class="btn" onclick="impOpen(\'ing\')">⤒ Importer</button><button class="btn ghost sm" onclick="ingCsv()">⤓ Exporter</button><button class="btn ghost sm" onclick="ingPrint()">🖨 Imprimer</button></div>'
   +'</div>';}
 function fcKeepList(z,build){
   if(!z)return;
@@ -3697,8 +3697,8 @@ function recToolbar(){
   +(act?'<button class="btn ghost sm" onclick="recClear()">✕ Réinitialiser</button>':'')
   +(cats.length?'<button class="btn ghost sm" onclick="foodRecCatDel()">Gérer les catégories</button>':'')
   +'<span style="flex:1;min-width:0"></span>'
-  +archToggleBtn('food','recipes',CID)
-  +' <button class="btn" onclick="impOpen(\'rec\')">⤒ Importer un fichier</button> <button class="btn ghost sm" onclick="recCsv()">⤓ Exporter</button> <button class="btn ghost sm" onclick="recPrintList()">🖨 Imprimer</button>'
+  +'<div class="ingacts">'+archToggleBtn('food','recipes',CID)
+  +'<button class="btn" onclick="impOpen(\'rec\')">⤒ Importer</button><button class="btn ghost sm" onclick="recCsv()">⤓ Exporter</button><button class="btn ghost sm" onclick="recPrintList()">🖨 Imprimer</button></div>'
   +'</div>';}
 function recRefresh(){fcKeepList(document.getElementById('food_rec_zone'),recPanel);}
 function recRow(r){
