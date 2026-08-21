@@ -2404,16 +2404,21 @@ const PDF_OPTS=[
 ];
 function pdfOptsGet(){const o={};PDF_OPTS.forEach(function(x){
   o[x.k]=(state.pdfOpts&&state.pdfOpts[x.k]!==undefined)?!!state.pdfOpts[x.k]:x.d;});return o;}
-function pdfOptsAsk(title,run){
+function pdfOptsAsk(title,run,multi){
   const cur=pdfOptsGet();
   openConfirm(title,'',function(){
     const n={};PDF_OPTS.forEach(function(x){const el=document.getElementById('po_'+x.k);n[x.k]=el?el.checked:cur[x.k];});
     if(!n.brut&&!n.net)n.brut=true;
+    const sp=document.getElementById('po_split');n.split=!!(sp&&sp.checked);
     state.pdfOpts=n;run(n);},'Exporter le PDF',false);
   fcHtmlMsg('<div style="text-align:left"><p style="margin:0 0 14px" class="tsub">Choisissez ce qui doit apparaître dans le document.</p>'
    +PDF_OPTS.map(function(x){return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;cursor:pointer;font-size:14px">'
      +'<input type="checkbox" class="ingck" id="po_'+x.k+'"'+(cur[x.k]?' checked':'')+'>'+escH(x.l)+'</label>';}).join('')
-   +'<p class="tsub" style="margin:12px 0 0">Sans les prix, le document devient une fiche de fabrication à afficher en cuisine.</p></div>');}
+   +(multi?('<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">'
+     +'<div class="tsub" style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Fichier de sortie</div>'
+     +'<label style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:14px"><input type="radio" name="posplit" class="ingck" '+(cur.split?'':'checked')+' onclick="document.getElementById(\'po_split\').checked=false"><span><b>Un seul fichier PDF</b><div class="tsub">Toutes les fiches à la suite, puis leurs sous-recettes une seule fois.</div></span></label>'
+     +'<label style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:14px"><input type="radio" name="posplit" id="po_split" class="ingck" '+(cur.split?'checked':'')+'><span><b>Un fichier PDF par recette</b><div class="tsub">Un document autonome par fiche, avec ses propres sous-recettes. Votre navigateur demandera l\'autorisation de télécharger plusieurs fichiers.</div></span></label></div>'):'')
+   +'<p class="tsub" style="margin:14px 0 0">Sans les prix, le document devient une fiche de fabrication à afficher en cuisine.</p></div>');}
 function pdfCols(defs,M,CW){
   let fixed=0;defs.forEach(function(c){if(c.k!=='name')fixed+=c.w+14;});
   const nw=Math.max(120,CW-fixed);let x=M;const out=[];
@@ -2571,10 +2576,27 @@ async function subPdfRun(id,O){
     d.save('preparation-'+pdfSlug(s.name)+'.pdf');
     toast('✓ PDF téléchargé');
   }catch(e){toast('Échec de la génération : '+(e.message||e));}}
-function recBulkPdf(){if(!recSelIds().length)return;pdfOptsAsk('Exporter '+recSelIds().length+' fiche(s) technique(s)',function(O){recBulkPdfRun(O);});}
+function recBulkPdf(){if(!recSelIds().length)return;pdfOptsAsk('Exporter '+recSelIds().length+' fiche(s) technique(s)',function(O){recBulkPdfRun(O);},true);}
 async function recBulkPdfRun(O){
   const ids=recSelIds();if(!ids.length)return;
   const list=(state.recipes||[]).filter(function(r){return ids.indexOf(r.id)>=0;});
+  const est=(state.clients||[]).filter(function(c){return c.id===CID;})[0];
+  const estN=est?(est.nom||est.name||''):'';
+  if(O.split){
+    toast('Génération de '+list.length+' fichiers PDF…');
+    try{
+      for(let i=0;i<list.length;i++){
+        const r=list[i];
+        const img=O.photo?await pdfFetchJpeg(r.photo||''):null;
+        const d=pdfNew();
+        pdfDrawFiche(d,pdfRecData(r),img,O);
+        if(O.subs)pdfCollectSubs(r.lines,[],0).forEach(function(x){pdfDrawFiche(d,pdfSubData(x),null,O);});
+        pdfFooters(d,estN);
+        d.save('fiche-technique-'+pdfSlug(r.name)+'.pdf');
+        await new Promise(function(res){setTimeout(res,320);});}
+      toast('✓ '+list.length+' fichiers PDF téléchargés');
+    }catch(e){toast('Échec de la génération : '+(e.message||e));}
+    return;}
   toast('Génération du PDF — '+list.length+' fiche(s)…');
   try{
     const d=pdfNew();const all=[];
