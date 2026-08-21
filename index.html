@@ -281,10 +281,14 @@
   .emp .av{width:64px;height:64px;border-radius:50%;background:var(--brand-l);color:var(--brand-d);display:grid;place-items:center;font-size:24px;font-weight:800;margin:0 auto 10px}
   .emp .nm{font-weight:700}.emp .rl{margin-top:6px}
   .eqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
-  .eqc{border:1px solid #eee;border-radius:16px;background:#fff;overflow:hidden;cursor:pointer;transition:.15s;position:relative}
+  .eqc{border:1px solid #eee;border-radius:16px;background:#fff;overflow:hidden;cursor:pointer;transition:.15s;position:relative;display:flex;flex-direction:column;min-height:216px}
   .eqc:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
-  .eqc .ph{height:96px;display:grid;place-items:center;font-size:40px;background:#f1f5f9}
-  .eqc .bd{padding:12px}.eqc .nm{font-weight:700;font-size:14px}.eqc .lo{margin:6px 0}.eqc .sub{font-size:12px;color:var(--muted)}
+  .eqc .ph{flex:1 1 auto;min-height:104px;display:flex;align-items:center;justify-content:center;padding:34px 14px 10px;font-size:40px;overflow:hidden}
+  .eqc .ph img{max-width:80%;max-height:104px;width:auto;height:auto;object-fit:contain;display:block}
+  .eqc .bd{flex:0 0 auto;padding:10px 12px 15px;text-align:center}
+  .eqc .nm{font-weight:700;font-size:14px;line-height:1.3}
+  .eqc .lo{margin:6px 0 0;display:flex;justify-content:center}
+  .eqc .sub{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.35}
   .eqc .bdg{position:absolute;top:10px;right:10px;font-size:10.5px;font-weight:800;padding:3px 9px;border-radius:999px}
   .split2{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:640px;margin:0 auto}
   .bigcard{border:1px solid #eee;border-radius:22px;padding:26px;background:#fff;text-align:center;cursor:pointer;transition:.15s}
@@ -306,7 +310,14 @@
   @keyframes pop{from{transform:scale(.96);opacity:.5}to{transform:scale(1);opacity:1}}
   .sheet h3{font-size:19px;margin-bottom:3px;text-align:center}
   .sheet .sub{font-size:13px;color:var(--muted);margin-bottom:14px;text-align:center}
-  .readout{text-align:center;font-size:52px;font-weight:800;letter-spacing:-1px;margin:6px 0 4px}.readout small{font-size:22px;color:var(--muted)}
+  .readout-row{position:relative;margin:6px 0 4px}
+  .readout{text-align:center;font-size:52px;font-weight:800;letter-spacing:-1px}.readout small{font-size:22px;color:var(--muted)}
+  .kp-edit{position:absolute;right:2px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:6px}
+  .kp-edit button{border:1px solid var(--line);background:#fff;border-radius:12px;font-weight:800;color:var(--slate);display:grid;place-items:center;padding:0}
+  .kp-edit button:active{background:#f1f5f9}
+  .kp-edit button:disabled{opacity:.3}
+  .kp-edit .kp-del{width:52px;height:44px;font-size:19px}
+  .kp-edit .kp-clr{width:52px;height:28px;font-size:11px;letter-spacing:.06em}
   .read-status{text-align:center;font-size:14px;font-weight:800;margin-bottom:14px;height:20px}
   .keys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
   .keys button{border:1px solid var(--line);background:#fff;border-radius:14px;padding:18px 0;font-size:22px;font-weight:700}
@@ -642,7 +653,13 @@
     <!-- keypad -->
     <div class="sheet-mask" id="kp_mask"><div class="sheet">
       <h3 id="kp_title">Frigo</h3><div class="sub" id="kp_sub">Cible 0 à +4 °C</div>
-      <div class="readout"><span id="kp_val">0.0</span><small> °C</small></div>
+      <div class="readout-row">
+        <div class="readout"><span id="kp_val">0.0</span><small> °C</small></div>
+        <div class="kp-edit">
+          <button class="kp-del" id="kp_del" onclick="kpDel()" title="Effacer le dernier chiffre" aria-label="Effacer le dernier chiffre">⌫</button>
+          <button class="kp-clr" id="kp_clr" onclick="kpClear()" title="Tout effacer" aria-label="Tout effacer">EFFACER</button>
+        </div>
+      </div>
       <div class="read-status" id="kp_status"></div>
       <div class="keys">
         <button onclick="kpKey('7')">7</button><button onclick="kpKey('8')">8</button><button onclick="kpKey('9')">9</button>
@@ -3196,7 +3213,7 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
   } else if(s==='eqlist'){
     const list=eqs.filter(e=>tbCat==='froid'?isFroid(e):e.cat==='chaud');
     b.innerHTML='<div class="tb-title-k">'+(tbCat==='froid'?' Équipements Froid':' Équipements Chaud')+'</div><div class="tb-title" style="margin-bottom:18px">Sélectionnez un équipement</div><div class="eqgrid">'
-    +list.map(e=>{const done=todayRel(cid).some(r=>r.equipId===e.id);const last=cRel(cid).find(r=>r.equipId===e.id);return '<div class="eqc" onclick="openKp(\''+e.id+'\')"><div class="bdg" style="background:'+(done?'#e7f7f0':'#fde7ec')+';color:'+(done?'#0b7d57':'#be123c')+'">'+(done?'✓ fait':'Non fait')+'</div><div class="ph" style="padding:0"><img src="'+eqImg(e)+'" style="width:100%;height:100%;object-fit:cover"></div><div class="bd"><div class="nm">'+e.name+'</div><div class="lo"><span class="chip muted"> '+e.loc+'</span></div><div class="sub">'+catLabel(e.cat)+' · '+seuilTxt(e)+(last?' · dernier '+last.value+'°':'')+'</div></div></div>';}).join('')+'</div>';
+    +list.map(e=>{const done=todayRel(cid).some(r=>r.equipId===e.id);const last=cRel(cid).find(r=>r.equipId===e.id);return '<div class="eqc" onclick="openKp(\''+e.id+'\')"><div class="bdg" style="background:'+(done?'#e7f7f0':'#fde7ec')+';color:'+(done?'#0b7d57':'#be123c')+'">'+(done?'✓ fait':'Non fait')+'</div><div class="ph"><img src="'+eqImg(e)+'" alt=""></div><div class="bd"><div class="nm">'+e.name+'</div>'+(e.loc?'<div class="lo"><span class="chip muted">'+e.loc+'</span></div>':'')+'<div class="sub">'+catLabel(e.cat)+' · '+seuilTxt(e)+(last?' · dernier '+last.value+'°':'')+'</div></div></div>';}).join('')+'</div>';
   } else if(s==='clean'){
     const tasks=state.postes.filter(p=>p.clientId===cid);const zones=[...new Set(tasks.map(t=>t.zone))];
     b.innerHTML='<div class="tb-title-k">Plan de nettoyage</div><div class="tb-title" style="margin-bottom:18px">Nettoyages des postes</div>'
@@ -3219,6 +3236,7 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
     b.innerHTML='<div class="tb-title-k">Archives</div><div class="tb-title" style="margin-bottom:22px">Choisissez une action</div><div style="max-width:640px;margin:0 auto"><div class="tlist">'
     +'<div class="row" onclick="tbGo(\'archives\')"><div><div class="nm">Archives HACCP</div><div class="sub">Historique des relevés et contrôles</div></div><div class="rt">›</div></div>'
     +'<div class="row" onclick="tbGo(\'documents\')"><div><div class="nm">Documents</div><div class="sub">Fiches techniques et procédures</div></div><div class="rt">›</div></div>'
+    +'<div class="row" onclick="tbGo(\'archexport\')"><div><div class="nm">Exporter en PDF</div><div class="sub">Tous les registres sur la période de votre choix</div></div><div class="rt">›</div></div>'
     +'<div class="row" onclick="tbGo(\'declareperte\')"><div><div class="nm" style="color:var(--bad)">Déclarer une perte</div><div class="sub">Enregistrer une casse ou une perte produit</div></div><div class="rt">›</div></div>'
     +'</div></div>';
   } else if(s==='archives'){
@@ -3229,8 +3247,10 @@ function tbRender(s,isBack){tbCurrent=s;const b=document.getElementById('tb_body
      +'<input type="date" value="'+(tbArchDate||'')+'" onchange="tbArchDate=this.value;tbRender(\'archives\')" style="padding:9px;border:1px solid #eee;border-radius:10px;font-size:13px">'
      +'<select onchange="tbArchEmp=this.value;tbRender(\'archives\')" style="padding:9px 10px;border:1px solid #eee;border-radius:10px;font-size:13px"><option value="">Tous les employés</option>'+state.employees.filter(e=>e.clientId===cid).map(e=>'<option '+(tbArchEmp===e.name?'selected':'')+'>'+e.name+'</option>').join('')+'</select>'
      +(tbArchDate?'<button class="btn ghost sm" onclick="tbArchDate=\'\';tbRender(\'archives\')">✕</button>':'')
-     +'<span style="margin-left:auto;display:flex;gap:10px;align-items:center"><span class="tsub" id="arch_count"></span><button class="btn ghost sm" onclick="tbArchExport()">↓ Exporter</button></span></div>'
+     +'<span style="margin-left:auto;display:flex;gap:10px;align-items:center"><span class="tsub" id="arch_count"></span><button class="btn ghost sm" onclick="tbGo(\'archexport\')">↓ Exporter en PDF</button></span></div>'
     +'<div class="tlist" style="max-width:760px;margin:0 auto">'+tbArchRows(cid)+'</div>';
+  } else if(s==='archexport'){
+    b.innerHTML=tbArchExportScreen(cid);
   } else if(s==='documents'){
     const folders=state.docFolders.filter(f=>f.clientId===cid);const docs=state.documents.filter(d=>d.clientId===cid);
     const open=tbDocFolder?folders.find(f=>f.id===tbDocFolder):null;
@@ -3277,6 +3297,131 @@ function tbArchDel(coll,id){openConfirm('Supprimer cet enregistrement ?','Cette 
   if(coll==='postes'){const p=state.postes.find(x=>x.id===id);if(p){p.done=false;p.by=null;p.at=null;}}
   else{const i=state[coll].findIndex(x=>x.id===id);if(i>=0)state[coll].splice(i,1);}
   tbRender('archives');toast('Enregistrement supprimé');});}
+/* ============ EXPORT PDF DES ARCHIVES SUR UNE PLAGE DE DATES ============ */
+let tbArchFrom='',tbArchTo='';
+function _dk(d){const x=new Date(d);if(isNaN(x))return '';return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
+function _fr(dk){if(!dk)return '';const p=dk.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+const ARCH_KINDS=[
+ {k:'temp', t:'Relevés de températures',      heads:['Date','Heure','Équipement','Valeur','Seuil','État','Action corrective','Par']},
+ {k:'clean',t:'Plan de nettoyage',            heads:['Date','Heure','Zone','Tâche','Fréquence','Par']},
+ {k:'oil',  t:'Contrôle des huiles',          heads:['Date','Heure','Friteuse','Polarité','État','Par']},
+ {k:'dlc',  t:'Étiquettes DLC',               heads:['Date de pose','Heure','Produit','DLC','Par']},
+ {k:'recep',t:'Réception des marchandises',   heads:['Date','Heure','Fournisseur','Produit','Lot','Température','Conformité','Par']},
+ {k:'prod', t:'Traçabilité des productions',  heads:['Date','Heure','Produit','Lot','Par']},
+ {k:'perte',t:'Pertes et casses',             heads:['Date','Heure','Produit','Motif','Quantité','Par']}
+];
+function _hm(d){const x=new Date(d);return isNaN(x)?'':String(x.getHours()).padStart(2,'0')+':'+String(x.getMinutes()).padStart(2,'0');}
+/* Liste les lignes d'un registre entre deux dates (bornes incluses). */
+function tbArchRange(cid,kind,from,to,emp){
+  const ok=function(d,by){const k=_dk(d);if(!k)return false;
+    if(from&&k<from)return false;if(to&&k>to)return false;
+    if(emp&&!_sameEmp(by,emp))return false;return true;};
+  const out=[];
+  if(kind==='temp')cRel(cid).forEach(function(r){if(!ok(r.at,r.by))return;const e=eqById(r.equipId)||{};
+    out.push({at:r.at,bad:r.status==='alerte',row:[_fr(_dk(r.at)),_hm(r.at),e.name||'',(r.value!=null?r.value+' °C':''),(e.min!=null?e.min+' à '+e.max+' °C':''),(r.status==='alerte'?'HORS SEUIL':'Conforme'),r.action||'—',r.by||'']});});
+  if(kind==='clean')(state.postes||[]).forEach(function(x){if(!x.clientId||x.clientId!==cid||!x.done||!x.at)return;if(!ok(x.at,x.by))return;
+    out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.zone||'',x.name||'',x.freq||'',x.by||'']});});
+  if(kind==='oil')(state.huileTests||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
+    out.push({at:x.at,bad:x.status==='alerte',row:[_fr(_dk(x.at)),_hm(x.at),x.friteuse||'',(x.polarity!=null?x.polarity+' %':''),(x.status==='alerte'?'À CHANGER':'Conforme'),x.by||'']});});
+  if(kind==='dlc')(state.dlc||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.ouvertAt,x.by))return;
+    out.push({at:x.ouvertAt,bad:false,row:[_fr(_dk(x.ouvertAt)),_hm(x.ouvertAt),x.produit||'',_fr(_dk(x.dlcAt)),x.by||'']});});
+  if(kind==='recep')(state.reception||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
+    out.push({at:x.at,bad:!x.conforme,row:[_fr(_dk(x.at)),_hm(x.at),x.fournisseur||'',x.produit||'',x.lot||'',(x.temp!=null?x.temp+' °C':'—'),(x.conforme?'Conforme':'NON CONFORME'),x.by||'']});});
+  if(kind==='prod')(state.tracabilite||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
+    out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.lot||'—',x.by||'']});});
+  if(kind==='perte')(state.pertes||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
+    out.push({at:x.at,bad:true,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.motif||'',x.qte||'',x.by||'']});});
+  out.sort(function(a,b){return new Date(a.at)-new Date(b.at);});
+  return out;}
+/* raccourcis de période */
+function tbArchPreset(p){const n=new Date();const to=_dk(n);let from=to;
+  if(p==='7'){const d=new Date();d.setDate(d.getDate()-6);from=_dk(d);}
+  else if(p==='30'){const d=new Date();d.setDate(d.getDate()-29);from=_dk(d);}
+  else if(p==='mois'){from=_dk(new Date(n.getFullYear(),n.getMonth(),1));}
+  else if(p==='moisdernier'){from=_dk(new Date(n.getFullYear(),n.getMonth()-1,1));tbArchFrom=from;tbArchTo=_dk(new Date(n.getFullYear(),n.getMonth(),0));tbRender('archexport');return;}
+  else if(p==='trim'){const d=new Date();d.setMonth(d.getMonth()-3);from=_dk(d);}
+  tbArchFrom=from;tbArchTo=to;tbRender('archexport');}
+function tbArchSet(k,v){if(k==='from')tbArchFrom=v;else if(k==='to')tbArchTo=v;else tbArchEmp=v;tbRender('archexport');}
+function tbArchExportScreen(cid){
+  if(!tbArchFrom&&!tbArchTo){const n=new Date();tbArchTo=_dk(n);const d=new Date();d.setDate(d.getDate()-6);tbArchFrom=_dk(d);}
+  const bad=(tbArchFrom&&tbArchTo&&tbArchFrom>tbArchTo);
+  const counts=ARCH_KINDS.map(function(K){return {K:K,n:bad?0:tbArchRange(cid,K.k,tbArchFrom,tbArchTo,tbArchEmp).length};});
+  const tot=counts.reduce(function(s,c){return s+c.n;},0);
+  const days=(tbArchFrom&&tbArchTo&&!bad)?Math.round((new Date(tbArchTo)-new Date(tbArchFrom))/864e5)+1:0;
+  const presets=[['7','7 derniers jours'],['30','30 derniers jours'],['mois','Mois en cours'],['moisdernier','Mois dernier'],['trim','3 derniers mois']];
+  const inp='padding:11px 12px;border:1px solid #e6ebf1;border-radius:12px;font-size:15px;font-weight:700;width:100%;box-sizing:border-box';
+  return '<div class="tb-title-k">Archives</div><div class="tb-title" style="margin-bottom:16px">Exporter en PDF</div>'
+  +'<div style="max-width:640px;margin:0 auto">'
+  +'<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px">'
+   +presets.map(function(x){return '<button class="btn ghost sm" onclick="tbArchPreset(\''+x[0]+'\')">'+x[1]+'</button>';}).join('')+'</div>'
+  +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'
+   +'<div style="flex:1;min-width:150px"><div class="tsub" style="font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Du</div>'
+   +'<input type="date" value="'+(tbArchFrom||'')+'" onchange="tbArchSet(\'from\',this.value)" style="'+inp+'"></div>'
+   +'<div style="flex:1;min-width:150px"><div class="tsub" style="font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Au</div>'
+   +'<input type="date" value="'+(tbArchTo||'')+'" onchange="tbArchSet(\'to\',this.value)" style="'+inp+'"></div></div>'
+  +'<div style="margin-bottom:14px"><div class="tsub" style="font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;margin-bottom:5px">Employé</div>'
+   +'<select onchange="tbArchSet(\'emp\',this.value)" style="'+inp+'"><option value="">Tous les employés</option>'
+   +(state.employees||[]).filter(function(e){return e.clientId===cid;}).map(function(e){return '<option'+(tbArchEmp===e.name?' selected':'')+'>'+escH(e.name)+'</option>';}).join('')+'</select></div>'
+  +(bad?'<div style="background:#fde7ec;border:1px solid #f7b8c6;color:#be123c;border-radius:12px;padding:12px 14px;font-weight:700;font-size:13.5px;margin-bottom:14px">La date de début est postérieure à la date de fin.</div>':'')
+  +'<div style="border:1px solid #eee;border-radius:16px;overflow:hidden;margin-bottom:16px">'
+   +'<div style="padding:12px 15px;background:#f8fafc;border-bottom:1px solid #eee;display:flex;align-items:center;gap:10px">'
+     +'<b style="font-size:14.5px">Contenu du PDF</b>'
+     +'<span style="margin-left:auto;font-weight:800;font-size:13px;color:'+(tot?'#0e9f6e':'#94a3b8')+'">'+tot+' enregistrement'+(tot>1?'s':'')+(days?' · '+days+' jour'+(days>1?'s':''):'')+'</span></div>'
+   +counts.map(function(c){return '<div style="display:flex;align-items:center;gap:10px;padding:10px 15px;border-bottom:1px solid #f1f5f9">'
+     +'<span style="font-weight:600;font-size:13.5px;color:'+(c.n?'#0b1220':'#94a3b8')+'">'+c.K.t+'</span>'
+     +'<span style="margin-left:auto;font-family:ui-monospace,monospace;font-size:12.5px;font-weight:700;color:'+(c.n?'#0b1220':'#cbd5e1')+'">'+c.n+'</span></div>';}).join('')
+   +'</div>'
+  +'<button class="btn block" onclick="tbArchPdf()"'+((tot&&!bad)?'':' disabled style="opacity:.45;pointer-events:none"')+'>📄 Générer le PDF</button>'
+  +'<div class="tsub" style="text-align:center;margin-top:10px;font-size:12.5px">Le PDF s\'ouvre dans une nouvelle fenêtre : choisissez « Enregistrer au format PDF » dans la boîte d\'impression.</div>'
+  +'</div>';}
+function tbArchPdf(){
+  const cid=CID,est=(state.clients||[]).find(function(c){return c.id===cid;})||{};
+  const secs=ARCH_KINDS.map(function(K){return {K:K,rows:tbArchRange(cid,K.k,tbArchFrom,tbArchTo,tbArchEmp)};}).filter(function(s){return s.rows.length;});
+  if(!secs.length){toast('Aucun enregistrement sur cette période');return;}
+  const tot=secs.reduce(function(s,x){return s+x.rows.length;},0);
+  const alerts=secs.reduce(function(s,x){return s+x.rows.filter(function(r){return r.bad;}).length;},0);
+  const w=window.open('','_blank');
+  if(!w){toast('Autorisez les fenêtres pop-up pour générer le PDF');return;}
+  const esc=function(t){return String(t==null?'':t).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});};
+  let body='<div class="cover"><div class="k">Registre HACCP</div><h1>Archives '+esc(est.name||CUR||'')+'</h1>'
+   +'<div class="per">Période du '+_fr(tbArchFrom)+' au '+_fr(tbArchTo)+(tbArchEmp?' · '+esc(tbArchEmp):'')+'</div>'
+   +'<div class="sum"><div class="c"><span class="v">'+tot+'</span><span class="l">Enregistrements</span></div>'
+   +'<div class="c"><span class="v">'+secs.length+'</span><span class="l">Registres</span></div>'
+   +'<div class="c"><span class="v'+(alerts?' bad':'')+'">'+alerts+'</span><span class="l">Non conformités</span></div></div>'
+   +'<div class="ed">Édité le '+new Date().toLocaleDateString('fr-FR')+' à '+_hm(new Date())+' — Vigie</div></div>';
+  secs.forEach(function(s){
+    body+='<section><h2>'+esc(s.K.t)+' <span class="n">'+s.rows.length+'</span></h2><table><thead><tr>'
+      +s.K.heads.map(function(x){return '<th>'+esc(x)+'</th>';}).join('')+'</tr></thead><tbody>'
+      +s.rows.map(function(r){return '<tr'+(r.bad?' class="bad"':'')+'>'+r.row.map(function(c){return '<td>'+esc(c)+'</td>';}).join('')+'</tr>';}).join('')
+      +'</tbody></table></section>';});
+  w.document.write('<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Archives '+esc(est.name||CUR||'')+' — '+_fr(tbArchFrom)+' au '+_fr(tbArchTo)+'</title><style>'
+   +'@page{size:A4;margin:14mm 12mm}'
+   +'*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:#0b1220;margin:0;font-size:11px;line-height:1.45}'
+   +'.cover{border-bottom:2px solid #0b1220;padding-bottom:16px;margin-bottom:20px}'
+   +'.cover .k{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#64748b}'
+   +'.cover h1{font-size:23px;margin:6px 0 3px;letter-spacing:-.5px}'
+   +'.cover .per{font-size:12.5px;color:#334155;font-weight:600}'
+   +'.sum{display:flex;gap:26px;margin:14px 0 10px}'
+   +'.sum .c{display:flex;flex-direction:column}'
+   +'.sum .v{font-size:21px;font-weight:800;letter-spacing:-.5px}.sum .v.bad{color:#be123c}'
+   +'.sum .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.8px;color:#64748b;font-weight:700}'
+   +'.cover .ed{font-size:10px;color:#94a3b8}'
+   +'section{margin-bottom:20px;page-break-inside:auto}'
+   +'h2{font-size:13px;margin:0 0 7px;padding-bottom:5px;border-bottom:1px solid #cbd5e1;page-break-after:avoid}'
+   +'h2 .n{font-size:10px;color:#64748b;font-weight:600}'
+   +'table{width:100%;border-collapse:collapse;font-size:9.5px}'
+   +'thead{display:table-header-group}'
+   +'th{background:#f1f5f9;text-align:left;padding:5px 6px;border:1px solid #cbd5e1;font-size:8.5px;text-transform:uppercase;letter-spacing:.4px}'
+   +'td{padding:4px 6px;border:1px solid #dfe5ec;vertical-align:top}'
+   +'tr{page-break-inside:avoid}'
+   +'tr.bad td{background:#fdeaee;font-weight:600}'
+   +'@media print{.noprint{display:none}}'
+   +'.noprint{position:fixed;top:10px;right:10px;background:#0e9f6e;color:#fff;border:0;border-radius:9px;padding:9px 15px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}'
+   +'</style></head><body><button class="noprint" onclick="window.print()">📄 Enregistrer en PDF</button>'+body
+   +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},350);};</scr'+'ipt></body></html>');
+  w.document.close();
+  toast('📄 PDF généré — '+tot+' enregistrement'+(tot>1?'s':''));}
+
 function tbArchExport(){const es=tbArchEntries(CID);if(!es.length){toast('Rien à exporter');return;}
   const heads={temp:['Date','Equipement','Valeur','Par','Etat'],clean:['Date','Zone','Tache','Par'],oil:['Date','Friteuse','Polarite','Etat'],dlc:['Date ouverture','Produit','DLC','Par'],recep:['Date','Fournisseur','Produit','Lot','Temp'],prod:['Date','Produit','Lot','Par'],perte:['Date','Produit','Motif','Quantite','Par']}[tbArchTab];
   let csv=heads.join(',')+'\n';es.forEach(x=>csv+=x.row.map(v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"').join(',')+'\n');
@@ -3335,11 +3480,16 @@ function rhAddMotifQuick(v){if(!state.rhCfg.badgeMotifs.includes(v))state.rhCfg.
 function rhDelMotif(i){state.rhCfg.badgeMotifs.splice(i,1);renderClient('rh_etab');}
 function rhSetConge(id,field,val){const e=state.employees.find(x=>x.id===id);if(e)e[field]=+val;}
 function formJob(id){const j=id?state.jobs.find(x=>x.id===id):null;openForm(id?'Modifier le poste':'Nouveau poste',[{key:'name',label:'Nom du poste',value:j?j.name:''},{key:'color',label:'Couleur',type:'color',value:j?j.color:'#2563eb'}],v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}if(j){Object.assign(j,{name:v.name,color:v.color});}else{state.jobs.push({id:'j'+Date.now(),clientId:CID,name:v.name,color:v.color});}renderClient('rh_etab');toast('Poste enregistré');});}
+function rhNewPin(){let p='',guard=0;do{p=String(Math.floor(1000+Math.random()*9000));guard++;}
+  while(guard<40&&(state.employees||[]).some(function(x){return x.clientId===CID&&String(x.pin||'')===p;}));return p;}
+function rhPinOf(e){if(!e)return '';if(!e.pin)e.pin=rhNewPin();return String(e.pin);}
 function formEmp(id){const e=id?state.employees.find(x=>x.id===id):null;const jobs=state.jobs.filter(j=>j.clientId===CID);
-  openForm(id?'Modifier l\'employé':'Nouvel employé',[{key:'name',label:'Nom complet',value:e?e.name:''},{key:'job',label:'Poste',type:'select',options:jobs.map(j=>j.name),value:e?(jobs.find(j=>j.id===e.jobId)||{}).name:(jobs[0]||{}).name},{key:'contract',label:'Contrat (h/semaine)',type:'number',value:e?e.contract:35},{key:'contact',label:'Contact (email ou téléphone)',value:e?(e.contactInfo||''):'',ph:'optionnel'},{key:'hire',label:'Date d\'embauche',type:'date',value:e?(e.hireDate||''):''}],
+  openForm(id?'Modifier l\'employé':'Nouvel employé',[{key:'name',label:'Nom complet',value:e?e.name:''},{key:'job',label:'Poste',type:'select',options:jobs.map(j=>j.name),value:e?(jobs.find(j=>j.id===e.jobId)||{}).name:(jobs[0]||{}).name},{key:'contract',label:'Contrat (h/semaine)',type:'number',value:e?e.contract:35},{key:'contact',label:'Contact (email ou téléphone)',value:e?(e.contactInfo||''):'',ph:'optionnel'},{key:'pin',label:'Code personnel (4 chiffres)',value:e?(e.pin||''):'',ph:'laissez vide : généré automatiquement'},{key:'hire',label:'Date d\'embauche',type:'date',value:e?(e.hireDate||''):''}],
   v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}const job=jobs.find(j=>j.name===v.job)||jobs[0];
-    if(e){e.name=v.name;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.contract=+v.contract;e.contactInfo=v.contact||'';if(v.hire)e.hireDate=v.hire;}
-    else{const ini=v.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();state.employees.push({id:'em'+Date.now(),clientId:CID,name:v.name,role:job?job.name:'',ini:ini,jobId:job?job.id:null,active:true,contract:+v.contract,hStd:+v.contract,hReal:0,contactInfo:v.contact||'',hireDate:v.hire||new Date().toISOString().slice(0,10),cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});}
+    const pin=String(v.pin||'').replace(/\D/g,'').slice(0,4);
+    if(v.pin&&pin.length!==4){toast('Le code personnel doit faire 4 chiffres');return;}
+    if(e){e.name=v.name;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.contract=+v.contract;e.contactInfo=v.contact||'';e.pin=pin||e.pin||rhNewPin();if(v.hire)e.hireDate=v.hire;}
+    else{const ini=v.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();state.employees.push({id:'em'+Date.now(),clientId:CID,name:v.name,role:job?job.name:'',ini:ini,jobId:job?job.id:null,active:true,contract:+v.contract,hStd:+v.contract,hReal:0,contactInfo:v.contact||'',pin:pin||rhNewPin(),hireDate:v.hire||new Date().toISOString().slice(0,10),cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});}
     renderClient('rh_etab');toast(e?'Employé modifié':'Employé ajouté — dispo sur la tablette');});}
 function rhArchiveEmp(id){const e=state.employees.find(x=>x.id===id);if(!e)return;
   if(e.active===false){e.active=true;renderClient('rh_etab');toast('Employé réactivé');return;}
@@ -4677,8 +4827,11 @@ function suiviTable(cid){
 let kpEq=null,kpBuf='';
 function openKp(id){kpEq=eqById(id);kpBuf='';document.getElementById('kp_title').textContent=kpEq.icon+' '+kpEq.name;document.getElementById('kp_sub').textContent='Cible '+seuilTxt(kpEq);document.getElementById('kp_corr').classList.remove('on');updateKp();document.getElementById('kp_mask').classList.add('on');}
 function kpClose(){document.getElementById('kp_mask').classList.remove('on');}
+function kpDel(){if(!kpBuf)return;kpBuf=kpBuf.slice(0,-1);if(kpBuf==='-')kpBuf='';updateKp();}
+function kpClear(){if(!kpBuf)return;kpBuf='';updateKp();}
 function kpKey(k){if(k==='-'){kpBuf=kpBuf.startsWith('-')?kpBuf.slice(1):'-'+kpBuf;updateKp();return;}if(k==='.'&&kpBuf.includes('.'))return;if(kpBuf.replace('-','').replace('.','').length>=3)return;kpBuf+=k;updateKp();}
-function updateKp(){const v=parseFloat(kpBuf);document.getElementById('kp_val').textContent=(kpBuf===''||kpBuf==='-')?'0.0':kpBuf;const st=document.getElementById('kp_status');const corr=document.getElementById('kp_corr');
+function updateKp(){const v=parseFloat(kpBuf);document.getElementById('kp_val').textContent=(kpBuf===''||kpBuf==='-')?'0.0':kpBuf;
+  ['kp_del','kp_clr'].forEach(function(i){const b=document.getElementById(i);if(b)b.disabled=(kpBuf==='');});const st=document.getElementById('kp_status');const corr=document.getElementById('kp_corr');
   if(kpBuf===''||isNaN(v)){st.textContent='';corr.classList.remove('on');return;}
   const bad=v>kpEq.max||v<kpEq.min;
   if(bad){st.textContent=' Hors seuil ('+seuilTxt(kpEq)+')';st.style.color='var(--bad)';corr.classList.add('on');}else{st.textContent='✓ Conforme';st.style.color='var(--ok)';corr.classList.remove('on');}}
