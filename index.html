@@ -149,6 +149,28 @@
   .pwk .bdgchip:hover{background:#DDF4FA}
   .pwk thead th{position:sticky;top:0;background:#fff;z-index:2}
   .planwrap{max-height:calc(100vh - 252px);overflow:auto}
+  /* --- liste ingrédients : filtres, tri, sélection multiple --- */
+  .ingbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .ingbar .dp-search{flex:1;min-width:180px;width:auto}
+  .ingsel{padding:9px 10px;border:1px solid #ccd6e0;border-radius:10px;font-size:12.5px;background:#fff;color:var(--ink);font-weight:600;max-width:185px}
+  .ingscroll{max-height:calc(100vh - 340px);overflow:auto}
+  .ingscroll thead th{position:sticky;top:0;background:#fff;z-index:2}
+  .ingtbl th.s{cursor:pointer;user-select:none;white-space:nowrap}
+  .ingtbl th.s:hover{color:var(--ink)}
+  .ingtbl td,.ingtbl th{padding:9px 10px}
+  .ingtbl tr.sel td{background:#e3f2fb}
+  .ingck{width:16px;height:16px;accent-color:var(--brand);cursor:pointer;vertical-align:middle}
+  .selbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:var(--ink);color:#fff;padding:10px 14px;border-radius:var(--r-md);margin-bottom:10px}
+  .selbar b{font-size:13.5px}
+  .selbar .btn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);color:#fff}
+  .selbar .btn:hover{background:rgba(255,255,255,.26)}
+  .tg{display:inline-block;background:#f0e9fd;color:#6d28d9;font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:999px;margin:1px 3px 1px 0;white-space:nowrap}
+  .trend{font-size:10.5px;font-weight:800;padding:1px 6px;border-radius:999px;margin-left:5px;white-space:nowrap}
+  .trend.up{background:#ffebe3;color:#b83504}.trend.dn{background:#e3f2fb;color:#006fab}
+  .pgbar{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:10px 12px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+  .edp{cursor:pointer;border-bottom:1px dashed #ccd6e0}
+  .edp:hover{color:var(--brand)}
+  .usel{cursor:pointer;color:var(--brand);font-weight:700}
   .actwrap{position:relative;display:inline-block}
   .actmenu{display:none;position:absolute;right:0;top:calc(100% + 8px);background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 34px rgba(15,23,42,.16);min-width:262px;z-index:60;overflow:hidden}
   .actmenu.on{display:block}
@@ -247,14 +269,14 @@
   .prn .hint{color:var(--muted);font-size:12.5px;margin-top:-4px;margin-bottom:12px}
   .tb-title-k{text-align:center;color:var(--muted);font-weight:800;font-size:12px;letter-spacing:2px;text-transform:uppercase}
   .tb-title{text-align:center;font-size:26px;font-weight:800;margin:4px 0 16px;letter-spacing:-.6px}
-  .modwrap{display:flex;flex-direction:column;min-height:100%}
-  .modgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;flex:1;align-content:stretch;width:100%}
+  .modwrap{display:flex;flex-direction:column;justify-content:center;min-height:100%;padding:0 clamp(12px,5vw,72px)}
+  .modgrid{display:grid;grid-template-columns:1fr 1fr;gap:20px;width:100%;max-width:940px;margin:0 auto;align-content:center}
   @media(max-width:620px){.modgrid{grid-template-columns:1fr;gap:12px}}
-  .modcard{border:1px solid var(--line);border-radius:var(--r-xl);padding:30px 32px;background:#fff;cursor:pointer;transition:.15s;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:150px}
+  .modcard{border:1px solid var(--line);border-radius:var(--r-xl);padding:26px 28px;background:#fff;cursor:pointer;transition:.15s;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:168px}
   .modcard:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .modcard .k{font-size:11px;font-weight:800;letter-spacing:2px;color:var(--brand);text-transform:uppercase}
   .modcard .ic{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px;margin:8px 0 14px}
-  .modcard h3{font-size:29px;margin:6px 0 10px}.modcard p{font-size:15px;color:var(--muted);line-height:1.5;max-width:36ch}
+  .modcard h3{font-size:25px;margin:6px 0 9px}.modcard p{font-size:14px;color:var(--muted);line-height:1.5;max-width:34ch}
   .modcard .arr{margin-top:auto;padding-top:20px;color:var(--brand);font-weight:700;font-size:15px}
   .modcard .cnt{position:absolute;top:16px;right:16px;background:#ffebe3;color:var(--bad);font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
   .bdg-choice{display:grid;grid-template-columns:1fr 1fr;gap:22px;max-width:720px;margin:0 auto}
@@ -271,7 +293,13 @@
   #bdgcam{position:fixed;inset:0;background:#08090c;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px}
   #bdgcam video{width:min(78vw,420px);aspect-ratio:3/4;object-fit:cover;border-radius:22px;background:#000;transform:scaleX(-1)}
   #bdgcam .cd{font-size:56px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1}
-  #bdgcam .msg{color:#ccd6e0;font-size:15px;text-align:center;max-width:320px}
+  #bdgcam .msg{color:#ccd6e0;font-size:15.5px;text-align:center;max-width:360px;line-height:1.5}
+  #bdgcam img.shot-prev{width:min(78vw,420px);aspect-ratio:3/4;object-fit:cover;border-radius:22px;background:#000}
+  #bdgcam .bdgrow{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap}
+  #bdgcam .shot{width:82px;height:82px;border-radius:50%;background:#fff;border:6px solid rgba(255,255,255,.28);cursor:pointer;display:grid;place-items:center;font-size:29px}
+  #bdgcam .shot:active{transform:scale(.94)}
+  #bdgcam .lnk{background:transparent;border:1px solid #3b4252;color:#ccd6e0;border-radius:999px;padding:13px 22px;font-weight:700;font-size:14.5px;cursor:pointer;font-family:inherit}
+  #bdgcam .lnk.ok{background:var(--brand);border-color:var(--brand);color:#fff}
   #prodcam{position:fixed;inset:0;background:#08090c;z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:18px}
   #prodcam video,#prodcam img.shot{width:min(84vw,460px);aspect-ratio:4/3;object-fit:cover;border-radius:20px;background:#000}
   #prodcam .cap{color:#ccd6e0;font-size:14.5px;text-align:center;max-width:340px;line-height:1.45}
@@ -1010,7 +1038,7 @@ state.shifts=[];
 })();
 
 /* helpers */
-const cEquip=cid=>state.equip.filter(e=>e.clientId===cid);
+const cEquip=cid=>state.equip.filter(e=>e.clientId===cid&&!e.archived);
 const cRel=cid=>state.releves.filter(r=>r.clientId===cid).sort((a,b)=>b.at-a.at);
 function todayRel(cid){const t=new Date();t.setHours(0,0,0,0);return cRel(cid).filter(r=>r.at>=t);}
 const openAlerts=cid=>cRel(cid).filter(r=>r.status==='alerte');
@@ -1577,26 +1605,27 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     +'</div>'
     +'<div class="grid2"><div class="panel"><div class="ph"><h3>Températures — 5 derniers jours</h3><span class="chip muted">moyenne / relevé</span></div><div class="pb">'+tempChart(cid)+'</div></div><div class="panel"><div class="ph"><h3>Alertes à traiter</h3></div><div class="pb">'+clientAlerts(cid)+'</div></div></div>';
   } else if(clientView==='h_zones'){
-    const tasks=state.postes.filter(p=>p.clientId===cid);const zones=state.zones.filter(z=>z.clientId===cid);
+    const tasks=archFilter(state.postes.filter(p=>p.clientId===cid));const zones=archFilter(state.zones.filter(z=>z.clientId===cid));
     m.innerHTML=topbar('Zones & Tâches','Plan de nettoyage — zones & tâches synchronisées avec la tablette','<button class="btn ghost" onclick="zlibOpen()">📚 Bibliothèque</button><button class="btn ghost" onclick="formZone()">＋ Nouvelle zone</button><button class="btn" onclick="formTask()">＋ Nouvelle tâche</button>')
     +syncedNote('Zones et tâches créées ici apparaissent immédiatement sur la tablette (module Nettoyage).')
-    +(zones.length?zones.map(z=>{const zt=tasks.filter(t=>t.zone===z.name);return '<div class="panel" style="margin-bottom:14px"><div class="ph"><h3> '+z.name+'</h3><span class="chip muted">'+zt.length+' tâches</span><div class="actions"><button class="btn ghost sm" onclick="formZone(\''+z.id+'\')">Modifier</button><button class="btn ghost sm" onclick="crudDel(\'zones\',\''+z.id+'\',\'h_zones\')">Suppr.</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Tâche</th><th>Fréquence</th><th>Dernière fois</th><th>État</th><th></th></tr></thead><tbody>'
+    +(zones.length?zones.map(z=>{const zt=tasks.filter(t=>t.zone===z.name);return '<div class="panel" style="margin-bottom:14px"><div class="ph"><h3> '+z.name+'</h3><span class="chip muted">'+zt.length+' tâches</span><div class="actions"><button class="btn ghost sm" onclick="formZone(\''+z.id+'\')">Modifier</button><button class="btn ghost sm" onclick="crudDel(\'zones\',\''+z.id+'\',\'h_zones\')">🗄 Archiver</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th>Tâche</th><th>Fréquence</th><th>Dernière fois</th><th>État</th><th></th></tr></thead><tbody>'
       +(zt.length?zt.map(t=>'<tr><td class="tname">'+t.name+'</td><td><span class="chip muted">'+t.freq+'</span></td><td class="tsub">'+(t.at?t.at.toLocaleDateString('fr-FR')+' · '+t.by:'—')+'</td><td>'+(t.done?'<span class="chip ok">✓ fait</span>':'<span class="chip warn">à faire</span>')+'</td><td style="text-align:right">'+rowActions('formTask','postes',t.id,'h_zones')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Aucune tâche dans cette zone.</td></tr>')+'</tbody></table></div></div>';}).join(''):'<div class="empty" style="padding:44px 20px;text-align:center"><div style="font-size:38px">🧽</div><div style="font-weight:800;margin:8px 0 4px">Aucune zone pour le moment</div><div class="tsub" style="margin-bottom:14px">Partez de notre bibliothèque : cochez vos zones et vos tâches, tout est créé d\'un coup.</div><button class="btn" onclick="zlibOpen()">📚 Ouvrir la bibliothèque</button></div>');
   } else if(clientView==='h_equip'){
-    m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette','<button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>')
+    const eqs=archFilter((state.equip||[]).filter(function(e){return e.clientId===cid;}));
+    m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette',archToggleBtn('h_equip','equip',cid)+'<button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>')
     +syncedNote('Un équipement ajouté ici apparaît aussitôt sur la tablette. L\'interrupteur « Actif » l\'active ou le masque sur la tablette.')
     +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th></th><th>Équipement</th><th>Catégorie</th><th>Local</th><th>Seuil</th><th>Dernier</th><th>Actif</th><th></th></tr></thead><tbody>'
-    +eqs.map(e=>{const last=cRel(cid).find(r=>r.equipId===e.id);return '<tr'+(e.active===false?' style="opacity:.55"':'')+'><td><img src="'+eqImg(e)+'" style="width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--line)"></td><td class="tname">'+e.name+'</td><td><span class="chip '+(e.cat==='chaud'?'warn':'blue')+'">'+catLabel(e.cat)+'</span></td><td>'+e.loc+'</td><td>'+seuilTxt(e)+'</td><td class="tname" style="color:'+(last&&last.status==='alerte'?'var(--bad)':'var(--ink)')+'">'+(last?last.value+' °C':'—')+'</td><td>'+switchTgl('equip',e.id,'h_equip',e.active!==false)+'</td><td style="text-align:right">'+rowActions('formEquip','equip',e.id,'h_equip')+'</td></tr>';}).join('')+'</tbody></table></div></div>';
+    +eqs.map(e=>{const last=cRel(cid).find(r=>r.equipId===e.id);return '<tr'+(e.archived?' style="opacity:.5"':(e.active===false?' style="opacity:.55"':''))+'><td><img src="'+eqImg(e)+'" style="width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--line)"></td><td class="tname">'+e.name+'</td><td><span class="chip '+(e.cat==='chaud'?'warn':'blue')+'">'+catLabel(e.cat)+'</span></td><td>'+e.loc+'</td><td>'+seuilTxt(e)+'</td><td class="tname" style="color:'+(last&&last.status==='alerte'?'var(--bad)':'var(--ink)')+'">'+(last?last.value+' °C':'—')+'</td><td>'+switchTgl('equip',e.id,'h_equip',e.active!==false)+'</td><td style="text-align:right">'+rowActions('formEquip','equip',e.id,'h_equip')+'</td></tr>';}).join('')+'</tbody></table></div></div>';
   } else if(clientView==='h_friteuses'){
-    const fr=state.friteuses.filter(h=>h.clientId===cid);
-    m.innerHTML=topbar('Friteuses','Configuration des friteuses & suivi de la polarité des huiles','<button class="btn" onclick="formFriteuse()">＋ Nouvelle friteuse</button>')
+    const fr=archFilter(state.friteuses.filter(h=>h.clientId===cid));
+    m.innerHTML=topbar('Friteuses','Configuration des friteuses & suivi de la polarité des huiles',archToggleBtn('h_friteuses','friteuses',cid)+'<button class="btn" onclick="formFriteuse()">＋ Nouvelle friteuse</button>')
     +syncedNote('Les friteuses configurées ici apparaissent sur la tablette (module Suivi des huiles).')
     +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Friteuse</th><th>Marque</th><th>Capacité</th><th>Zone</th><th>Nettoyage</th><th>Polarité</th><th></th></tr></thead><tbody>'
     +fr.map(h=>'<tr><td class="tname"> '+h.name+'</td><td>'+(h.marque||'—')+'</td><td>'+(h.capacite||'—')+'</td><td>'+(h.zone||'—')+'</td><td><span class="chip muted">'+(h.freq||'—')+'</span></td><td>'+(h.status==='alerte'?'<span class="chip bad">'+h.polarity+'% · à changer</span>':'<span class="chip ok">'+h.polarity+'%</span>')+'</td><td style="text-align:right">'+rowActions('formFriteuse','friteuses',h.id,'h_friteuses')+'</td></tr>').join('')+'</tbody></table></div></div>'
     +'<p style="color:var(--muted);font-size:13px;margin-top:14px"> Au-delà de 24% de composés polaires, l\'huile doit être changée (arrêté du 8 septembre 1988).</p>';
   } else if(clientView==='h_dlc'){
-    const cats=state.dlcCats.filter(c2=>c2.clientId===cid);const prods=state.dlcProducts.filter(p=>p.clientId===cid);
-    m.innerHTML=topbar('Configuration DLC','Catégories & produits — durées par type (Ouvert / Décongelé / Fabriqué)','')
+    const cats=archFilter(state.dlcCats.filter(c2=>c2.clientId===cid));const prods=archFilter(state.dlcProducts.filter(p=>p.clientId===cid));
+    m.innerHTML=topbar('Configuration DLC','Catégories & produits — durées par type (Ouvert / Décongelé / Fabriqué)',archToggleBtn('h_dlc','dlcProducts',cid))
     +syncedNote('Les produits configurés ici alimentent l\'étiquetage DLC sur la tablette.')
     +'<div style="margin-bottom:14px"><span class="seg-mini"><button class="'+(dlcTab==='cats'?'active':'')+'" onclick="setDlcTab(\'cats\')">Catégories ('+cats.length+')</button><button class="'+(dlcTab==='prods'?'active':'')+'" onclick="setDlcTab(\'prods\')">Produits ('+prods.length+')</button></span></div>'
     +(dlcTab==='cats'
@@ -1605,8 +1634,8 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       :'<div class="panel"><div class="ph"><h3>Produits</h3><div class="actions"><button class="btn sm" onclick="formDlcProduct()">＋ Nouveau produit</button></div></div><div class="pb" style="padding:0"><table><thead><tr><th></th><th>Produit</th><th>Catégorie</th><th>Ouvert</th><th>Décongelé</th><th>Fabriqué</th><th>Actif</th><th></th></tr></thead><tbody>'
         +prods.map(p=>{const c2=state.dlcCats.find(x=>x.id===p.catId)||{};return '<tr'+(p.active===false?' style="opacity:.55"':'')+'><td><img src="'+(p.photo||emojiImg('','#f0e9fd'))+'" style="width:36px;height:36px;border-radius:8px;object-fit:cover;border:1px solid var(--line)"></td><td class="tname">'+p.name+'</td><td><span class="chip" style="background:'+((c2.color||'#eff4f8')+'22')+';color:'+(c2.color||'#55637a')+'">'+(c2.name||'—')+'</span></td><td>'+(p.ouvert?p.ouvert+' j':'—')+'</td><td>'+(p.decongele?p.decongele+' j':'—')+'</td><td>'+(p.fabrique?p.fabrique+' j':'—')+'</td><td>'+switchTgl('dlcProducts',p.id,'h_dlc',p.active!==false)+'</td><td style="text-align:right">'+rowActions('formDlcProduct','dlcProducts',p.id,'h_dlc')+'</td></tr>';}).join('')+'</tbody></table></div></div>');
   } else if(clientView==='h_four'){
-    const fs=state.fournisseurs.filter(f=>f.clientId===cid);
-    m.innerHTML=topbar('Fournisseurs','Annuaire pour la traçabilité des réceptions','<button class="btn" onclick="formFour()">＋ Nouveau fournisseur</button>')
+    const fs=archFilter(state.fournisseurs.filter(f=>f.clientId===cid));
+    m.innerHTML=topbar('Fournisseurs','Annuaire pour la traçabilité des réceptions',archToggleBtn('h_four','fournisseurs',cid)+'<button class="btn" onclick="formFour()">＋ Nouveau fournisseur</button>')
     +syncedNote('Les fournisseurs sont proposés à la saisie des réceptions sur la tablette.')
     +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Nom</th><th>Contact</th><th>Téléphone</th><th>Email</th><th></th></tr></thead><tbody>'
     +fs.map(f=>'<tr><td class="tname">'+f.nom+'</td><td>'+(f.contact||'—')+'</td><td>'+(f.tel||'—')+'</td><td>'+(f.email||'—')+'</td><td style="text-align:right">'+rowActions('formFour','fournisseurs',f.id,'h_four')+'</td></tr>').join('')+'</tbody></table></div></div>';
@@ -1734,7 +1763,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     }
   } else if(clientView==='food'){
     state.recipes=state.recipes||[];state.foodIng=state.foodIng||[];state.foodSubs=state.foodSubs||[];
-    const rs=state.recipes.filter(r=>r.clientId===cid);const ings=state.foodIng.filter(g=>g.clientId===cid);const subs=state.foodSubs.filter(s=>s.clientId===cid);
+    const rs=archFilter(state.recipes.filter(r=>r.clientId===cid));const ings=archFilter(state.foodIng.filter(g=>g.clientId===cid));const subs=archFilter(state.foodSubs.filter(s=>s.clientId===cid));
     const tab=foodTab||'fiches';
     const withPV=rs.filter(function(r){return foodPvHT(r.prix,r.tva||0)>0;});
     const avgMarge=withPV.length?Math.round(withPV.reduce(function(s,r){const h=foodPvHT(r.prix,r.tva||0);return s+(h-foodCostOf(r))/h;},0)/withPV.length*100):0;
@@ -1745,7 +1774,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     const actBtn=tab==='fiches'?'<button class="btn ghost" onclick="foodRecCatAdd()">＋ Catégorie</button> <button class="btn" onclick="foodRecipeOpen()">＋ Nouvelle recette</button>':(tab==='subs'?'<button class="btn" onclick="foodSubOpen()">＋ Nouvelle sous-recette</button>':'<button class="btn ghost" onclick="foodIngCatAdd()">＋ Catégorie</button> <button class="btn" onclick="foodIngForm()">＋ Nouvel ingrédient</button>');
     m.innerHTML=topbar('Food Cost','Recettes, sous-recettes, ingrédients — coût matière & marges automatiques',actBtn)
     +'<div class="kpis">'+kpi('Recettes',rs.length,'au menu','up')+kpi('Food cost moyen',avgCM+'%','objectif ≤ 30%',avgCM<=30?'up':'down')+kpi('Marge brute moyenne',avgMarge+'%','sur PV HT',avgMarge>=70?'up':'down')+kpi('À surveiller',sousSeuil,'food cost > 30%',sousSeuil?'down':'up')+'</div>';
-    if(rs.length){
+    if(rs.length&&tab==='fiches'){
       const pos=Math.min(100,Math.max(0,avgCM*2)); // jauge 0→50%
       const watch=withPV.filter(function(r){const h=foodPvHT(r.prix,r.tva||0);return foodCostOf(r)/h>0.30;}).sort(function(a,b){return foodCostOf(b)/foodPvHT(b.prix,b.tva||0)-foodCostOf(a)/foodPvHT(a.prix,a.tva||0);}).slice(0,5);
       const best=withPV.slice().sort(function(a,b){return (foodPvHT(b.prix,b.tva||0)-foodCostOf(b))-(foodPvHT(a.prix,a.tva||0)-foodCostOf(a));}).slice(0,3);
@@ -1762,28 +1791,16 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     var foodHelp=helpBox([['Créer vos ingrédients','renseignez le prix d\'achat HT du conditionnement et l\'unité d\'achat — le prix unitaire se calcule seul.'],['Préparer vos sous-recettes','une préparation maison (pâte, sauce…) avec sa quantité produite : son coût par unité s\'utilise ensuite dans vos recettes.'],['Composer vos recettes','ajoutez sous-recettes et ingrédients bruts avec quantités et % de perte — coûts, marges et food cost se mettent à jour en direct.'],['Surveiller vos marges','visez un food cost sous 30 % ; la jauge et la liste « à surveiller » vous alertent.']]);
     if(tab==='fiches'){
       state.foodRecCats=state.foodRecCats||[];
-      const rgrp=foodRecFilter||'';
-      const rshown=rgrp?rs.filter(function(r){return rgrp==='__none__'?!r.cat:(r.cat===rgrp);}):rs;
-      m.innerHTML+='<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap"><span class="chip" style="cursor:pointer;'+(rgrp===''?'background:#0a1020;color:#fff':'background:#eff4f8')+'" onclick="foodRecFilter=\'\';renderClient(\'food\')">Toutes ('+rs.length+')</span>'
-       +'<span class="chip" style="cursor:pointer;'+(rgrp==='__none__'?'background:#0a1020;color:#fff':'background:#eff4f8')+'" onclick="foodRecFilter=\'__none__\';renderClient(\'food\')">Sans catégorie ('+rs.filter(function(r){return !r.cat;}).length+')</span>'
-       +state.foodRecCats.map(function(c){return '<span class="chip" style="cursor:pointer;'+(rgrp===c?'background:#0a1020;color:#fff':'background:#eff4f8')+'" onclick="foodRecFilter=\''+escH(c)+'\';renderClient(\'food\')">'+escH(c)+' ('+rs.filter(function(r){return r.cat===c;}).length+')</span>';}).join('')
-       +'<button class="btn ghost sm" style="margin-left:auto" onclick="foodRecCatDel()"'+(state.foodRecCats.length?'':' disabled')+'>Gérer les catégories</button></div>'
-      +'<div style="margin-bottom:12px"><input class="dp-search" id="food_rec_search" placeholder="Rechercher une recette…" oninput="foodTableFilter(\'food_rec_search\',\'food_rec_tbody\')"></div>';
-      m.innerHTML+='<div class="panel"><div class="pb" style="padding:0">'+(rshown.length?('<table><thead><tr><th>Recette</th><th>Catégorie</th><th>PV TTC</th><th>Coût matière</th><th>Marge brute (HT)</th><th>Food cost</th><th></th></tr></thead><tbody id="food_rec_tbody">'+rshown.map(function(r){const c=foodCostOf(r);const pvht=foodPvHT(r.prix,r.tva!=null?r.tva:0);const mg=pvht-c;const tx=pvht>0?Math.round(mg/pvht*100):0;const cm=pvht>0?Math.round(c/pvht*100):0;const portions=Math.max(1,Number(r.portions)||1);const nSub=(r.lines||[]).filter(function(l){return l.kind==='sub';}).length;return '<tr data-s="'+escH((r.name+' '+(r.cat||'')+' '+(r.desc||'')).toLowerCase())+'"><td><div style="display:flex;align-items:center;gap:10px">'+(r.photo?'<img src="'+r.photo+'" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line);flex:none">':'<div style="width:44px;height:44px;border-radius:10px;background:#eff4f8;border:1px solid var(--line);flex:none"></div>')+'<div><div class="tname">'+escH(r.name)+'</div><div class="tsub">'+((r.lines||[]).length)+' composant(s)'+(nSub?' dont '+nSub+' sous-recette(s)':'')+(portions>1?' · '+portions+' portions':'')+'</div></div></div></td><td>'+(r.cat?'<span class="chip muted">'+escH(r.cat)+'</span>':'—')+'</td><td>'+(Number(r.prix)||0).toFixed(2)+' €</td><td>'+c.toFixed(2)+' €'+(portions>1?'<div class="tsub">'+(c/portions).toFixed(2)+' €/portion</div>':'')+'</td><td>'+mg.toFixed(2)+' € ('+tx+'%)</td><td><span class="chip '+(cm>35?'warn':'ok')+'">'+cm+'%</span></td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodRecipeOpen(\''+r.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="foodDuplicate(\''+r.id+'\')" title="Dupliquer">Dupliquer</button> <button class="btn ghost sm" onclick="crudDel(\'recipes\',\''+r.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucune recette. Créez vos ingrédients et sous-recettes, puis composez vos recettes : les coûts se calculent automatiquement.</div>')+'</div></div>';
+      m.innerHTML+=recToolbar()+'<div id="food_rec_zone"></div>';
     } else if(tab==='subs'){
       m.innerHTML+='<div style="margin-bottom:12px"><input class="dp-search" id="food_sub_search" placeholder="Rechercher une sous-recette…" oninput="foodTableFilter(\'food_sub_search\',\'food_sub_tbody\')"></div>'
       +'<div class="panel"><div class="pb" style="padding:0">'+(subs.length?('<table><thead><tr><th>Sous-recette</th><th>Production</th><th>Coût total</th><th>Coût / unité</th><th>Utilisée dans</th><th></th></tr></thead><tbody id="food_sub_tbody">'+subs.map(function(sb){const tot=foodSubTotal(sb);const cpu=foodSubCostPerUnit(sb);const used=rs.filter(function(r){return (r.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===sb.id;});}).length;return '<tr data-s="'+escH((sb.name||'').toLowerCase())+'"><td><div class="tname">'+escH(sb.name)+'</div><div class="tsub">'+((sb.lines||[]).length)+' ingrédient(s)</div></td><td>'+(Number(sb.yieldQty)||0)+' '+escH(sb.yieldUnit||'')+'</td><td>'+tot.toFixed(2)+' €</td><td>'+cpu.toFixed(3)+' € / '+escH(sb.yieldUnit||'u')+'</td><td>'+used+' recette(s)</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodSubOpen(\''+sb.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="foodSubDel(\''+sb.id+'\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucune sous-recette. Une sous-recette (ex. pâte à naan, sauce maison) se prépare à partir d\'ingrédients et s\'utilise ensuite dans vos recettes — son coût remonte automatiquement.</div>')+'</div></div>';
     } else {
       state.foodIngCats=state.foodIngCats||[];
-      const grp=foodIngFilter||'';
-      const shown=grp?ings.filter(function(g){return (g.group||'')===(grp==='__none__'?'':grp)&&(grp!=='__none__'||!g.group);}):ings;
-      m.innerHTML+='<div style="margin-bottom:12px;display:flex;gap:6px;flex-wrap:wrap"><span class="chip" style="cursor:pointer;'+(grp===''?'background:#0a1020;color:#fff':'background:#eff4f8')+'" onclick="foodIngFilter=\'\';renderClient(\'food\')">Tous ('+ings.length+')</span>'
-       +'<span class="chip" style="cursor:pointer;'+(grp==='__none__'?'background:#0a1020;color:#fff':'background:#eff4f8')+'" onclick="foodIngFilter=\'__none__\';renderClient(\'food\')">Sans catégorie ('+ings.filter(function(g){return !g.group;}).length+')</span>'
-       +state.foodIngCats.map(function(c){return '<span class="chip" style="cursor:pointer;'+(grp===c?'background:#0a1020;color:#fff':'background:#eff4f8')+'" onclick="foodIngFilter=\''+escH(c)+'\';renderClient(\'food\')">'+escH(c)+' ('+ings.filter(function(g){return g.group===c;}).length+')</span>';}).join('')+'</div>'
-      +'<div style="margin-bottom:12px"><input class="dp-search" id="food_ing_search" placeholder="Rechercher un ingrédient…" oninput="foodTableFilter(\'food_ing_search\',\'food_ing_tbody\')"></div>'
-      +'<div class="panel"><div class="pb" style="padding:0">'+(shown.length?('<table><thead><tr><th>Ingrédient</th><th>Catégorie</th><th>Type</th><th>Prix d\'achat HT</th><th>Prix unitaire</th><th>Fournisseur</th><th>Utilisé dans</th><th></th></tr></thead><tbody id="food_ing_tbody">'+shown.map(function(g){const usedR=rs.filter(function(r){return (r.lines||[]).some(function(l){return (l.kind==='sub'?false:(l.refId||l.ingId)===g.id);});}).length;const usedS=subs.filter(function(sb){return (sb.lines||[]).some(function(l){return (l.refId||l.ingId)===g.id;});}).length;const up=foodIngUnitPrice(g);const _sk=(typeof stkIngLink==='function')?stkIngLink(g):null;const _skp=_sk&&stkIngPrice(g)!=null;const achat=_skp?(_sk.cost.toFixed(2)+' € / '+escH(_sk.prod.unit)+' <span class="chip" style="background:#fdf6e3;color:#b45309;font-size:9.5px" title="Coût moyen pondéré issu de vos réceptions">CMP stock</span>'):(g.priceHT!=null)?((Number(g.priceHT)||0).toFixed(2)+' € / '+(g.purchQty||1)+' '+escH(g.purchUnit||g.unit||''))+(g.tva?' · TVA '+String(g.tva).replace('.',',')+'%':''):'—';return '<tr data-s="'+escH(((g.name||'')+' '+(g.group||'')+' '+(g.fournisseur||'')).toLowerCase())+'"><td class="tname">'+escH(g.name)+'</td><td>'+(g.group?'<span class="chip muted">'+escH(g.group)+'</span>':'—')+'</td><td>'+(g.cat==='nonalim'?'<span class="chip warn">Non alim.</span>':'<span class="chip ok">Alim.</span>')+'</td><td class="tsub">'+achat+'</td><td>'+up.toFixed(3)+' € / '+escH(g.unit||'u')+'</td><td class="tsub">'+escH(g.fournisseur||'—')+'</td><td class="tsub">'+usedR+' rec. · '+usedS+' s-rec.</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="crudDel(\'foodIng\',\''+g.id+'\',\'food\')">Suppr.</button></td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucun ingrédient'+(grp?' dans cette catégorie':'')+'. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix unitaire se calcule automatiquement.</div>')+'</div></div>';
+      m.innerHTML+=ingToolbar()+'<div id="food_ing_zone"></div>';
     }
     m.innerHTML+=foodHelp;
+    if(tab==='ing')ingRefresh();else if(tab==='fiches')recRefresh();
   } else if(clientView==='fid'){
     m.innerHTML=topbar('Mes jeux','Créez et gérez vos jeux de fidélisation (roue, ticket à gratter)','<button class="btn" onclick="fidNewGame()">＋ Créer un jeu</button>')
     +'<div id="fid_body"><div class="empty" style="padding:24px">Chargement des jeux…</div></div>';
@@ -2228,17 +2245,369 @@ function foodIngForm(id){state.foodIng=state.foodIng||[];state.foodIngCats=state
     {key:'purchUnit',label:'Unité d\'achat',type:'select',options:units,value:g&&g.purchUnit?g.purchUnit:(g?g.unit:'kg')},
     {key:'priceHT',label:'Prix d\'achat HT (€) du conditionnement',type:'number',value:g?(g.priceHT!=null?g.priceHT:g.price):'',ph:'Ex. 12.50'},
     {key:'tva',label:'TVA (%)',type:'select',options:['5,5','10','20','0'],value:g&&g.tva!=null?String(g.tva).replace('.',','):'5,5'},
-    {key:'fournisseur',label:'Fournisseur',type:'select',options:['Aucun'].concat(fours),value:g&&g.fournisseur?g.fournisseur:'Aucun'}
+    {key:'fournisseur',label:'Fournisseur',type:'select',options:['Aucun'].concat(fours),value:g&&g.fournisseur?g.fournisseur:'Aucun'},
+    {key:'tags',label:'Tags (séparés par des virgules)',value:g&&Array.isArray(g.tags)?g.tags.join(', '):'',ph:'Ex. bio, allergène, à surveiller'}
   ],function(v){
     if(!v.name||!String(v.name).trim()){toast('Nom requis');return;}
     const cat=(String(v.cat||'').indexOf('Non')===0)?'nonalim':'alim';
     const o={name:String(v.name).trim(),cat:cat,group:(v.group&&v.group!=='Aucune')?v.group:'',unit:v.unit,purchQty:Number(v.purchQty)||1,purchUnit:v.purchUnit,priceHT:Number(String(v.priceHT).replace(',','.'))||0,tva:Number(String(v.tva).replace(',','.'))||0,fournisseur:(v.fournisseur&&v.fournisseur!=='Aucun')?v.fournisseur:''};
-    if(g){Object.assign(g,o);delete g.price;}else{state.foodIng.push(Object.assign({id:'ing'+Date.now(),clientId:CID},o));}
+    o.tags=String(v.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return !!t;});
+    if(g){if(typeof ingPushHist==='function'&&Number(g.priceHT||0)!==o.priceHT)ingPushHist(g,o.priceHT);Object.assign(g,o);delete g.price;}
+    else{var ng=Object.assign({id:'ing'+Date.now(),clientId:CID,createdAt:new Date().toISOString(),priceHist:[{at:new Date().toISOString(),p:o.priceHT}]},o);state.foodIng.push(ng);}
     renderClient('food');toast('Ingrédient enregistré');});
 }
 function foodIngCatAdd(){state.foodIngCats=state.foodIngCats||[];openForm('Nouvelle catégorie d\'ingrédients',[{key:'name',label:'Nom de la catégorie',value:'',ph:'Ex. Viandes, Légumes, Emballages…'}],function(v){const n=(v.name||'').trim();if(!n){toast('Nom requis');return;}if(state.foodIngCats.indexOf(n)<0)state.foodIngCats.push(n);renderClient('food');toast('Catégorie créée');});}
+/* ================= LISTES FOOD COST : filtres, tri, sélection multiple, pagination ================= */
+function fcOpt(v,l,cur){return '<option value="'+escH(v)+'"'+(String(cur)===String(v)?' selected':'')+'>'+escH(l)+'</option>';}
+function fcCreated(x){if(!x)return null;if(x.createdAt)return new Date(x.createdAt);var m=/(\d{12,})/.exec(String(x.id||''));return m?new Date(Number(m[1])):null;}
+function fcDate(d){return d&&!isNaN(d.getTime())?d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'2-digit'}):'—';}
+function fcTags(x){return (x&&Array.isArray(x.tags))?x.tags:[];}
+function fcHtmlMsg(h){var el=document.getElementById('cf_msg');if(el)el.innerHTML=h;}
+function fcListBlock(title,arr){if(!arr.length)return '';
+  return '<div class="tsub" style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin:15px 0 6px">'+escH(title)+' ('+arr.length+')</div>'
+   +arr.map(function(x,i){return '<div style="padding:8px 11px;border-radius:8px;background:'+(i%2?'#fff':'#f5f8fb')+';font-size:13.5px">'+escH(x.name||'—')+'</div>';}).join('');}
+
+/* ---------- INGRÉDIENTS ---------- */
+let ingQ='',ingPage=0,ingPer=50,ingSel={},ingSort={k:'name',d:1},ingFilt={cat:'',four:'',tag:'',type:''};
+function ingBase(){return (state.foodIng||[]).filter(function(g){return g.clientId===CID;});}
+function ingAll(){return archFilter(ingBase());}
+function ingTagList(){var s={};ingBase().forEach(function(g){fcTags(g).forEach(function(t){if(t)s[t]=1;});});return Object.keys(s).sort(function(a,b){return a.localeCompare(b,'fr');});}
+function ingFourList(){var s={};ingBase().forEach(function(g){if(g.fournisseur)s[g.fournisseur]=1;});
+  (state.fournisseurs||[]).filter(function(f){return f.clientId===CID;}).forEach(function(f){if(f.nom)s[f.nom]=1;});
+  return Object.keys(s).sort(function(a,b){return a.localeCompare(b,'fr');});}
+function ingUsedR(id){return (state.recipes||[]).filter(function(x){return x.clientId===CID&&!x.archived&&(x.lines||[]).some(function(l){return l.kind!=='sub'&&(l.refId||l.ingId)===id;});});}
+function ingUsedS(id){return (state.foodSubs||[]).filter(function(x){return x.clientId===CID&&!x.archived&&(x.lines||[]).some(function(l){return l.kind!=='sub'&&(l.refId||l.ingId)===id;});});}
+function ingMatch(g){var q=ingQ.trim().toLowerCase();
+  if(q){var hay=((g.name||'')+' '+(g.group||'')+' '+(g.fournisseur||'')+' '+fcTags(g).join(' ')).toLowerCase();if(hay.indexOf(q)<0)return false;}
+  if(ingFilt.cat){if(ingFilt.cat==='__none__'){if(g.group)return false;}else if((g.group||'')!==ingFilt.cat)return false;}
+  if(ingFilt.four){if(ingFilt.four==='__none__'){if(g.fournisseur)return false;}else if((g.fournisseur||'')!==ingFilt.four)return false;}
+  if(ingFilt.tag&&fcTags(g).indexOf(ingFilt.tag)<0)return false;
+  if(ingFilt.type){var t=(g.cat==='nonalim')?'nonalim':'alim';if(t!==ingFilt.type)return false;}
+  return true;}
+function ingSv(g,k){if(k==='name')return (g.name||'').toLowerCase();
+  if(k==='group')return (g.group||'￿').toLowerCase();
+  if(k==='four')return (g.fournisseur||'￿').toLowerCase();
+  if(k==='unit')return (g.unit||'').toLowerCase();
+  if(k==='price')return foodIngUnitPrice(g);
+  if(k==='type')return (g.cat==='nonalim')?1:0;
+  return 0;}
+function ingRows(){var a=ingAll().filter(ingMatch),k=ingSort.k,d=ingSort.d;
+  a.sort(function(x,y){var vx=ingSv(x,k),vy=ingSv(y,k);if(vx<vy)return -d;if(vx>vy)return d;return String(x.name||'').localeCompare(String(y.name||''),'fr');});return a;}
+function ingSetSort(k){if(ingSort.k===k)ingSort.d=-ingSort.d;else{ingSort.k=k;ingSort.d=1;}ingPage=0;ingRefresh();}
+function ingArrow(k){return ingSort.k===k?(ingSort.d>0?' ↑':' ↓'):'';}
+function ingClear(){ingQ='';ingFilt={cat:'',four:'',tag:'',type:''};ingPage=0;renderClient('food');}
+function ingSelIds(){var o=[];for(var k in ingSel)if(ingSel[k])o.push(k);return o;}
+function ingTick(id,on){if(on)ingSel[id]=1;else delete ingSel[id];ingRefresh();}
+function ingTickAll(on){ingRows().forEach(function(g){if(on)ingSel[g.id]=1;else delete ingSel[g.id];});ingRefresh();}
+function ingPushHist(g,p){g.priceHist=g.priceHist||[];var l=g.priceHist[g.priceHist.length-1];
+  if(l&&Math.abs((Number(l.p)||0)-(Number(p)||0))<0.0001)return;
+  g.priceHist.push({at:new Date().toISOString(),p:Number(p)||0});
+  if(g.priceHist.length>24)g.priceHist=g.priceHist.slice(-24);}
+function ingTrend(g){var h=(g&&g.priceHist)||[];if(h.length<2)return null;
+  var c=Number(h[h.length-1].p)||0,p=Number(h[h.length-2].p)||0;if(!p||!c)return null;
+  var d=Math.round((c-p)/p*100);return d?d:null;}
+function ingToolbar(){
+  var cats=state.foodIngCats||[],tags=ingTagList(),fours=ingFourList();
+  var act=!!(ingFilt.cat||ingFilt.four||ingFilt.tag||ingFilt.type||ingQ);
+  return '<div class="ingbar">'
+  +'<input class="dp-search" id="ing_q" placeholder="Rechercher : nom, catégorie, fournisseur, tag…" value="'+escH(ingQ)+'" oninput="ingQ=this.value;ingPage=0;ingRefresh()">'
+  +'<select class="ingsel" onchange="ingFilt.cat=this.value;ingPage=0;ingRefresh()">'+fcOpt('','Toutes les catégories',ingFilt.cat)+fcOpt('__none__','Sans catégorie',ingFilt.cat)+cats.map(function(c){return fcOpt(c,c,ingFilt.cat);}).join('')+'</select>'
+  +'<select class="ingsel" onchange="ingFilt.four=this.value;ingPage=0;ingRefresh()">'+fcOpt('','Tous les fournisseurs',ingFilt.four)+fcOpt('__none__','Sans fournisseur',ingFilt.four)+fours.map(function(c){return fcOpt(c,c,ingFilt.four);}).join('')+'</select>'
+  +(tags.length?('<select class="ingsel" onchange="ingFilt.tag=this.value;ingPage=0;ingRefresh()">'+fcOpt('','Tous les tags',ingFilt.tag)+tags.map(function(c){return fcOpt(c,c,ingFilt.tag);}).join('')+'</select>'):'')
+  +'<select class="ingsel" onchange="ingFilt.type=this.value;ingPage=0;ingRefresh()">'+fcOpt('','Alim. et non alim.',ingFilt.type)+fcOpt('alim','Alimentaire',ingFilt.type)+fcOpt('nonalim','Non alimentaire',ingFilt.type)+'</select>'
+  +(act?'<button class="btn ghost sm" onclick="ingClear()">✕ Réinitialiser</button>':'')
+  +'<span style="flex:1;min-width:0"></span>'
+  +archToggleBtn('food','foodIng',CID)
+  +' <button class="btn ghost sm" onclick="ingCsv()">⤓ Exporter</button> <button class="btn ghost sm" onclick="ingPrint()">🖨 Imprimer</button>'
+  +'</div>';}
+function ingRefresh(){var z=document.getElementById('food_ing_zone');if(z)z.innerHTML=ingPanel();}
+function ingRow(g){
+  var up=foodIngUnitPrice(g);
+  var sk=(typeof stkIngLink==='function')?stkIngLink(g):null;
+  var fromStock=!!(sk&&typeof stkIngPrice==='function'&&stkIngPrice(g)!=null);
+  var tr=ingTrend(g),tg=fcTags(g);
+  var uR=ingUsedR(g.id).length,uS=ingUsedS(g.id).length;
+  return '<tr class="'+(ingSel[g.id]?'sel':'')+'">'
+  +'<td><input type="checkbox" class="ingck"'+(ingSel[g.id]?' checked':'')+' onchange="ingTick(\''+g.id+'\',this.checked)"></td>'
+  +'<td><div class="tname">'+escH(g.name)+(g.archived?' <span class="chip muted">archivé</span>':'')+'</div>'
+   +(tg.length?('<div style="margin-top:3px">'+tg.map(function(t){return '<span class="tg">'+escH(t)+'</span>';}).join('')+'</div>'):'')
+   +((uR+uS)?('<div class="tsub"><span class="usel" onclick="ingUsedList(\''+g.id+'\')">'+uR+' recette'+(uR>1?'s':'')+(uS?(' · '+uS+' sous-recette'+(uS>1?'s':'')):'')+'</span></div>'):'<div class="tsub">non utilisé</div>')
+  +'</td>'
+  +'<td>'+(g.group?'<span class="chip muted">'+escH(g.group)+'</span>':'—')+'</td>'
+  +'<td id="ingp_'+g.id+'" style="text-align:right;white-space:nowrap">'
+   +(fromStock?('<b>'+up.toFixed(3).replace('.',',')+' €</b> <span class="chip" style="background:#fdf6e3;color:#b45309;font-size:9.5px" title="Coût moyen pondéré issu de vos réceptions">CMP</span>')
+              :('<b class="edp" onclick="ingPriceEdit(\''+g.id+'\')" title="Cliquez pour modifier le prix">'+up.toFixed(3).replace('.',',')+' €</b>'))
+   +(tr?('<span class="trend '+(tr>0?'up':'dn')+'" title="Évolution depuis le dernier prix enregistré">'+(tr>0?'▲ +':'▼ ')+tr+'%</span>'):'')
+   +'<div class="tsub">'+(g.priceHT!=null?((Number(g.priceHT)||0).toFixed(2).replace('.',',')+' € / '+(g.purchQty||1)+' '+escH(g.purchUnit||g.unit||'')):'—')+'</div></td>'
+  +'<td>'+escH(g.unit||'—')+'</td>'
+  +'<td class="tsub">'+escH(g.fournisseur||'—')+'</td>'
+  +'<td style="text-align:center">'+(g.cat==='nonalim'?'<span class="chip warn" title="Non alimentaire (packaging)">✕</span>':'<span class="chip ok" title="Produit alimentaire">✓</span>')+'</td>'
+  +'<td style="text-align:right;white-space:nowrap">'+(g.archived
+     ?'<button class="btn ghost sm" onclick="crudRestore(\'foodIng\',\''+g.id+'\',\'food\')">↩ Restaurer</button>'
+     :'<button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="ingArch(\''+g.id+'\')">🗄 Archiver</button>')+'</td></tr>';}
+function ingPanel(){
+  var rows=ingRows(),tot=ingAll().length,n=rows.length;
+  var per=ingPer||50,pages=per>=99999?1:Math.max(1,Math.ceil(n/per));
+  if(ingPage>=pages)ingPage=pages-1;if(ingPage<0)ingPage=0;
+  var page=per>=99999?rows:rows.slice(ingPage*per,(ingPage+1)*per);
+  var sel=ingSelIds(),h='';
+  if(sel.length)h+='<div class="selbar"><b>'+sel.length+' sélectionné'+(sel.length>1?'s':'')+'</b>'
+   +'<button class="btn sm" onclick="ingBulkCat()">Catégorie</button>'
+   +'<button class="btn sm" onclick="ingBulkFour()">Fournisseur</button>'
+   +'<button class="btn sm" onclick="ingBulkTag()">Tag</button>'
+   +'<button class="btn sm" onclick="ingBulkArch()">🗄 Archiver</button>'
+   +'<span style="flex:1;min-width:0"></span><button class="btn sm" onclick="ingSel={};ingRefresh()">Tout désélectionner</button></div>';
+  if(!n)return h+'<div class="panel"><div class="pb"><div class="empty" style="padding:40px 20px">'+(tot?'Aucun ingrédient ne correspond à cette recherche.':'Aucun ingrédient. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix appliqué se calcule automatiquement.')+'</div></div></div>';
+  var allOn=rows.length>0&&rows.every(function(g){return !!ingSel[g.id];});
+  h+='<div class="panel"><div class="pb" style="padding:0"><div class="ingscroll"><table class="ingtbl">'
+   +'<thead><tr><th style="width:36px"><input type="checkbox" class="ingck"'+(allOn?' checked':'')+' title="Tout sélectionner" onchange="ingTickAll(this.checked)"></th>'
+   +'<th class="s" onclick="ingSetSort(\'name\')">Nom du produit'+ingArrow('name')+'</th>'
+   +'<th class="s" onclick="ingSetSort(\'group\')">Catégorie'+ingArrow('group')+'</th>'
+   +'<th class="s" style="text-align:right" onclick="ingSetSort(\'price\')">Prix appliqué'+ingArrow('price')+'</th>'
+   +'<th class="s" onclick="ingSetSort(\'unit\')">Unité'+ingArrow('unit')+'</th>'
+   +'<th class="s" onclick="ingSetSort(\'four\')">Dernier fournisseur'+ingArrow('four')+'</th>'
+   +'<th class="s" style="text-align:center" onclick="ingSetSort(\'type\')">Alim.'+ingArrow('type')+'</th>'
+   +'<th></th></tr></thead><tbody>'+page.map(ingRow).join('')+'</tbody></table></div>'
+   +'<div class="pgbar"><div><b style="color:var(--ink)">'+n+'</b> ingrédient'+(n>1?'s':'')+(n!==tot?(' sur '+tot):'')+'</div>'
+   +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+   +'<select class="ingsel" style="padding:5px 8px" onchange="ingPer=Number(this.value);ingPage=0;ingRefresh()">'+[50,100,200].map(function(v){return fcOpt(v,v+' par page',ingPer);}).join('')+fcOpt(99999,'Tout afficher',ingPer)+'</select>'
+   +(pages>1?('<button class="btn ghost sm"'+(ingPage<=0?' disabled':'')+' onclick="ingPage--;ingRefresh()">‹ Précédent</button><span>Page '+(ingPage+1)+' / '+pages+'</span><button class="btn ghost sm"'+(ingPage>=pages-1?' disabled':'')+' onclick="ingPage++;ingRefresh()">Suivant ›</button>'):'')
+   +'</div></div></div></div>';
+  return h;}
+function ingPriceEdit(id){var g=foodIngById(id);if(!g)return;var td=document.getElementById('ingp_'+id);if(!td)return;
+  var cur=Math.round(foodIngUnitPrice(g)*1000)/1000;
+  td.innerHTML='<input id="ingpi_'+id+'" type="number" step="0.001" value="'+cur+'" style="width:98px;padding:5px 8px;border:1.5px solid var(--brand);border-radius:8px;font-size:13px;text-align:right" onkeydown="if(event.key===\'Enter\'){this.blur();}else if(event.key===\'Escape\'){this.setAttribute(\'data-esc\',\'1\');this.blur();}" onblur="ingPriceSave(\''+id+'\',this)"> <span class="tsub">€ / '+escH(g.unit||'u')+'</span>';
+  var i=document.getElementById('ingpi_'+id);if(i){i.focus();i.select();}}
+function ingPriceLater(){setTimeout(function(){try{ingRefresh();}catch(e){}},0);}
+function ingPriceSave(id,el){var g=foodIngById(id);if(!g||!el){ingPriceLater();return;}
+  if(el.getAttribute('data-saved'))return;el.setAttribute('data-saved','1');
+  if(el.getAttribute('data-esc')){ingPriceLater();return;}
+  var v=Number(String(el.value).replace(',','.'));
+  if(isNaN(v)||v<0){toast('Prix invalide');ingPriceLater();return;}
+  var q=Number(g.purchQty)||1,f=foodUnitFactor(g.purchUnit||g.unit,g.unit||g.purchUnit),tot=q*f;
+  var np=(tot>0)?v*tot:v;np=Math.round(np*10000)/10000;
+  if(Math.abs((Number(g.priceHT)||0)-np)>0.0001){ingPushHist(g,np);g.priceHT=np;delete g.price;toast('Prix mis à jour');}
+  ingPriceLater();}
+function ingUsedList(id){var g=foodIngById(id);if(!g)return;
+  var rs=ingUsedR(id),sbs=ingUsedS(id);
+  openConfirm(g.name,'',null,'Fermer',false,true);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Cet ingrédient entre dans la composition de :</p>'
+   +fcListBlock('Recettes',rs)+fcListBlock('Sous-recettes',sbs)+'</div>');}
+function ingArch(id){var g=foodIngById(id);if(!g)return;
+  var rs=ingUsedR(id),sbs=ingUsedS(id);
+  openConfirm('Archiver « '+g.name+' » ?','',function(){
+    g.archived=true;g.archivedAt=new Date().toISOString();delete ingSel[id];
+    renderClient('food');toast('🗄 '+g.name+' archivé — données conservées');},'Archiver',true);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Il disparaît des listes et de la tablette, mais <b>toutes ses données restent conservées</b> : vous pourrez le restaurer à tout moment.</p>'
+   +fcListBlock('Recettes associées',rs)+fcListBlock('Sous-recettes associées',sbs)
+   +((rs.length||sbs.length)?'<p class="tsub" style="margin:12px 0 0">Ces fiches gardent leur coût actuel ; l\'ingrédient n\'apparaîtra simplement plus dans les listes de sélection.</p>':'<p class="tsub" style="margin:12px 0 0">Cet ingrédient n\'est utilisé dans aucune recette.</p>')
+   +'</div>');}
+function ingBulkApply(fn,msg){var ids=ingSelIds(),n=0;
+  (state.foodIng||[]).forEach(function(g){if(ids.indexOf(g.id)>=0){fn(g);n++;}});
+  ingSel={};renderClient('food');toast(n+' '+msg);}
+function ingBulkCat(){state.foodIngCats=state.foodIngCats||[];var n=ingSelIds().length;if(!n)return;
+  openForm('Changer la catégorie — '+n+' ingrédient(s)',[{key:'c',label:'Nouvelle catégorie',type:'select',options:['Aucune'].concat(state.foodIngCats)}],
+   function(v){ingBulkApply(function(g){g.group=(v.c&&v.c!=='Aucune')?v.c:'';},'ingrédient(s) reclassé(s)');});}
+function ingBulkFour(){var n=ingSelIds().length;if(!n)return;
+  openForm('Changer le fournisseur — '+n+' ingrédient(s)',[{key:'f',label:'Fournisseur',type:'select',options:['Aucun'].concat(ingFourList())}],
+   function(v){ingBulkApply(function(g){g.fournisseur=(v.f&&v.f!=='Aucun')?v.f:'';},'ingrédient(s) mis à jour');});}
+function ingBulkTag(){var n=ingSelIds().length;if(!n)return;
+  openForm('Tags — '+n+' ingrédient(s)',[
+   {key:'m',label:'Action',type:'select',options:['Ajouter le tag','Retirer le tag']},
+   {key:'t',label:'Tag existant',type:'select',options:['—'].concat(ingTagList())},
+   {key:'n',label:'… ou nouveau tag',value:'',ph:'Ex. bio, allergène, à surveiller'}],
+   function(v){var tag=String(v.n||'').trim()||((v.t&&v.t!=='—')?v.t:'');
+    if(!tag){toast('Aucun tag indiqué');return;}
+    ingBulkApply(function(g){var a=fcTags(g).slice(),i=a.indexOf(tag);
+      if(v.m==='Retirer le tag'){if(i>=0)a.splice(i,1);}else if(i<0)a.push(tag);
+      g.tags=a;},'ingrédient(s) mis à jour');});}
+function ingBulkArch(){var ids=ingSelIds();if(!ids.length)return;
+  var rs={};ids.forEach(function(id){ingUsedR(id).forEach(function(r){rs[r.id]=r;});});
+  var lst=Object.keys(rs).map(function(k){return rs[k];});
+  openConfirm('Archiver '+ids.length+' ingrédient(s) ?','',function(){
+    ingBulkApply(function(g){g.archived=true;g.archivedAt=new Date().toISOString();},'ingrédient(s) archivé(s) — données conservées');},'Archiver',true);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Ils disparaissent des listes et de la tablette, mais <b>toutes leurs données restent conservées</b>.</p>'
+   +fcListBlock('Recettes impactées',lst)+'</div>');}
+function ingCsv(){var rows=ingRows();
+  _stkCsv('ingredients_'+new Date().toISOString().slice(0,10)+'.csv',
+   [['Ingrédient','Catégorie','Tags','Prix appliqué (€)','Unité','Prix achat HT (€)','Conditionnement','Dernier fournisseur','Alimentaire','Recettes','Sous-recettes']]
+   .concat(rows.map(function(g){return [g.name||'',g.group||'',fcTags(g).join(', '),
+     String(Math.round(foodIngUnitPrice(g)*1000)/1000).replace('.',','),g.unit||'',
+     String(g.priceHT!=null?g.priceHT:'').replace('.',','),(g.purchQty||1)+' '+(g.purchUnit||g.unit||''),
+     g.fournisseur||'',g.cat==='nonalim'?'Non':'Oui',ingUsedR(g.id).length,ingUsedS(g.id).length];})));
+  toast('Export Excel téléchargé');}
+function ingPrint(){var rows=ingRows();
+  _stkPrint('Liste des ingrédients','<table><tr><th>Nom du produit</th><th>Catégorie</th><th>Prix appliqué</th><th>Unité</th><th>Dernier fournisseur</th><th>Alim.</th></tr>'
+   +rows.map(function(g){return '<tr><td>'+escH(g.name||'')+'</td><td>'+escH(g.group||'')+'</td><td>'+foodIngUnitPrice(g).toFixed(3).replace('.',',')+' €</td><td>'+escH(g.unit||'')+'</td><td>'+escH(g.fournisseur||'')+'</td><td>'+(g.cat==='nonalim'?'Non':'Oui')+'</td></tr>';}).join('')
+   +'</table><p style="margin-top:10px;font-size:11px;color:#7d8899">'+rows.length+' ingrédient(s)</p>');}
+
+/* ---------- RECETTES ---------- */
+let recQ='',recPage=0,recPer=50,recSel={},recSort={k:'name',d:1},recFilt={cat:'',tag:'',watch:''};
+function recBase(){return (state.recipes||[]).filter(function(r){return r.clientId===CID;});}
+function recAll(){return archFilter(recBase());}
+function recTagList(){var s={};recBase().forEach(function(r){fcTags(r).forEach(function(t){if(t)s[t]=1;});});return Object.keys(s).sort(function(a,b){return a.localeCompare(b,'fr');});}
+function recCm(r){var h=foodPvHT(r.prix,r.tva||0);return h>0?foodCostOf(r)/h:0;}
+function recMatch(r){var q=recQ.trim().toLowerCase();
+  if(q){var hay=((r.name||'')+' '+(r.cat||'')+' '+(r.desc||'')+' '+fcTags(r).join(' ')).toLowerCase();if(hay.indexOf(q)<0)return false;}
+  if(recFilt.cat){if(recFilt.cat==='__none__'){if(r.cat)return false;}else if((r.cat||'')!==recFilt.cat)return false;}
+  if(recFilt.tag&&fcTags(r).indexOf(recFilt.tag)<0)return false;
+  if(recFilt.watch==='1'&&!(recCm(r)>0.30))return false;
+  if(recFilt.watch==='0'&&!(recCm(r)>0&&recCm(r)<=0.30))return false;
+  return true;}
+function recSv(r,k){if(k==='name')return (r.name||'').toLowerCase();
+  if(k==='cat')return (r.cat||'￿').toLowerCase();
+  if(k==='pv')return Number(r.prix)||0;
+  if(k==='cm')return recCm(r);
+  if(k==='date'){var d=fcCreated(r);return d?d.getTime():0;}
+  return 0;}
+function recRows(){var a=recAll().filter(recMatch),k=recSort.k,d=recSort.d;
+  a.sort(function(x,y){var vx=recSv(x,k),vy=recSv(y,k);if(vx<vy)return -d;if(vx>vy)return d;return String(x.name||'').localeCompare(String(y.name||''),'fr');});return a;}
+function recSetSort(k){if(recSort.k===k)recSort.d=-recSort.d;else{recSort.k=k;recSort.d=(k==='date'?-1:1);}recPage=0;recRefresh();}
+function recArrow(k){return recSort.k===k?(recSort.d>0?' ↑':' ↓'):'';}
+function recClear(){recQ='';recFilt={cat:'',tag:'',watch:''};recPage=0;renderClient('food');}
+function recSelIds(){var o=[];for(var k in recSel)if(recSel[k])o.push(k);return o;}
+function recTick(id,on){if(on)recSel[id]=1;else delete recSel[id];recRefresh();}
+function recTickAll(on){recRows().forEach(function(r){if(on)recSel[r.id]=1;else delete recSel[r.id];});recRefresh();}
+function recToolbar(){
+  var cats=state.foodRecCats||[],tags=recTagList();
+  var act=!!(recFilt.cat||recFilt.tag||recFilt.watch||recQ);
+  return '<div class="ingbar">'
+  +'<input class="dp-search" id="rec_q" placeholder="Rechercher : nom, catégorie, tag…" value="'+escH(recQ)+'" oninput="recQ=this.value;recPage=0;recRefresh()">'
+  +'<select class="ingsel" onchange="recFilt.cat=this.value;recPage=0;recRefresh()">'+fcOpt('','Toutes les catégories',recFilt.cat)+fcOpt('__none__','Sans catégorie',recFilt.cat)+cats.map(function(c){return fcOpt(c,c,recFilt.cat);}).join('')+'</select>'
+  +(tags.length?('<select class="ingsel" onchange="recFilt.tag=this.value;recPage=0;recRefresh()">'+fcOpt('','Tous les tags',recFilt.tag)+tags.map(function(c){return fcOpt(c,c,recFilt.tag);}).join('')+'</select>'):'')
+  +'<select class="ingsel" onchange="recFilt.watch=this.value;recPage=0;recRefresh()">'+fcOpt('','Tous les food costs',recFilt.watch)+fcOpt('1','À surveiller (> 30 %)',recFilt.watch)+fcOpt('0','Dans l\'objectif (≤ 30 %)',recFilt.watch)+'</select>'
+  +(act?'<button class="btn ghost sm" onclick="recClear()">✕ Réinitialiser</button>':'')
+  +(cats.length?'<button class="btn ghost sm" onclick="foodRecCatDel()">Gérer les catégories</button>':'')
+  +'<span style="flex:1;min-width:0"></span>'
+  +archToggleBtn('food','recipes',CID)
+  +' <button class="btn ghost sm" onclick="recCsv()">⤓ Exporter</button> <button class="btn ghost sm" onclick="recPrintList()">🖨 Imprimer</button>'
+  +'</div>';}
+function recRefresh(){var z=document.getElementById('food_rec_zone');if(z)z.innerHTML=recPanel();}
+function recRow(r){
+  var c=foodCostOf(r),pvht=foodPvHT(r.prix,r.tva!=null?r.tva:0);
+  var cm=pvht>0?Math.round(c/pvht*100):0;
+  var tg=fcTags(r),d=fcCreated(r);
+  var nLines=(r.lines||[]).length;
+  return '<tr class="'+(recSel[r.id]?'sel':'')+'">'
+  +'<td><input type="checkbox" class="ingck"'+(recSel[r.id]?' checked':'')+' onchange="recTick(\''+r.id+'\',this.checked)"></td>'
+  +'<td><div style="display:flex;align-items:center;gap:10px">'
+   +(r.photo?('<img src="'+r.photo+'" style="width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line);flex:none">')
+            :('<div style="width:44px;height:44px;border-radius:10px;background:#eff4f8;border:1px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:17px;color:#a6b0be">🍽</div>'))
+   +'<div><div class="tname">'+escH(r.name)+(r.archived?' <span class="chip muted">archivée</span>':'')+'</div>'
+   +'<div class="tsub">'+nLines+' composant'+(nLines>1?'s':'')+'</div>'
+   +(tg.length?('<div style="margin-top:3px">'+tg.map(function(t){return '<span class="tg">'+escH(t)+'</span>';}).join('')+'</div>'):'')
+   +'</div></div></td>'
+  +'<td>'+(r.cat?'<span class="chip muted">'+escH(r.cat)+'</span>':'—')+'</td>'
+  +'<td style="text-align:right;white-space:nowrap"><b>'+pvht.toFixed(2).replace('.',',')+' €</b><div class="tsub">'+(Number(r.prix)||0).toFixed(2).replace('.',',')+' € TTC</div></td>'
+  +'<td style="text-align:center"><span class="chip '+(cm>35?'bad':(cm>30?'warn':'ok'))+'">'+cm+' %</span></td>'
+  +'<td class="tsub" style="white-space:nowrap">'+fcDate(d)+'</td>'
+  +'<td style="text-align:right;white-space:nowrap">'+(r.archived
+     ?'<button class="btn ghost sm" onclick="crudRestore(\'recipes\',\''+r.id+'\',\'food\')">↩ Restaurer</button>'
+     :'<button class="btn ghost sm" onclick="foodRecipeOpen(\''+r.id+'\')" title="Modifier la fiche">✎</button>'
+      +' <button class="btn ghost sm" onclick="foodDuplicate(\''+r.id+'\')" title="Dupliquer la recette">⧉</button>'
+      +' <button class="btn ghost sm" onclick="recPrintOne(\''+r.id+'\')" title="Imprimer la fiche technique">🖨</button>'
+      +' <button class="btn ghost sm" onclick="recArch(\''+r.id+'\')" title="Archiver">🗄</button>')+'</td></tr>';}
+function recPanel(){
+  var rows=recRows(),tot=recAll().length,n=rows.length;
+  var per=recPer||50,pages=per>=99999?1:Math.max(1,Math.ceil(n/per));
+  if(recPage>=pages)recPage=pages-1;if(recPage<0)recPage=0;
+  var page=per>=99999?rows:rows.slice(recPage*per,(recPage+1)*per);
+  var sel=recSelIds(),h='';
+  if(sel.length)h+='<div class="selbar"><b>'+sel.length+' sélectionnée'+(sel.length>1?'s':'')+'</b>'
+   +'<button class="btn sm" onclick="recBulkCat()">Catégorie</button>'
+   +'<button class="btn sm" onclick="recBulkTag()">Tag</button>'
+   +'<button class="btn sm" onclick="recBulkPrint()">🖨 Imprimer</button>'
+   +'<button class="btn sm" onclick="recBulkArch()">🗄 Archiver</button>'
+   +'<span style="flex:1;min-width:0"></span><button class="btn sm" onclick="recSel={};recRefresh()">Tout désélectionner</button></div>';
+  if(!n)return h+'<div class="panel"><div class="pb"><div class="empty" style="padding:40px 20px">'+(tot?'Aucune recette ne correspond à cette recherche.':'Aucune recette. Créez vos ingrédients et sous-recettes, puis composez vos recettes : les coûts se calculent automatiquement.')+'</div></div></div>';
+  var allOn=rows.length>0&&rows.every(function(r){return !!recSel[r.id];});
+  h+='<div class="panel"><div class="pb" style="padding:0"><div class="ingscroll"><table class="ingtbl">'
+   +'<thead><tr><th style="width:36px"><input type="checkbox" class="ingck"'+(allOn?' checked':'')+' title="Tout sélectionner" onchange="recTickAll(this.checked)"></th>'
+   +'<th class="s" onclick="recSetSort(\'name\')">Recette'+recArrow('name')+'</th>'
+   +'<th class="s" onclick="recSetSort(\'cat\')">Catégorie'+recArrow('cat')+'</th>'
+   +'<th class="s" style="text-align:right" onclick="recSetSort(\'pv\')">Prix HT / TTC'+recArrow('pv')+'</th>'
+   +'<th class="s" style="text-align:center" onclick="recSetSort(\'cm\')">Food cost'+recArrow('cm')+'</th>'
+   +'<th class="s" onclick="recSetSort(\'date\')">Créée le'+recArrow('date')+'</th>'
+   +'<th></th></tr></thead><tbody>'+page.map(recRow).join('')+'</tbody></table></div>'
+   +'<div class="pgbar"><div><b style="color:var(--ink)">'+n+'</b> recette'+(n>1?'s':'')+(n!==tot?(' sur '+tot):'')+'</div>'
+   +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+   +'<select class="ingsel" style="padding:5px 8px" onchange="recPer=Number(this.value);recPage=0;recRefresh()">'+[50,100,200].map(function(v){return fcOpt(v,v+' par page',recPer);}).join('')+fcOpt(99999,'Tout afficher',recPer)+'</select>'
+   +(pages>1?('<button class="btn ghost sm"'+(recPage<=0?' disabled':'')+' onclick="recPage--;recRefresh()">‹ Précédent</button><span>Page '+(recPage+1)+' / '+pages+'</span><button class="btn ghost sm"'+(recPage>=pages-1?' disabled':'')+' onclick="recPage++;recRefresh()">Suivant ›</button>'):'')
+   +'</div></div></div></div>';
+  return h;}
+function recArch(id){var r=(state.recipes||[]).find(function(x){return x.id===id;});if(!r)return;
+  var lines=(r.lines||[]).map(function(l){if(l.kind==='sub'){var sb=foodSubById(l.refId);return {name:(sb?sb.name:'Sous-recette')+' — '+(Number(l.qty)||0)+' '+((sb&&sb.yieldUnit)||'')};}
+    var g=foodIngById(l.refId||l.ingId);return {name:(g?g.name:'Ingrédient')+' — '+(Number(l.qty)||0)+' '+((g&&g.unit)||'')};});
+  openConfirm('Archiver « '+r.name+' » ?','',function(){
+    r.archived=true;r.archivedAt=new Date().toISOString();delete recSel[id];
+    renderClient('food');toast('🗄 '+r.name+' archivée — données conservées');},'Archiver',true);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Elle disparaît de la carte et de la tablette, mais <b>toutes ses données restent conservées</b> : vous pourrez la restaurer à tout moment.</p>'
+   +fcListBlock('Composition de la fiche',lines)+'</div>');}
+function recBulkApply(fn,msg){var ids=recSelIds(),n=0;
+  (state.recipes||[]).forEach(function(r){if(ids.indexOf(r.id)>=0){fn(r);n++;}});
+  recSel={};renderClient('food');toast(n+' '+msg);}
+function recBulkCat(){state.foodRecCats=state.foodRecCats||[];var n=recSelIds().length;if(!n)return;
+  openForm('Changer la catégorie — '+n+' recette(s)',[{key:'c',label:'Nouvelle catégorie',type:'select',options:['Aucune'].concat(state.foodRecCats)}],
+   function(v){recBulkApply(function(r){r.cat=(v.c&&v.c!=='Aucune')?v.c:'';},'recette(s) reclassée(s)');});}
+function recBulkTag(){var n=recSelIds().length;if(!n)return;
+  openForm('Tags — '+n+' recette(s)',[
+   {key:'m',label:'Action',type:'select',options:['Ajouter le tag','Retirer le tag']},
+   {key:'t',label:'Tag existant',type:'select',options:['—'].concat(recTagList())},
+   {key:'n',label:'… ou nouveau tag',value:'',ph:'Ex. carte été, végétarien, à revoir'}],
+   function(v){var tag=String(v.n||'').trim()||((v.t&&v.t!=='—')?v.t:'');
+    if(!tag){toast('Aucun tag indiqué');return;}
+    recBulkApply(function(r){var a=fcTags(r).slice(),i=a.indexOf(tag);
+      if(v.m==='Retirer le tag'){if(i>=0)a.splice(i,1);}else if(i<0)a.push(tag);
+      r.tags=a;},'recette(s) mise(s) à jour');});}
+function recBulkArch(){var ids=recSelIds();if(!ids.length)return;
+  var lst=(state.recipes||[]).filter(function(r){return ids.indexOf(r.id)>=0;});
+  openConfirm('Archiver '+ids.length+' recette(s) ?','',function(){
+    recBulkApply(function(r){r.archived=true;r.archivedAt=new Date().toISOString();},'recette(s) archivée(s) — données conservées');},'Archiver',true);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Elles disparaissent de la carte et de la tablette, mais <b>toutes leurs données restent conservées</b>.</p>'+fcListBlock('Recettes concernées',lst)+'</div>');}
+function recFicheHtml(r){
+  var sp=foodCostSplitOf(r),c=sp.food+sp.pack;
+  var pvht=foodPvHT(r.prix,r.tva!=null?r.tva:0),mg=pvht-c;
+  var portions=Math.max(1,Number(r.portions)||1);
+  var cm=pvht>0?Math.round(c/pvht*100):0;
+  var d=fcCreated(r);
+  var rows=(r.lines||[]).map(function(l){
+    var nm='',un='',cost=foodLineCost(l);
+    if(l.kind==='sub'){var sb=foodSubById(l.refId);nm=(sb?sb.name:'—')+' (sous-recette)';un=(sb&&sb.yieldUnit)||'';}
+    else{var g=foodIngById(l.refId||l.ingId);nm=g?g.name:'—';un=(g&&g.unit)||'';}
+    return '<tr><td>'+escH(nm)+'</td><td>'+(Number(l.qty)||0)+' '+escH(un)+'</td><td>'+(Number(l.loss)||0)+' %</td><td>'+cost.toFixed(3).replace('.',',')+' €</td></tr>';}).join('');
+  return '<h2 style="font-size:16px;margin:18px 0 4px">'+escH(r.name)+'</h2>'
+   +'<div class="sub">'+(r.cat?escH(r.cat)+' · ':'')+portions+' portion(s)'+(d?' · créée le '+fcDate(d):'')+'</div>'
+   +(r.photo?'<img src="'+r.photo+'" style="width:130px;height:130px;object-fit:cover;border-radius:8px;margin-top:8px">':'')
+   +(r.desc?'<p style="font-size:12px;margin:8px 0 0">'+escH(r.desc)+'</p>':'')
+   +'<table><tr><th>Composant</th><th>Quantité</th><th>Perte</th><th>Coût</th></tr>'+rows
+   +'<tr><th colspan="3">COÛT MATIÈRE TOTAL</th><th>'+c.toFixed(2).replace('.',',')+' €</th></tr>'
+   +(portions>1?'<tr><td colspan="3">Coût par portion</td><td>'+(c/portions).toFixed(3).replace('.',',')+' €</td></tr>':'')
+   +'<tr><td colspan="3">Prix de vente TTC</td><td>'+(Number(r.prix)||0).toFixed(2).replace('.',',')+' €</td></tr>'
+   +'<tr><td colspan="3">Prix de vente HT (TVA '+String(r.tva!=null?r.tva:0).replace('.',',')+' %)</td><td>'+pvht.toFixed(2).replace('.',',')+' €</td></tr>'
+   +'<tr><td colspan="3">Marge brute</td><td>'+mg.toFixed(2).replace('.',',')+' €</td></tr>'
+   +'<tr><th colspan="3">FOOD COST</th><th>'+cm+' %</th></tr></table>';}
+function recPrintOne(id){var r=(state.recipes||[]).find(function(x){return x.id===id;});if(!r)return;
+  _stkPrint('Fiche technique',recFicheHtml(r));}
+function recBulkPrint(){var ids=recSelIds();if(!ids.length)return;
+  var lst=(state.recipes||[]).filter(function(r){return ids.indexOf(r.id)>=0;});
+  _stkPrint('Fiches techniques',lst.map(recFicheHtml).join('<div style="page-break-after:always"></div>'));}
+function recPrintList(){var rows=recRows();
+  _stkPrint('Liste des recettes','<table><tr><th>Recette</th><th>Catégorie</th><th>PV HT</th><th>PV TTC</th><th>Coût matière</th><th>Food cost</th><th>Créée le</th></tr>'
+   +rows.map(function(r){var c=foodCostOf(r),h=foodPvHT(r.prix,r.tva||0);return '<tr><td>'+escH(r.name||'')+'</td><td>'+escH(r.cat||'')+'</td><td>'+h.toFixed(2).replace('.',',')+' €</td><td>'+(Number(r.prix)||0).toFixed(2).replace('.',',')+' €</td><td>'+c.toFixed(2).replace('.',',')+' €</td><td>'+(h>0?Math.round(c/h*100):0)+' %</td><td>'+fcDate(fcCreated(r))+'</td></tr>';}).join('')
+   +'</table><p style="margin-top:10px;font-size:11px;color:#7d8899">'+rows.length+' recette(s)</p>');}
+function recCsv(){var rows=recRows();
+  _stkCsv('recettes_'+new Date().toISOString().slice(0,10)+'.csv',
+   [['Recette','Catégorie','Tags','PV TTC (€)','PV HT (€)','TVA (%)','Coût matière (€)','Marge brute (€)','Food cost (%)','Portions','Composants','Créée le']]
+   .concat(rows.map(function(r){var c=foodCostOf(r),h=foodPvHT(r.prix,r.tva||0),d=fcCreated(r);
+     return [r.name||'',r.cat||'',fcTags(r).join(', '),
+      String(Number(r.prix)||0).replace('.',','),String(Math.round(h*100)/100).replace('.',','),String(r.tva!=null?r.tva:0).replace('.',','),
+      String(Math.round(c*100)/100).replace('.',','),String(Math.round((h-c)*100)/100).replace('.',','),
+      h>0?Math.round(c/h*100):0,Math.max(1,Number(r.portions)||1),(r.lines||[]).length,
+      d?d.toISOString().slice(0,10):''];})));
+  toast('Export Excel téléchargé');}
+
 function foodRecCatAdd(){state.foodRecCats=state.foodRecCats||[];openForm('Nouvelle catégorie de recettes',[{key:'name',label:'Nom de la catégorie',value:'',ph:'Ex. Pizzas, Sandwichs, Desserts…'}],function(v){const n=(v.name||'').trim();if(!n){toast('Nom requis');return;}if(state.foodRecCats.indexOf(n)<0)state.foodRecCats.push(n);renderClient('food');toast('Catégorie créée');});}
-function foodDuplicate(id){const r=(state.recipes||[]).find(function(x){return x.id===id;});if(!r)return;const c=JSON.parse(JSON.stringify(r));c.id='rec'+Date.now();c.name=r.name+' (copie)';state.recipes.push(c);renderClient('food');toast('Recette dupliquée');}
+function foodDuplicate(id){const r=(state.recipes||[]).find(function(x){return x.id===id;});if(!r)return;const c=JSON.parse(JSON.stringify(r));c.id='rec'+Date.now();c.name=r.name+' (copie)';c.createdAt=new Date().toISOString();delete c.archived;delete c.archivedAt;state.recipes.push(c);renderClient('food');toast('Recette dupliquée');}
 function foodTableFilter(inputId,tbodyId){const q=((document.getElementById(inputId)||{}).value||'').toLowerCase().trim();document.querySelectorAll('#'+tbodyId+' tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
 function foodRecCatDel(){state.foodRecCats=state.foodRecCats||[];if(!state.foodRecCats.length)return;
   openForm('Supprimer une catégorie de recettes',[{key:'cat',label:'Catégorie à supprimer',type:'select',options:state.foodRecCats}],function(v){
@@ -2391,7 +2760,7 @@ function foodRecipeSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name|
   state.recipes=state.recipes||[];
   const meta={cat:(e.cat&&e.cat!=='Aucune')?e.cat:'',portions:Math.max(1,Number(e.portions)||1),tva:e.tva!=null?Number(e.tva):10,desc:(e.desc||'').trim()};
   if(e.id){const r=state.recipes.find(function(x){return x.id===e.id;});if(r){r.name=nm;r.prix=prix;r.lines=lines;r.photo=e.photo||'';r.photoPath=e.photoPath||'';Object.assign(r,meta);delete r.cout;}}
-  else{state.recipes.push(Object.assign({id:'rec'+Date.now(),clientId:CID,name:nm,prix:prix,lines:lines,photo:e.photo||'',photoPath:e.photoPath||''},meta));}
+  else{state.recipes.push(Object.assign({id:'rec'+Date.now(),clientId:CID,createdAt:new Date().toISOString(),name:nm,prix:prix,lines:lines,photo:e.photo||'',photoPath:e.photoPath||''},meta));}
   document.getElementById('food_mask').classList.remove('on');foodTab='fiches';renderClient('food');toast('Recette enregistrée');
 }
 function foodSubSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name||'').trim();const yq=Number(e.yieldQty)||0;
@@ -3306,21 +3675,21 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
      +'<button class="btn" onclick="tbGo(\'eqadd\')">＋ Ajouter un équipement</button>'
      +'<button class="btn ghost" onclick="tbGo(\'temphist\')">🕘 Historique</button></div>';
   } else if(s==='eqlist'){
-    const list=eqs.filter(e=>tbCat==='froid'?isFroid(e):e.cat==='chaud');
+    const list=eqs.filter(e=>!e.archived&&(tbCat==='froid'?isFroid(e):e.cat==='chaud'));
     b.innerHTML='<div class="tb-title-k">'+(tbCat==='froid'?' Équipements Froid':' Équipements Chaud')+'</div><div class="tb-title" style="margin-bottom:18px">Sélectionnez un équipement</div><div class="eqgrid">'
     +list.map(e=>{const done=todayRel(cid).some(r=>r.equipId===e.id);const last=cRel(cid).find(r=>r.equipId===e.id);return '<div class="eqc" onclick="openKp(\''+e.id+'\')"><div class="bdg" style="background:'+(done?'#e3f2fb':'#ffebe3')+';color:'+(done?'#006fab':'#b83504')+'">'+(done?'✓ fait':'Non fait')+'</div><div class="ph"><img src="'+eqImg(e)+'" alt=""></div><div class="bd"><div class="nm">'+e.name+'</div>'+(e.loc?'<div class="lo"><span class="chip muted">'+e.loc+'</span></div>':'')+'<div class="sub">'+catLabel(e.cat)+' · '+seuilTxt(e)+(last?' · dernier '+last.value+'°':'')+'</div></div></div>';}).join('')+'</div>';
   } else if(s==='clean'){
-    const tasks=state.postes.filter(p=>p.clientId===cid);const zones=[...new Set(tasks.map(t=>t.zone))];
+    const tasks=state.postes.filter(p=>p.clientId===cid&&!p.archived);const zones=[...new Set(tasks.map(t=>t.zone))];
     b.innerHTML='<div class="tb-title-k">Plan de nettoyage</div><div class="tb-title" style="margin-bottom:18px">Nettoyages des postes</div>'
     +'<div style="max-width:760px;margin:0 auto">'+tbHistBtn('clean')+tbDateField(1)+'</div>'
     +zones.map(z=>'<div style="font-weight:800;color:var(--muted);font-size:13px;margin:14px 2px 8px"> '+z.toUpperCase()+'</div><div class="tlist">'+tasks.filter(t=>t.zone===z).map(t=>'<div class="row '+(t.done?'done':'')+'" onclick="tbToggleClean(\''+t.id+'\')"><div class="ic" style="background:'+(t.done?'#e3f2fb':'#eff4f8')+'">'+(t.done?'✓':'○')+'</div><div><div class="nm">'+t.name+'</div><div class="sub">'+t.freq+(t.done?' · '+t.by:'')+'</div></div><div class="rt">'+(t.done?'<span class="chip ok">fait</span>':'<span class="chip warn">à faire</span>')+'</div></div>').join('')+'</div>').join('');
   } else if(s==='oil'){
-    const oils=state.friteuses.filter(h=>h.clientId===cid);
+    const oils=state.friteuses.filter(h=>h.clientId===cid&&!h.archived);
     b.innerHTML='<div class="tb-title-k">Friteuses</div><div class="tb-title" style="margin-bottom:18px">Suivi des huiles</div>'
     +'<div style="max-width:760px;margin:0 auto">'+tbHistBtn('oil')+tbDateField(1)+'</div><div class="tlist">'
     +(oils.length?oils.map(h=>'<div class="row"><div><div class="nm">'+h.name+'</div><div class="sub">'+(h.marque||'')+' '+(h.capacite||'')+' · polarité '+h.polarity+'% · seuil 24%</div></div><div class="rt">'+(h.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>')+'<button class="btn sm" onclick="event.stopPropagation();tbTestOil(\''+h.id+'\')">Tester</button></div></div>').join(''):'<div style="text-align:center;color:var(--muted)">Aucune friteuse configurée — ajoutez-en dans le back-office.</div>')+'</div>';
   } else if(s==='dlclabel'){
-    const prods=state.dlcProducts.filter(p=>p.clientId===cid&&p.active!==false);
+    const prods=state.dlcProducts.filter(p=>p.clientId===cid&&p.active!==false&&!p.archived);
     b.innerHTML='<div class="tb-title-k">Étiquetage DLC</div><div class="tb-title" style="margin-bottom:18px">Imprimer une étiquette</div>'
     +'<div style="max-width:520px;margin:0 auto">'
     +'<div style="display:flex;justify-content:center;gap:9px;margin-bottom:16px"><button class="btn ghost sm" onclick="tbOpenHist(\'dlc\')">🕘 Historique</button><button class="btn ghost sm" onclick="tbGo(\'dlcprod\')">⚙️ Gérer les produits</button></div>'
@@ -3387,25 +3756,26 @@ const _fmtD=d=>new Date(d).toLocaleDateString('fr-FR');
 function _sameEmp(a,b){if(!a||!b)return false;return String(a).split(' ')[0].toLowerCase()===String(b).split(' ')[0].toLowerCase();}
 function tbArchEntries(cid){
   const inDay=d=>!tbArchDate||new Date(d).toISOString().slice(0,10)===tbArchDate;
+  const live=a=>(a||[]).filter(function(x){return !x.archived;});
   const empOk=by=>!tbArchEmp||_sameEmp(by,tbArchEmp);
-  if(tbArchTab==='temp')return cRel(cid).filter(r=>inDay(r.at)&&empOk(r.by)).map(r=>{const e=eqById(r.equipId)||{};return {coll:'releves',id:r.id,icon:e.icon||'',bg:r.status==='alerte'?'#ffebe3':'#e3f2fb',title:(e.name||'')+' — '+r.value+'°',sub:_fmtD(r.at)+' · '+relPeriod(r)+' · '+r.by,badge:r.status==='alerte'?'<span class="chip bad">alerte</span>':'<span class="chip ok">ok</span>',row:[_fmtD(r.at),e.name||'',r.value+'°C',r.by,r.status]};});
-  if(tbArchTab==='clean')return state.postes.filter(p=>p.clientId===cid&&p.done&&p.at&&inDay(p.at)&&empOk(p.by)).map(p=>({coll:'postes',id:p.id,icon:'',bg:'#e3f2fb',title:p.name,sub:_fmtD(p.at)+' · '+p.zone+' · '+(p.by||''),badge:'<span class="chip ok">fait</span>',row:[_fmtD(p.at),p.zone,p.name,p.by||'']}));
-  if(tbArchTab==='oil')return state.huileTests.filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'huileTests',id:t.id,icon:'',bg:'#ffebe3',title:t.friteuse+' — '+t.polarity+'%',sub:_fmtD(t.at)+' · '+(t.by||''),badge:t.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>',row:[_fmtD(t.at),t.friteuse,t.polarity+'%',t.status]}));
-  if(tbArchTab==='dlc')return state.dlc.filter(d=>d.clientId===cid&&inDay(d.ouvertAt)&&empOk(d.by)).map(d=>({coll:'dlc',id:d.id,icon:'',bg:'#f0e9fd',title:d.produit,sub:_fmtD(d.ouvertAt)+' → DLC '+_fmtD(d.dlcAt)+' · '+(d.by||''),badge:'',row:[_fmtD(d.ouvertAt),d.produit,_fmtD(d.dlcAt),d.by||'']}));
-  if(tbArchTab==='recep')return state.reception.filter(r=>r.clientId===cid&&inDay(r.at)&&empOk(r.by)).map(r=>({coll:'reception',id:r.id,icon:'',bg:'#fdf6e3',title:r.produit+' · '+r.fournisseur,sub:_fmtD(r.at)+' · lot '+r.lot+' · '+(r.by||''),badge:r.conforme?'<span class="chip ok">conforme</span>':'<span class="chip bad">non</span>',row:[_fmtD(r.at),r.fournisseur,r.produit,r.lot,r.temp!=null?r.temp+'°C':'-']}));
-  if(tbArchTab==='prod')return state.tracabilite.filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'tracabilite',id:t.id,icon:'',bg:'#fde9f1',title:t.produit,sub:_fmtD(t.at)+' · lot '+(t.lot||'—')+' · '+(t.by||''),badge:(tracePhotosOf(t).length?'<button class="btn ghost sm" onclick="event.stopPropagation();traceZoom(\''+t.id+'\')">📷 '+tracePhotosOf(t).length+' photo'+(tracePhotosOf(t).length>1?'s':'')+'</button>':''),row:[_fmtD(t.at),t.produit,t.lot||'',t.by||'']}));
-  if(tbArchTab==='perte')return state.pertes.filter(p=>p.clientId===cid&&inDay(p.at)&&empOk(p.by)).map(p=>({coll:'pertes',id:p.id,icon:'',bg:'#ffebe3',title:p.produit,sub:_fmtD(p.at)+' · '+p.motif+' · '+(p.by||''),badge:'<span class="chip bad">'+p.qte+'</span>',row:[_fmtD(p.at),p.produit,p.motif,p.qte,p.by||'']}));
+  if(tbArchTab==='temp')return live(cRel(cid)).filter(r=>inDay(r.at)&&empOk(r.by)).map(r=>{const e=eqById(r.equipId)||{};return {coll:'releves',id:r.id,icon:e.icon||'',bg:r.status==='alerte'?'#ffebe3':'#e3f2fb',title:(e.name||'')+' — '+r.value+'°',sub:_fmtD(r.at)+' · '+relPeriod(r)+' · '+r.by,badge:r.status==='alerte'?'<span class="chip bad">alerte</span>':'<span class="chip ok">ok</span>',row:[_fmtD(r.at),e.name||'',r.value+'°C',r.by,r.status]};});
+  if(tbArchTab==='clean')return live(state.postes).filter(p=>p.clientId===cid&&p.done&&p.at&&inDay(p.at)&&empOk(p.by)).map(p=>({coll:'postes',id:p.id,icon:'',bg:'#e3f2fb',title:p.name,sub:_fmtD(p.at)+' · '+p.zone+' · '+(p.by||''),badge:'<span class="chip ok">fait</span>',row:[_fmtD(p.at),p.zone,p.name,p.by||'']}));
+  if(tbArchTab==='oil')return live(state.huileTests).filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'huileTests',id:t.id,icon:'',bg:'#ffebe3',title:t.friteuse+' — '+t.polarity+'%',sub:_fmtD(t.at)+' · '+(t.by||''),badge:t.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>',row:[_fmtD(t.at),t.friteuse,t.polarity+'%',t.status]}));
+  if(tbArchTab==='dlc')return live(state.dlc).filter(d=>d.clientId===cid&&inDay(d.ouvertAt)&&empOk(d.by)).map(d=>({coll:'dlc',id:d.id,icon:'',bg:'#f0e9fd',title:d.produit,sub:_fmtD(d.ouvertAt)+' → DLC '+_fmtD(d.dlcAt)+' · '+(d.by||''),badge:'',row:[_fmtD(d.ouvertAt),d.produit,_fmtD(d.dlcAt),d.by||'']}));
+  if(tbArchTab==='recep')return live(state.reception).filter(r=>r.clientId===cid&&inDay(r.at)&&empOk(r.by)).map(r=>({coll:'reception',id:r.id,icon:'',bg:'#fdf6e3',title:r.produit+' · '+r.fournisseur,sub:_fmtD(r.at)+' · lot '+r.lot+' · '+(r.by||''),badge:r.conforme?'<span class="chip ok">conforme</span>':'<span class="chip bad">non</span>',row:[_fmtD(r.at),r.fournisseur,r.produit,r.lot,r.temp!=null?r.temp+'°C':'-']}));
+  if(tbArchTab==='prod')return live(state.tracabilite).filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'tracabilite',id:t.id,icon:'',bg:'#fde9f1',title:t.produit,sub:_fmtD(t.at)+' · lot '+(t.lot||'—')+' · '+(t.by||''),badge:(tracePhotosOf(t).length?'<button class="btn ghost sm" onclick="event.stopPropagation();traceZoom(\''+t.id+'\')">📷 '+tracePhotosOf(t).length+' photo'+(tracePhotosOf(t).length>1?'s':'')+'</button>':''),row:[_fmtD(t.at),t.produit,t.lot||'',t.by||'']}));
+  if(tbArchTab==='perte')return live(state.pertes).filter(p=>p.clientId===cid&&inDay(p.at)&&empOk(p.by)).map(p=>({coll:'pertes',id:p.id,icon:'',bg:'#ffebe3',title:p.produit,sub:_fmtD(p.at)+' · '+p.motif+' · '+(p.by||''),badge:'<span class="chip bad">'+p.qte+'</span>',row:[_fmtD(p.at),p.produit,p.motif,p.qte,p.by||'']}));
   return [];
 }
 function tbArchRows(cid){const es=tbArchEntries(cid);
   setTimeout(()=>{const c=document.getElementById('arch_count');if(c)c.textContent=es.length+' enreg.';},0);
   if(!es.length)return '<div style="text-align:center;color:var(--muted);padding:26px">Aucun enregistrement.</div>';
-  return es.map(x=>'<div class="row"><div class="ic" style="background:'+x.bg+'">'+x.icon+'</div><div><div class="nm">'+x.title+'</div><div class="sub">'+x.sub+'</div></div><div class="rt">'+x.badge+'<button class="btn ghost sm" onclick="tbArchDel(\''+x.coll+'\',\''+x.id+'\')">Suppr.</button></div></div>').join('');
+  return es.map(x=>'<div class="row"><div class="ic" style="background:'+x.bg+'">'+x.icon+'</div><div><div class="nm">'+x.title+'</div><div class="sub">'+x.sub+'</div></div><div class="rt">'+x.badge+'<button class="btn ghost sm" onclick="tbArchDel(\''+x.coll+'\',\''+x.id+'\')">🗄 Archiver</button></div></div>').join('');
 }
-function tbArchDel(coll,id){openConfirm('Supprimer cet enregistrement ?','Cette action est définitive.',()=>{
+function tbArchDel(coll,id){openConfirm('Archiver cet enregistrement ?','Il disparaît de la tablette, mais <b>il reste conservé et visible depuis le back-office</b> : rien n\'est effacé.',()=>{
   if(coll==='postes'){const p=state.postes.find(x=>x.id===id);if(p){p.done=false;p.by=null;p.at=null;}}
-  else{const i=state[coll].findIndex(x=>x.id===id);if(i>=0)state[coll].splice(i,1);}
-  tbRender('archives');toast('Enregistrement supprimé');});}
+  else{const it=(state[coll]||[]).find(x=>x.id===id);if(it){it.archived=true;it.archivedAt=new Date().toISOString();}}
+  tbRender('archives');toast('🗄 Archivé — conservé dans le back-office');});}
 /* ============ EXPORT PDF DES ARCHIVES SUR UNE PLAGE DE DATES ============ */
 let tbArchFrom='',tbArchTo='';
 function _dk(d){const x=new Date(d);if(isNaN(x))return '';return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
@@ -3935,31 +4305,54 @@ async function tbFidRedeem(t){
 function tbLogin(id){tbUser=id;tbStack=[];tbRender('haccp');}
 let tbBadgeUser=null;
 function tbBadgeWho(id){tbBadgeUser=id;tbGo('badgeact');}
-function tbBadgeCapture(){return new Promise(function(resolve){
+/* La photo de pointage est déclenchée par le salarié lui-même : il se cadre,
+   appuie sur le déclencheur, puis valide ou reprend. Rien ne part tout seul. */
+function tbBadgeCapture(sens){return new Promise(function(resolve){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){resolve('');return;}
-  let done=false,stream=null,timer=null,hard=null;
+  let done=false,stream=null;
+  const label=(sens==='out')?'départ':'arrivée';
   const ov=document.createElement('div');ov.id='bdgcam';
-  ov.innerHTML='<video id="bdgcam_v" autoplay playsinline muted></video><div class="msg" id="bdgcam_m">📷 Photo en cours…</div><button class="btn ghost" id="bdgcam_skip" style="background:transparent;color:#ccd6e0;border-color:#3b4252">Passer sans photo</button>';
+  ov.innerHTML='<video id="bdgcam_v" autoplay playsinline muted></video>'
+   +'<div class="msg" id="bdgcam_m">Cadrez-vous, puis appuyez sur le déclencheur pour votre photo d\'' + label + '.</div>'
+   +'<div class="bdgrow" id="bdgcam_row">'
+     +'<button class="lnk" id="bdgcam_skip">Passer sans photo</button>'
+     +'<button class="shot" id="bdgcam_snap" title="Prendre la photo" aria-label="Prendre la photo">📷</button>'
+   +'</div>';
   document.body.appendChild(ov);
   const finish=function(url){if(done)return;done=true;
-    if(timer){clearInterval(timer);clearTimeout(timer);}if(hard)clearTimeout(hard);
     if(stream){try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}}
     if(ov.parentNode)ov.parentNode.removeChild(ov);resolve(url||'');};
   document.getElementById('bdgcam_skip').onclick=function(){finish('');};
-  hard=setTimeout(function(){finish('');},15000);
-  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:640},height:{ideal:480}},audio:false})
-  .then(function(st){stream=st;const v=document.getElementById('bdgcam_v');if(!v){finish('');return;}
-    v.srcObject=st;
-    const snap=function(){try{
-      const w=560,h=Math.round(w*(v.videoHeight||480)/(v.videoWidth||640));
-      const cv=document.createElement('canvas');cv.width=w;cv.height=h;
-      cv.getContext('2d').drawImage(v,0,0,w,h);
-      finish(cv.toDataURL('image/jpeg',0.78));
-    }catch(e){finish('');}};
-    const go=function(){timer=setTimeout(snap,450);};
-    if(v.readyState>=2)go();else v.onloadeddata=go;})
-  .catch(function(){const m=document.getElementById('bdgcam_m');if(m)m.textContent='Caméra indisponible — le pointage est enregistré sans photo.';setTimeout(function(){finish('');},1400);});
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:960},height:{ideal:720}},audio:false})
+  .then(function(st){stream=st;const v=document.getElementById('bdgcam_v');if(!v){finish('');return;}v.srcObject=st;})
+  .catch(function(){
+    const m=document.getElementById('bdgcam_m');if(m)m.textContent='Caméra inaccessible — le pointage peut être enregistré sans photo.';
+    const r=document.getElementById('bdgcam_row');if(r)r.innerHTML='<button class="lnk" id="bdgcam_skip2">Continuer sans photo</button>';
+    const s2=document.getElementById('bdgcam_skip2');if(s2)s2.onclick=function(){finish('');};});
+  document.getElementById('bdgcam_snap').onclick=function(){
+    const v=document.getElementById('bdgcam_v');
+    if(!v||!v.videoWidth){toast('Caméra pas encore prête');return;}
+    const w=760,hh=Math.round(w*v.videoHeight/v.videoWidth);
+    const cv=document.createElement('canvas');cv.width=w;cv.height=hh;
+    const cx=cv.getContext('2d');
+    cx.translate(w,0);cx.scale(-1,1);           /* l'aperçu est en miroir : on redresse */
+    cx.drawImage(v,0,0,w,hh);
+    const url=cv.toDataURL('image/jpeg',0.8);
+    if(stream){try{stream.getTracks().forEach(function(t){t.stop();});}catch(e){}}
+    v.outerHTML='<img class="shot-prev" src="'+url+'" alt="Aperçu de votre photo">';
+    document.getElementById('bdgcam_m').textContent='La photo vous convient ?';
+    const row=document.getElementById('bdgcam_row');
+    row.innerHTML='<button class="lnk" id="bdgcam_again">↺ Reprendre</button>'
+                 +'<button class="lnk ok" id="bdgcam_use">✓ Valider mon pointage</button>';
+    document.getElementById('bdgcam_again').onclick=function(){finish('__again__');};
+    document.getElementById('bdgcam_use').onclick=function(){finish(url);};};
 });}
+/* Reprise : on relance tant que le salarié n'est pas satisfait. */
+async function tbBadgeShoot(sens){
+  for(let i=0;i<6;i++){
+    const r=await tbBadgeCapture(sens);
+    if(r!=='__again__')return r;}
+  return '';}
 async function tbUploadBadgePhoto(dataUrl){if(!dataUrl)return '';
   try{const res=await fetch(CFG.url+'/functions/v1/tablet-sync',{method:'POST',headers:{'Content-Type':'application/json','apikey':CFG.key},body:JSON.stringify({action:'badge_photo',code:(typeof TBLINK!=='undefined'&&TBLINK)?TBLINK:CUR,data:dataUrl})});
     const j=await res.json().catch(function(){return {};});
@@ -3970,7 +4363,7 @@ async function badgeDo(type){
   if(type==='in'&&open){toast('Déjà pointé en arrivée à '+fmtTime(new Date(open.at)));return;}
   if(type==='out'&&!open){toast('Aucune arrivée enregistrée');return;}
   let photo='';
-  if(state.tabletBadgePhoto!==false){const d=await tbBadgeCapture();if(d)photo=await tbUploadBadgePhoto(d);}
+  if(state.tabletBadgePhoto!==false){const d=await tbBadgeShoot(type);if(d)photo=await tbUploadBadgePhoto(d);}
   state.badges=state.badges||[];
   const now=new Date();
   state.badges.push({id:'bg'+Date.now(),clientId:CID,empId:e.id||'',name:e.name,at:now.toISOString(),type:type,photo:photo});
@@ -4167,7 +4560,7 @@ function tbSaveRecep(){const p=tbProdName(CID,'rc');if(!p){toast('Choisissez un 
   try{stockAfterReception(p,rcFour,rcBy);}catch(e){}}
 /* ============ RÉCEPTION — choix du fournisseur d'abord ============ */
 let recFour='';
-function tbFours(cid){return (state.fournisseurs||[]).filter(function(f){return f.clientId===cid;});}
+function tbFours(cid){return (state.fournisseurs||[]).filter(function(f){return f.clientId===cid&&!f.archived;});}
 function tbFourScreen(cid){
   const fs=tbFours(cid);
   const head='<div class="tb-title-k">Logistique · Réception</div><div class="tb-title" style="margin-bottom:16px">Sélectionner le fournisseur</div>';
@@ -4335,7 +4728,7 @@ async function tbFetchPhotos(){
   return TB_PHOTOS;}
 
 let dpEdit=null,dpPhoto='',dpBusy=false;
-function tbDlcProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid;});}
+function tbDlcProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid&&!p.archived;});}
 function tbDlcCats(cid){return (state.dlcCats||[]).filter(function(c){return c.clientId===cid;});}
 /* --- liste --- */
 function tbDlcProdScreen(cid){
@@ -4381,7 +4774,7 @@ function tbDlcProdFormScreen(cid){
   +'<div style="display:flex;gap:10px;margin-top:8px">'
    +'<button class="btn ghost" style="flex:1" onclick="tbGo(\'dlcprod\')">‹ Retour</button>'
    +'<button class="btn" style="flex:2" onclick="tbDlcProdSave()">'+(dpBusy?'Enregistrement…':'✓ Enregistrer')+'</button></div>'
-  +(dpEdit?'<div style="text-align:center;margin-top:14px"><button class="btn ghost sm" style="color:var(--bad)" onclick="tbDlcProdDel()">🗑 Supprimer ce produit</button></div>':'')
+  +(dpEdit?'<div style="text-align:center;margin-top:14px"><button class="btn ghost sm" style="color:var(--bad)" onclick="tbDlcProdDel()">🗄 Archiver ce produit</button></div>':'')
   +'</div>';}
 function dpUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;
   if(f.size>4*1024*1024){toast('Photo trop lourde (4 Mo maximum)');return;}
@@ -4430,14 +4823,14 @@ async function tbUploadProductPhoto(dataUrl){
     const j=await res.json().catch(function(){return {};});
     return (res.ok&&j&&j.url)?j.url:'';}catch(e){return '';}}
 function tbDlcProdDel(){
-  if(!dpEdit)return;const nm=dpEdit.name,id=dpEdit.id;
-  openConfirm('Supprimer « '+nm+' » ?','Il ne sera plus proposé à l\'étiquetage. Les étiquettes déjà posées ne sont pas affectées.',function(){
-    state.dlcProducts=(state.dlcProducts||[]).filter(function(x){return x.id!==id;});
-    dpEdit=null;dpPhoto='';tbRender('dlcprod');toast('Produit supprimé');});}
+  if(!dpEdit)return;const nm=dpEdit.name,it=dpEdit;
+  openConfirm('Archiver « '+nm+' » ?','Il ne sera plus proposé à l\'étiquetage, mais <b>toutes ses données restent conservées</b>. Le restaurateur peut le restaurer depuis le back-office.',function(){
+    it.archived=true;it.archivedAt=new Date().toISOString();it.active=false;
+    dpEdit=null;dpPhoto='';tbRender('dlcprod');toast('🗄 '+nm+' archivé — données conservées');});}
 
 /* ============ SÉLECTION D'UN PRODUIT — liste DLC commune + saisie libre ============ */
 let prodSel={rc:'',tr:''};
-function tbCatalogProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid&&p.active!==false;});}
+function tbCatalogProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid&&p.active!==false&&!p.archived;});}
 function tbProdSet(ns,v){prodSel[ns]=v;tbRender(tbCurrent);}
 /* ns = préfixe des identifiants : 'rc' réception, 'tr' traçabilité */
 function tbProdField(cid,ns,label){
@@ -4718,9 +5111,29 @@ function setDlcTab(t){dlcTab=t;renderClient('h_dlc');}
 function setSuivi(t){suiviTab=t;renderClient('h_suivi');}
 function setSuiviEmp(v){suiviEmp=v;renderClient('h_suivi');}
 function syncedNote(txt){return '<div style="background:#eef7f2;border:1px solid #cfe6f7;color:#006fab;font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:10px;margin-bottom:14px"> '+txt+'</div>';}
-function rowActions(editFn,coll,id,view){return (editFn?'<button class="btn ghost sm" onclick="'+editFn+'(\''+id+'\')" style="margin-right:6px">Modifier</button>':'')+'<button class="btn ghost sm" onclick="crudDel(\''+coll+'\',\''+id+'\',\''+view+'\')">Suppr.</button>';}
-function crudDel(coll,id,view){const it=state[coll].find(x=>x.id===id);const nm=it&&(it.name||it.nom||it.produit)||'cet élément';
-  openConfirm('Supprimer '+nm+' ?','Cette action est définitive et retire aussi l\'élément de la tablette.',()=>{const i=state[coll].findIndex(x=>x.id===id);if(i>=0)state[coll].splice(i,1);renderClient(view);toast('Supprimé');});}
+/* Rien n'est jamais supprimé : on archive, pour que l'historique reste opposable en cas de contrôle. */
+function isArch(x){return !!(x&&x.archived);}
+function notArch(a){return (a||[]).filter(function(x){return !x.archived;});}
+function rowActions(editFn,coll,id,view){
+  const it=(state[coll]||[]).find(function(x){return x.id===id;});
+  if(it&&it.archived)return '<button class="btn ghost sm" onclick="crudRestore(\''+coll+'\',\''+id+'\',\''+view+'\')">↩ Restaurer</button>';
+  return (editFn?'<button class="btn ghost sm" onclick="'+editFn+'(\''+id+'\')" style="margin-right:6px">Modifier</button>':'')
+    +'<button class="btn ghost sm" onclick="crudDel(\''+coll+'\',\''+id+'\',\''+view+'\')">🗄 Archiver</button>';}
+function crudDel(coll,id,view){const it=(state[coll]||[]).find(x=>x.id===id);const nm=it&&(it.name||it.nom||it.produit)||'cet élément';
+  openConfirm('Archiver '+nm+' ?','Il disparaît des listes et de la tablette, mais <b>toutes ses données restent conservées</b> : historique, relevés et registres sont intacts pour un contrôle. Vous pourrez le restaurer à tout moment.',()=>{
+    if(it){it.archived=true;it.archivedAt=new Date().toISOString();if(it.active!==undefined)it.active=false;}
+    renderClient(view);toast('🗄 '+nm+' archivé — données conservées');});}
+function crudRestore(coll,id,view){const it=(state[coll]||[]).find(x=>x.id===id);if(!it)return;
+  delete it.archived;delete it.archivedAt;if(it.active!==undefined)it.active=true;
+  renderClient(view);toast('↩ '+(it.name||it.nom||'Élément')+' restauré');}
+/* bascule d'affichage des éléments archivés, commune à toutes les listes */
+let SHOW_ARCH=false;
+function toggleArch(view){SHOW_ARCH=!SHOW_ARCH;renderClient(view);}
+function archToggleBtn(view,coll,cid){
+  const nb=(state[coll]||[]).filter(function(x){return x.clientId===cid&&x.archived;}).length;
+  if(!nb&&!SHOW_ARCH)return '';
+  return '<button class="btn ghost sm" onclick="toggleArch(\''+view+'\')">'+(SHOW_ARCH?'Masquer les archivés':'🗄 Archivés ('+nb+')')+'</button>';}
+function archFilter(a){return SHOW_ARCH?a:(a||[]).filter(function(x){return !x.archived;});}
 function toggleActive(coll,id,view){const it=state[coll].find(x=>x.id===id);if(!it)return;it.active=it.active===false?true:false;renderClient(view);toast(it.active?'✓ Activé — visible sur la tablette':'✕ Désactivé — masqué sur la tablette');}
 function switchTgl(coll,id,view,on){return '<span class="switch '+(on?'on':'')+'" onclick="toggleActive(\''+coll+'\',\''+id+'\',\''+view+'\')" title="Actif sur la tablette"><span class="tk"></span></span>';}
 
