@@ -1015,7 +1015,7 @@ const cRel=cid=>state.releves.filter(r=>r.clientId===cid).sort((a,b)=>b.at-a.at)
 function todayRel(cid){const t=new Date();t.setHours(0,0,0,0);return cRel(cid).filter(r=>r.at>=t);}
 const openAlerts=cid=>cRel(cid).filter(r=>r.status==='alerte');
 const eqById=id=>state.equip.find(e=>e.id===id);
-const seuilTxt=e=>e.cat==='chaud'?('≥ '+e.min+' °C'):(e.cat==='froidneg'?('≤ '+e.max+' °C'):(e.min+' à '+e.max+' °C'));
+const seuilTxt=e=>!e?'—':(e.cat==='chaud'?('≥ '+e.min+' °C'):(e.cat==='froidneg'?('≤ '+e.max+' °C'):(e.min+' à '+e.max+' °C')));
 const catLabel=c=>({chaud:' Chaud',froidpos:' Froid positif',froidneg:' Froid négatif'})[c]||c;
 const isFroid=e=>e.cat!=='chaud';
 function emojiImg(emoji,bg){return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" rx="16" fill="'+(bg||'#eff4f8')+'"/><text x="60" y="84" font-size="62" text-anchor="middle">'+emoji+'</text></svg>');}
@@ -1344,7 +1344,7 @@ function adminPhotoDel(id){const p=state[adminPhotoTab].find(x=>x.id===id);openC
 function adminPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{state[adminPhotoTab].push({id:'lib'+Date.now(),label:f.name.replace(/\.[^.]+$/,'').slice(0,18),url:rd.result});renderAdmin('photos');saveAdminPhotos();toast('Photo ajoutée à la bibliothèque');};rd.readAsDataURL(f);}
 function netAlerts(all){let items=[];state.clients.forEach(c=>openAlerts(c.id).forEach(r=>items.push({c,r})));items.sort((a,b)=>b.r.at-a.r.at);if(!all)items=items.slice(0,6);
   if(!items.length)return '<div class="empty"> Aucune alerte ouverte sur le réseau.</div>';
-  return items.map(o=>{const e=eqById(o.r.equipId);return '<div class="alert-i"><div><div class="at">'+o.c.name+' — '+e.name+'</div><div class="as">'+o.r.value+' °C (cible '+seuilTxt(e)+') · '+(o.r.action||'action en attente')+'</div></div><div class="aw">'+ago(o.r.at)+'</div></div>';}).join('');}
+  return items.map(o=>{const e=eqById(o.r.equipId)||{name:'Équipement supprimé',min:null,max:null};return '<div class="alert-i"><div><div class="at">'+o.c.name+' — '+e.name+'</div><div class="as">'+o.r.value+' °C (cible '+seuilTxt(e)+') · '+(o.r.action||'action en attente')+'</div></div><div class="aw">'+ago(o.r.at)+'</div></div>';}).join('');}
 function openCreate(){cmPopulateCatalogs();cmResetForm();document.getElementById('cm_mask').classList.add('on');}
 function closeCreate(){document.getElementById('cm_mask').classList.remove('on');}
 function catBoxes(containerId,catalog,selected){const sel=selected||[];const c=document.getElementById(containerId);if(!c)return;c.innerHTML=catalog.map(it=>'<label class="cm-mod"><input type="checkbox" value="'+it.key+'"'+(sel.indexOf(it.key)>=0?' checked':'')+'> '+(it.icon?it.icon+' ':'')+escH(it.name)+'</label>').join('');}
@@ -3170,9 +3170,9 @@ function tempChart(cid){const days=[];const t=new Date();t.setHours(0,0,0,0);for
   const data=days.map(d=>{const nd=new Date(d);nd.setDate(nd.getDate()+1);const dr=rs.filter(r=>r.at>=d&&r.at<nd);const avg=dr.length?dr.reduce((s,r)=>s+r.value,0)/dr.length:null;const bad=dr.some(r=>r.status==='alerte');return {d,avg,bad};});
   return '<div class="bars">'+data.map(x=>{const h=x.avg==null?4:Math.max(6,(x.avg/6)*130);return '<div class="bar '+(x.avg==null?'':x.bad?'b-bad':'b-ok')+'" style="height:'+h+'px"><span class="cap">'+(x.avg==null?'–':x.avg.toFixed(1)+'°')+'</span><span class="xl">'+x.d.toLocaleDateString('fr-FR',{weekday:'short'})+'</span></div>';}).join('')+'</div><p style="text-align:center;color:var(--muted);font-size:12px;margin-top:26px">Moyenne enceintes froides positives · seuil +4 °C</p>';}
 function clientAlerts(cid){const a=openAlerts(cid);if(!a.length)return '<div class="empty"> Aucune alerte. Tout est conforme.</div>';
-  return a.map(r=>{const e=eqById(r.equipId);return '<div class="alert-i"><div><div class="at">'+e.name+' — '+r.value+' °C</div><div class="as">Seuil '+seuilTxt(e)+' · '+(r.action||'action en attente')+' · '+r.by+'</div></div><div class="aw">'+ago(r.at)+'</div></div>';}).join('');}
+  return a.map(r=>{const e=eqById(r.equipId)||{name:'Équipement supprimé',min:null,max:null};return '<div class="alert-i"><div><div class="at">'+e.name+' — '+r.value+' °C</div><div class="as">Seuil '+seuilTxt(e)+' · '+(r.action||'action en attente')+' · '+r.by+'</div></div><div class="aw">'+ago(r.at)+'</div></div>';}).join('');}
 function exportCsv(){const rows=cRel(CID);let csv='Date,Heure,Equipement,Valeur,Min,Max,Etat,Par,Action\n';
-  rows.forEach(r=>{const e=eqById(r.equipId);csv+=r.at.toLocaleDateString('fr-FR')+','+fmtTime(r.at)+',"'+e.name+'",'+r.value+','+e.min+','+e.max+','+r.status+','+r.by+',"'+(r.action||'')+'"\n';});
+  rows.forEach(r=>{const e=eqById(r.equipId)||{name:'Équipement supprimé',min:'',max:''};csv+=r.at.toLocaleDateString('fr-FR')+','+fmtTime(r.at)+',"'+e.name+'",'+r.value+','+e.min+','+e.max+','+r.status+','+r.by+',"'+(r.action||'')+'"\n';});
   const b=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='releves_vigie.csv';a.click();toast('↓ Export CSV généré');}
 
 /* ============ TABLETTE TERRAIN ============ */
@@ -5487,7 +5487,7 @@ function suiviTable(cid){
 
 /* keypad */
 let kpEq=null,kpBuf='';
-function openKp(id){kpEq=eqById(id);kpBuf='';kpPeriod='now';kpRenderPeriod();const kd=document.getElementById('kp_date');if(kd)kd.innerHTML=tbDateField(1);document.getElementById('kp_title').textContent=kpEq.icon+' '+kpEq.name;document.getElementById('kp_sub').textContent='Cible '+seuilTxt(kpEq);document.getElementById('kp_corr').classList.remove('on');updateKp();document.getElementById('kp_mask').classList.add('on');}
+function openKp(id){kpEq=eqById(id);if(!kpEq){toast('Équipement introuvable');return;}kpBuf='';kpPeriod='now';kpRenderPeriod();const kd=document.getElementById('kp_date');if(kd)kd.innerHTML=tbDateField(1);document.getElementById('kp_title').textContent=kpEq.icon+' '+kpEq.name;document.getElementById('kp_sub').textContent='Cible '+seuilTxt(kpEq);document.getElementById('kp_corr').classList.remove('on');updateKp();document.getElementById('kp_mask').classList.add('on');}
 function kpClose(){document.getElementById('kp_mask').classList.remove('on');}
 function kpDel(){if(!kpBuf)return;kpBuf=kpBuf.slice(0,-1);if(kpBuf==='-')kpBuf='';updateKp();}
 function kpClear(){if(!kpBuf)return;kpBuf='';updateKp();}
