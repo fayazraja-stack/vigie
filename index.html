@@ -2374,6 +2374,78 @@ async function pdfFetchJpeg(url){
     return {bytes:bytes,w:sz.w,h:sz.h,comps:sz.comps||3};
   }catch(e){return null;}}
 
+/* ---------- Archive ZIP (sans dépendance) ---------- */
+let ZIP_CRC=null;
+function zipCrcTable(){if(ZIP_CRC)return ZIP_CRC;
+  const t=new Uint32Array(256);
+  for(let n=0;n<256;n++){let c=n;
+    for(let k=0;k<8;k++)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);
+    t[n]=c>>>0;}
+  ZIP_CRC=t;return t;}
+function zipCrc32(u8){const t=zipCrcTable();let c=0xFFFFFFFF;
+  for(let i=0;i<u8.length;i++)c=t[(c^u8[i])&0xFF]^(c>>>8);
+  return (c^0xFFFFFFFF)>>>0;}
+function zipUtf8(s){const o=[];s=String(s);
+  for(let i=0;i<s.length;i++){let c=s.charCodeAt(i);
+    if(c<0x80)o.push(c);
+    else if(c<0x800){o.push(0xC0|(c>>6),0x80|(c&63));}
+    else if(c>=0xD800&&c<0xDC00&&i+1<s.length){const c2=s.charCodeAt(++i);
+      const cp=0x10000+((c-0xD800)<<10)+(c2-0xDC00);
+      o.push(0xF0|(cp>>18),0x80|((cp>>12)&63),0x80|((cp>>6)&63),0x80|(cp&63));}
+    else o.push(0xE0|(c>>12),0x80|((c>>6)&63),0x80|(c&63));}
+  return new Uint8Array(o);}
+function zipDos(dt){
+  const t=((dt.getHours()&31)<<11)|((dt.getMinutes()&63)<<5)|((dt.getSeconds()/2)&31);
+  const d=(((dt.getFullYear()-1980)&127)<<9)|(((dt.getMonth()+1)&15)<<5)|(dt.getDate()&31);
+  return {t:t,d:d};}
+async function zipDeflate(u8){
+  if(typeof CompressionStream==='undefined')return null;
+  try{
+    const st=new Blob([u8]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    const out=new Uint8Array(await new Response(st).arrayBuffer());
+    return (out.length<u8.length)?out:null;
+  }catch(e){return null;}}
+async function zipBuild(files){
+  const now=zipDos(new Date());
+  const chunks=[],central=[];let off=0;
+  for(let i=0;i<files.length;i++){
+    const nb=zipUtf8(files[i].name),raw=files[i].bytes;
+    const crc=zipCrc32(raw);
+    const def=await zipDeflate(raw);
+    const data=def||raw,method=def?8:0;
+    const lh=new Uint8Array(30+nb.length),v=new DataView(lh.buffer);
+    v.setUint32(0,0x04034b50,true);v.setUint16(4,20,true);v.setUint16(6,0x0800,true);
+    v.setUint16(8,method,true);v.setUint16(10,now.t,true);v.setUint16(12,now.d,true);
+    v.setUint32(14,crc,true);v.setUint32(18,data.length,true);v.setUint32(22,raw.length,true);
+    v.setUint16(26,nb.length,true);v.setUint16(28,0,true);
+    lh.set(nb,30);
+    chunks.push(lh,data);
+    const ch=new Uint8Array(46+nb.length),cv=new DataView(ch.buffer);
+    cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);
+    cv.setUint16(8,0x0800,true);cv.setUint16(10,method,true);cv.setUint16(12,now.t,true);
+    cv.setUint16(14,now.d,true);cv.setUint32(16,crc,true);cv.setUint32(20,data.length,true);
+    cv.setUint32(24,raw.length,true);cv.setUint16(28,nb.length,true);
+    cv.setUint16(30,0,true);cv.setUint16(32,0,true);cv.setUint16(34,0,true);
+    cv.setUint16(36,0,true);cv.setUint32(38,0,true);cv.setUint32(42,off,true);
+    ch.set(nb,46);
+    central.push(ch);
+    off+=lh.length+data.length;}
+  let cdSize=0;central.forEach(function(c){cdSize+=c.length;});
+  const eo=new Uint8Array(22),ev=new DataView(eo.buffer);
+  ev.setUint32(0,0x06054b50,true);ev.setUint16(4,0,true);ev.setUint16(6,0,true);
+  ev.setUint16(8,files.length,true);ev.setUint16(10,files.length,true);
+  ev.setUint32(12,cdSize,true);ev.setUint32(16,off,true);ev.setUint16(20,0,true);
+  const all=chunks.concat(central,[eo]);
+  let total=0;all.forEach(function(a){total+=a.length;});
+  const out=new Uint8Array(total);let p=0;
+  all.forEach(function(a){out.set(a,p);p+=a.length;});
+  return out;}
+function zipSave(bytes,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([bytes],{type:'application/zip'}));
+  a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},2000);}
+
 /* ---------- Export PDF d'une fiche technique ---------- */
 const PDF_INK=[0.04,0.06,0.13],PDF_MUT=[0.49,0.53,0.60],PDF_LINE=[0.90,0.92,0.95],
       PDF_BAND=[0.89,0.949,0.984],PDF_BRAND=[0,0.435,0.671],PDF_WARN=[0.72,0.21,0.02];
@@ -2417,7 +2489,7 @@ function pdfOptsAsk(title,run,multi){
    +(multi?('<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">'
      +'<div class="tsub" style="font-weight:800;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Fichier de sortie</div>'
      +'<label style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:14px"><input type="radio" name="posplit" class="ingck" '+(cur.split?'':'checked')+' onclick="document.getElementById(\'po_split\').checked=false"><span><b>Un seul fichier PDF</b><div class="tsub">Toutes les fiches à la suite, puis leurs sous-recettes une seule fois.</div></span></label>'
-     +'<label style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:14px"><input type="radio" name="posplit" id="po_split" class="ingck" '+(cur.split?'checked':'')+'><span><b>Un fichier PDF par recette</b><div class="tsub">Un document autonome par fiche, avec ses propres sous-recettes. Votre navigateur demandera l\'autorisation de télécharger plusieurs fichiers.</div></span></label></div>'):'')
+     +'<label style="display:flex;gap:10px;align-items:flex-start;padding:7px 0;cursor:pointer;font-size:14px"><input type="radio" name="posplit" id="po_split" class="ingck" '+(cur.split?'checked':'')+'><span><b>Un fichier par recette, dans une archive ZIP</b><div class="tsub">Un document autonome par fiche, avec ses propres sous-recettes, rangés par catégorie dans un seul dossier compressé.</div></span></label></div>'):'')
    +'<p class="tsub" style="margin:14px 0 0">Sans les prix, le document devient une fiche de fabrication à afficher en cuisine.</p></div>');}
 function pdfCols(defs,M,CW){
   let fixed=0;defs.forEach(function(c){if(c.k!=='name')fixed+=c.w+14;});
@@ -2583,8 +2655,9 @@ async function recBulkPdfRun(O){
   const est=(state.clients||[]).filter(function(c){return c.id===CID;})[0];
   const estN=est?(est.nom||est.name||''):'';
   if(O.split){
-    toast('Génération de '+list.length+' fichiers PDF…');
+    toast('Génération de '+list.length+' fiches — préparation de l\'archive…');
     try{
+      const files=[],used={};
       for(let i=0;i<list.length;i++){
         const r=list[i];
         const img=O.photo?await pdfFetchJpeg(r.photo||''):null;
@@ -2592,9 +2665,13 @@ async function recBulkPdfRun(O){
         pdfDrawFiche(d,pdfRecData(r),img,O);
         if(O.subs)pdfCollectSubs(r.lines,[],0).forEach(function(x){pdfDrawFiche(d,pdfSubData(x),null,O);});
         pdfFooters(d,estN);
-        d.save('fiche-technique-'+pdfSlug(r.name)+'.pdf');
-        await new Promise(function(res){setTimeout(res,320);});}
-      toast('✓ '+list.length+' fichiers PDF téléchargés');
+        let nm=pdfSlug(r.name);
+        if(used[nm])nm=nm+'-'+(++used[nm]);else used[nm]=1;
+        const folder=r.cat?(pdfSlug(r.cat)+'/'):'';
+        files.push({name:folder+'fiche-technique-'+nm+'.pdf',bytes:d.build()});}
+      const zip=await zipBuild(files);
+      zipSave(zip,'fiches-techniques-'+new Date().toISOString().slice(0,10)+'.zip');
+      toast('✓ Archive ZIP téléchargée — '+files.length+' fiches');
     }catch(e){toast('Échec de la génération : '+(e.message||e));}
     return;}
   toast('Génération du PDF — '+list.length+' fiche(s)…');
