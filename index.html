@@ -2248,6 +2248,233 @@ function foodIngForm(id){state.foodIng=state.foodIng||[];state.foodIngCats=state
     renderClient('food');toast('Ingrédient enregistré');});
 }
 function foodIngCatAdd(){state.foodIngCats=state.foodIngCats||[];openForm('Nouvelle catégorie d\'ingrédients',[{key:'name',label:'Nom de la catégorie',value:'',ph:'Ex. Viandes, Légumes, Emballages…'}],function(v){const n=(v.name||'').trim();if(!n){toast('Nom requis');return;}if(state.foodIngCats.indexOf(n)<0)state.foodIngCats.push(n);renderClient('food');toast('Catégorie créée');});}
+/* ================= IMPORT CSV — INGRÉDIENTS ================= */
+let IMP=null,_impSeq=0;
+const IMP_FIELDS=[
+ {k:'name',lab:'Nom de l\'ingrédient',req:true,hints:['nom ingredient','ingredient','nom du produit','nom','designation','libelle','produit','article','matiere premiere']},
+ {k:'cat',lab:'Catégorie',hints:['categorie','category','famille','groupe','rayon']},
+ {k:'four',lab:'Fournisseur',hints:['fournisseur','supplier','dernier fournisseur','nom fournisseur']},
+ {k:'price',lab:'Prix d\'achat HT du conditionnement',req:true,hints:['prix unitaire ht','prix achat ht','prix achat','prix ht','prix applique','prix','tarif','pu ht','cout']},
+ {k:'qty',lab:'Quantité du conditionnement',hints:['quantite unitaire','quantite','contenance','poids','conditionnement','colisage nombre','qte']},
+ {k:'unit',lab:'Unité',hints:['unite','unit','um','mesure','unite achat']},
+ {k:'tva',lab:'Taux de TVA',hints:['taux tva','tva','vat']},
+ {k:'ref',lab:'Référence interne (clé pour les recettes)',hints:['numero interne','numero','reference interne','reference','ref','code produit','code','id']},
+ {k:'tags',lab:'Tags / allergènes',hints:['tag','tags','allergenes','allergene','etiquette','label']}
+];
+function impNorm(s){return String(s==null?'':s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
+function impClean(s){return String(s==null?'':s).replace(/[\t\r\n]+/g,' ').replace(/^[\s"']+|[\s"']+$/g,'').replace(/^[-–—]{1,4}\s*/,'').replace(/\s{2,}/g,' ').trim();}
+function impUnit(u){var n=impNorm(u);
+ if(/^(kg|kgs|kilo|kilos|kilogramme|kilogrammes)$/.test(n))return 'kg';
+ if(/^(g|gr|grs|gramme|grammes)$/.test(n))return 'g';
+ if(/^(l|litre|litres|lt|ltr)$/.test(n))return 'L';
+ if(/^(cl|centilitre|centilitres)$/.test(n))return 'cl';
+ if(/^(ml|millilitre|millilitres)$/.test(n))return 'ml';
+ if(/^(u|un|unite|unites|piece|pieces|pce|pc|pcs|unit|units)$/.test(n))return 'pièce';
+ if(/^(portion|portions|part|parts)$/.test(n))return 'portion';
+ return null;}
+function impNum(v){var s=String(v==null?'':v).replace(/[\s\u00a0\u202f]/g,'').replace(/[\u20ac%$]/g,'');
+ if(!s)return null;
+ if(s.indexOf(',')>-1&&s.indexOf('.')>-1){s=(s.lastIndexOf(',')>s.lastIndexOf('.'))?s.replace(/\./g,'').replace(/,/g,'.'):s.replace(/,/g,'');}
+ else s=s.replace(/,/g,'.');
+ if(s.charAt(0)==='.')s='0'+s;
+ if(s.charAt(0)==='-'&&s.charAt(1)==='.')s='-0'+s.slice(1);
+ var n=Number(s);return isNaN(n)?null:n;}
+function impDecode(buf){var u8=new Uint8Array(buf);
+ if(u8[0]===0xEF&&u8[1]===0xBB&&u8[2]===0xBF)return {txt:new TextDecoder('utf-8').decode(u8.subarray(3)),enc:'UTF-8'};
+ try{return {txt:new TextDecoder('utf-8',{fatal:true}).decode(u8),enc:'UTF-8'};}
+ catch(e){return {txt:new TextDecoder('windows-1252').decode(u8),enc:'Windows-1252 (Latin-1)'};}}
+function impSepOf(line){var c={';':0,',':0,'\t':0,'|':0},i;
+ for(i=0;i<line.length;i++)if(c[line.charAt(i)]!==undefined)c[line.charAt(i)]++;
+ var best=';',bv=-1;for(var k in c)if(c[k]>bv){bv=c[k];best=k;}
+ return bv>0?best:';';}
+function impParse(txt,sep){var rows=[],row=[],cur='',q=false,i,ch;
+ txt=String(txt).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+ for(i=0;i<txt.length;i++){ch=txt.charAt(i);
+  if(q){if(ch==='"'){if(txt.charAt(i+1)==='"'){cur+='"';i++;}else q=false;}else cur+=ch;}
+  else if(ch==='"')q=true;
+  else if(ch===sep){row.push(cur);cur='';}
+  else if(ch==='\n'){row.push(cur);rows.push(row);cur='';row=[];}
+  else cur+=ch;}
+ if(cur!==''||row.length){row.push(cur);rows.push(row);}
+ return rows.filter(function(r){return r.some(function(c){return String(c).trim()!=='';});});}
+function impGuess(head){var map={},used={};
+ IMP_FIELDS.forEach(function(f){
+   var found=-1,i,h;
+   for(i=0;i<head.length&&found<0;i++){h=impNorm(head[i]);if(used[i])continue;
+     if(f.hints.indexOf(h)>=0)found=i;}
+   for(i=0;i<head.length&&found<0;i++){h=impNorm(head[i]);if(used[i])continue;
+     if(f.hints.some(function(x){return h===x||h.indexOf(x)===0;}))found=i;}
+   for(i=0;i<head.length&&found<0;i++){h=impNorm(head[i]);if(used[i])continue;
+     if(f.hints.some(function(x){return x.length>3&&h.indexOf(x)>=0;}))found=i;}
+   if(found>=0){map[f.k]=found;used[found]=1;}else map[f.k]='';});
+ return map;}
+function impIsPack(cat){return /packag|emballage|non ?alim|consommable|jetable|carton/i.test(String(cat||''));}
+
+function impOpen(){
+ IMP={step:1,name:'',enc:'',sep:'',head:[],rows:[],map:{},built:[],onlyPb:false,
+      opts:{zero:true,cats:true,fours:true,dup:'skip',pack:true}};
+ var mask=document.getElementById('imp_mask');
+ if(!mask){document.body.insertAdjacentHTML('beforeend',
+  '<div class="modal-mask" id="imp_mask"><div class="modal" style="width:1080px;max-width:97vw"><div class="mh"><h3 id="imp_title">Importer des ingrédients</h3><button class="x" onclick="impClose()">✕</button></div><div class="mb" id="imp_body" style="max-height:74vh;overflow:auto"></div><div class="mf" id="imp_foot"></div></div></div>');
+  mask=document.getElementById('imp_mask');}
+ mask.classList.add('on');impRender();}
+function impClose(){var m=document.getElementById('imp_mask');if(m)m.classList.remove('on');IMP=null;}
+function impSteps(){var s=IMP.step;
+ return '<div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">'
+  +[[1,'Fichier'],[2,'Correspondance des colonnes'],[3,'Contrôle avant import']].map(function(x){
+    return '<span class="chip" style="'+(s===x[0]?'background:var(--ink);color:#fff':(s>x[0]?'background:#e3f2fb;color:#006fab':'background:#eff4f8;color:#7d8899'))+'">'+(s>x[0]?'✓ ':x[0]+'. ')+x[1]+'</span>';}).join('')
+  +'</div>';}
+function impRender(){
+ var b=document.getElementById('imp_body'),f=document.getElementById('imp_foot');if(!b)return;
+ if(IMP.step===1){
+  b.innerHTML=impSteps()
+   +'<div style="border:2px dashed #ccd6e0;border-radius:var(--r-lg);padding:34px 24px;text-align:center;background:#f9fbfd">'
+   +'<div style="font-size:34px">📄</div>'
+   +'<div style="font-weight:800;font-size:16px;margin-top:8px">Déposez l\'export de votre ancien logiciel</div>'
+   +'<div class="tsub" style="margin:6px auto 16px;max-width:520px">Fichier CSV ou texte. L\'encodage, le séparateur et le format des nombres sont détectés automatiquement — y compris les exports Windows en Latin-1 et les virgules décimales.</div>'
+   +'<input type="file" id="imp_file" accept=".csv,.txt,text/csv,text/plain" style="display:none" onchange="impFile(this)">'
+   +'<button class="btn" onclick="document.getElementById(\'imp_file\').click()">Choisir un fichier</button>'
+   +(IMP.name?('<div style="margin-top:16px;font-size:13px"><b>'+escH(IMP.name)+'</b><div class="tsub">'+IMP.rows.length+' ligne(s) · '+IMP.head.length+' colonne(s) · encodage '+escH(IMP.enc)+' · séparateur « '+(IMP.sep==='\t'?'tabulation':IMP.sep)+' »</div></div>'):'')
+   +'</div>';
+  f.innerHTML='<button class="btn ghost" onclick="impClose()">Annuler</button><button class="btn" '+(IMP.rows.length?'':'disabled')+' onclick="impStep(2)">Continuer</button>';
+ } else if(IMP.step===2){
+  var opts=IMP.head.map(function(h,i){return '<option value="'+i+'">'+escH((h||'(colonne '+(i+1)+')').slice(0,60))+'</option>';}).join('');
+  b.innerHTML=impSteps()
+   +'<p class="tsub" style="margin:0 0 14px">J\'ai reconnu la plupart des colonnes. Vérifiez, et corrigez celles qui ne correspondent pas. Les champs marqués d\'une étoile sont obligatoires.</p>'
+   +'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Donnée Vigie</th><th>Colonne du fichier</th><th>Exemple lu dans votre fichier</th></tr></thead><tbody>'
+   +IMP_FIELDS.map(function(fl){var cur=IMP.map[fl.k];
+     var ex='';if(cur!==''&&cur!=null){for(var i=0;i<IMP.rows.length&&!ex;i++){var v=String(IMP.rows[i][cur]==null?'':IMP.rows[i][cur]).trim();if(v)ex=v;}}
+     return '<tr><td class="tname">'+escH(fl.lab)+(fl.req?' <span style="color:#ff4e12">*</span>':'')+'</td>'
+      +'<td><select class="ingsel" style="max-width:280px;width:100%" onchange="IMP.map[\''+fl.k+'\']=this.value;impRender()"><option value="">— ne pas importer —</option>'+opts.replace('value="'+cur+'"','value="'+cur+'" selected')+'</select></td>'
+      +'<td class="tsub">'+(ex?escH(ex.slice(0,60)):'—')+'</td></tr>';}).join('')
+   +'</tbody></table></div></div>'
+   +'<div class="tsub" style="margin-top:12px">💡 La <b>référence interne</b> n\'est pas obligatoire, mais c\'est elle qui permettra de rattacher automatiquement vos recettes à ces ingrédients. Si votre export en contient une, gardez-la.</div>';
+  var ok=IMP_FIELDS.filter(function(x){return x.req;}).every(function(x){return IMP.map[x.k]!==''&&IMP.map[x.k]!=null;});
+  f.innerHTML='<button class="btn ghost" onclick="impStep(1)">Retour</button><button class="btn" '+(ok?'':'disabled')+' onclick="impStep(3)">Analyser le fichier</button>';
+ } else {
+  impBuild();
+  var st={new:0,update:0,skip:0,ko:0};IMP.built.forEach(function(r){st[r.status]++;});
+  var list=IMP.onlyPb?IMP.built.filter(function(r){return r.warn.length||r.err.length||r.status!=='new';}):IMP.built;
+  var shown=list.slice(0,150);
+  b.innerHTML=impSteps()
+   +'<div class="kpis" style="margin-bottom:14px">'
+   +kpi('À créer',st.new,'nouveaux ingrédients','up')
+   +kpi('À mettre à jour',st.update,IMP.opts.dup==='update'?'déjà présents':'doublons ignorés',st.update?'up':'up')
+   +kpi('Ignorés',st.skip,'volontairement écartés',st.skip?'down':'up')
+   +kpi('Illisibles',st.ko,'ligne inexploitable',st.ko?'down':'up')
+   +'</div>'
+   +'<div class="panel" style="margin-bottom:14px"><div class="pb">'
+   +'<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:13px">'
+   +'<label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" class="ingck" '+(IMP.opts.zero?'checked':'')+' onchange="IMP.opts.zero=this.checked;impRender()"> Ne pas importer les ingrédients à 0 €</label>'
+   +'<label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" class="ingck" '+(IMP.opts.cats?'checked':'')+' onchange="IMP.opts.cats=this.checked;impRender()"> Créer les catégories manquantes</label>'
+   +'<label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" class="ingck" '+(IMP.opts.fours?'checked':'')+' onchange="IMP.opts.fours=this.checked;impRender()"> Créer les fournisseurs manquants</label>'
+   +'<label style="display:flex;gap:7px;align-items:center;cursor:pointer"><input type="checkbox" class="ingck" '+(IMP.opts.pack?'checked':'')+' onchange="IMP.opts.pack=this.checked;impRender()"> Marquer « Packaging » en non alimentaire</label>'
+   +'<label style="display:flex;gap:7px;align-items:center">Ingrédient déjà présent : <select class="ingsel" style="padding:4px 8px" onchange="IMP.opts.dup=this.value;impRender()">'
+     +'<option value="skip"'+(IMP.opts.dup==='skip'?' selected':'')+'>ne pas y toucher</option><option value="update"'+(IMP.opts.dup==='update'?' selected':'')+'>mettre à jour son prix</option></select></label>'
+   +'<label style="display:flex;gap:7px;align-items:center;cursor:pointer;margin-left:auto"><input type="checkbox" class="ingck" '+(IMP.onlyPb?'checked':'')+' onchange="IMP.onlyPb=this.checked;impRender()"> N\'afficher que ce qui pose question</label>'
+   +'</div></div></div>'
+   +'<div class="panel"><div class="pb" style="padding:0"><div style="max-height:44vh;overflow:auto"><table class="ingtbl"><thead><tr>'
+   +'<th>État</th><th>Ingrédient</th><th>Catégorie</th><th>Fournisseur</th><th style="text-align:right">Conditionnement</th><th style="text-align:right">Prix appliqué</th><th>TVA</th><th>Remarque</th></tr></thead><tbody>'
+   +(shown.length?shown.map(impPrevRow).join(''):'<tr><td colspan="8" class="tsub" style="padding:24px;text-align:center">Rien à signaler : toutes les lignes sont propres.</td></tr>')
+   +'</tbody></table></div>'
+   +'<div class="pgbar"><div>'+list.length+' ligne(s) affichée(s)'+(list.length>150?' — les 150 premières':'')+' sur '+IMP.built.length+'</div></div>'
+   +'</div></div>';
+  var tot=st.new+(IMP.opts.dup==='update'?st.update:0);
+  f.innerHTML='<button class="btn ghost" onclick="impStep(2)">Retour</button><button class="btn" '+(tot?'':'disabled')+' onclick="impApply()">Importer '+tot+' ingrédient(s)</button>';
+ }}
+function impPrevRow(r){
+ var badge=r.status==='new'?'<span class="chip ok">Créer</span>':(r.status==='update'?'<span class="chip blue">Mettre à jour</span>':(r.status==='ko'?'<span class="chip bad">Illisible</span>':'<span class="chip muted">Ignoré</span>'));
+ var msg=r.err.concat(r.warn);
+ return '<tr><td>'+badge+'</td>'
+  +'<td><div class="tname">'+escH(r.name||'—')+'</div>'+(r.ref?'<div class="tsub">réf. '+escH(r.ref)+'</div>':'')+(r.pack?'<div class="tsub">non alimentaire</div>':'')+'</td>'
+  +'<td class="tsub">'+escH(r.cat||'—')+'</td><td class="tsub">'+escH(r.four||'—')+'</td>'
+  +'<td style="text-align:right;white-space:nowrap">'+(r.price==null?'—':(r.price.toFixed(2).replace('.',',')+' € / '+String(r.qty).replace('.',',')+' '+escH(r.unit)))+'</td>'
+  +'<td style="text-align:right;white-space:nowrap"><b>'+(r.unitPrice==null?'—':(r.unitPrice.toFixed(3).replace('.',',')+' € / '+escH(r.unit)))+'</b></td>'
+  +'<td class="tsub">'+(r.tva==null?'—':String(r.tva).replace('.',',')+' %')+'</td>'
+  +'<td class="tsub" style="color:'+(r.err.length?'#b83504':(r.warn.length?'#b45309':'inherit'))+'">'+(msg.length?escH(msg.join(' · ')):'—')+'</td></tr>';}
+function impStep(n){IMP.step=n;impRender();}
+function impFile(el){var fl=el.files&&el.files[0];if(!fl)return;
+ var rd=new FileReader();
+ rd.onload=function(){
+  try{
+   var d=impDecode(rd.result);
+   var first=d.txt.split('\n')[0]||'';
+   var sep=impSepOf(first);
+   var rows=impParse(d.txt,sep);
+   if(!rows.length){toast('Fichier vide');return;}
+   IMP.name=fl.name;IMP.enc=d.enc;IMP.sep=sep;
+   IMP.head=rows[0].map(function(h){return impClean(h);});
+   IMP.rows=rows.slice(1);
+   IMP.map=impGuess(IMP.head);
+   impRender();
+  }catch(e){toast('Fichier illisible : '+(e.message||e));}};
+ rd.onerror=function(){toast('Impossible de lire le fichier');};
+ rd.readAsArrayBuffer(fl);}
+function impBuild(){
+ var m=IMP.map,seen={},existing={},out=[];
+ (state.foodIng||[]).filter(function(g){return g.clientId===CID;}).forEach(function(g){existing[impNorm(g.name)]=g;});
+ var get=function(row,k){var j=m[k];return (j===''||j==null)?'':String(row[j]==null?'':row[j]);};
+ IMP.rows.forEach(function(row){
+  var name=impClean(get(row,'name'));
+  var price=impNum(get(row,'price'));
+  var qty=impNum(get(row,'qty'));
+  var unitRaw=impClean(get(row,'unit')),unit=impUnit(unitRaw);
+  var tvaN=impNum(get(row,'tva'));
+  var tva=(tvaN==null)?null:(tvaN>0&&tvaN<1?Math.round(tvaN*1000)/10:Math.round(tvaN*10)/10);
+  var cat=impClean(get(row,'cat')),four=impClean(get(row,'four')),ref=impClean(get(row,'ref'));
+  var tags=impClean(get(row,'tags')).split(/[,;/]/).map(function(t){return t.trim();}).filter(Boolean);
+  var warn=[],err=[];
+  if(!name)err.push('nom manquant');
+  if(price==null)err.push('prix illisible');
+  if(qty==null)qty=1;else if(qty<=0){warn.push('quantité à 0 → ramenée à 1');qty=1;}
+  if(!unit){warn.push(unitRaw?('unité « '+unitRaw+' » inconnue → pièce'):'unité absente → pièce');unit='pièce';}
+  if(price===0)warn.push('prix à 0 €');
+  if(tva==null)warn.push('TVA absente → 5,5 %');
+  if(!four)warn.push('sans fournisseur');
+  var key=impNorm(name),dupFile=!!seen[key];if(key)seen[key]=1;
+  var ex=existing[key];
+  var pack=IMP.opts.pack&&impIsPack(cat);
+  var st;
+  if(err.length)st='ko';
+  else if(IMP.opts.zero&&price===0)st='skip';
+  else if(dupFile){st='skip';warn.push('doublon dans le fichier');}
+  else if(ex){st=IMP.opts.dup==='update'?'update':'skip';if(IMP.opts.dup!=='update')warn.push('déjà dans Vigie');}
+  else st='new';
+  out.push({name:name,cat:cat,four:four,ref:ref,tags:tags,price:price,qty:qty,unit:unit,tva:tva,
+    unitPrice:(price==null)?null:(qty>0?price/qty:price),pack:pack,warn:warn,err:err,status:st,exist:ex});});
+ IMP.built=out;}
+function impApply(){
+ impBuild();
+ var cats=state.foodIngCats=state.foodIngCats||[];
+ state.fournisseurs=state.fournisseurs||[];
+ state.foodIng=state.foodIng||[];
+ var nNew=0,nUp=0,nCat=0,nFour=0;
+ IMP.built.forEach(function(r){
+  if(r.status!=='new'&&r.status!=='update')return;
+  if(IMP.opts.cats&&r.cat&&cats.indexOf(r.cat)<0){cats.push(r.cat);nCat++;}
+  if(IMP.opts.fours&&r.four){
+    var ex=state.fournisseurs.filter(function(f){return f.clientId===CID&&impNorm(f.nom)===impNorm(r.four);})[0];
+    if(!ex){state.fournisseurs.push({id:'f'+Date.now()+'_'+(_impSeq++),clientId:CID,nom:r.four,contact:'',tel:'',email:''});nFour++;}}
+  var o={name:r.name,cat:r.pack?'nonalim':'alim',group:IMP.opts.cats?r.cat:'',
+    unit:r.unit,purchQty:r.qty,purchUnit:r.unit,priceHT:r.price,
+    tva:(r.tva==null?5.5:r.tva),fournisseur:r.four||'',tags:r.tags,extRef:r.ref||''};
+  if(r.status==='update'&&r.exist){
+    if(Math.abs((Number(r.exist.priceHT)||0)-r.price)>0.0001)ingPushHist(r.exist,r.price);
+    Object.assign(r.exist,o);delete r.exist.price;delete r.exist.archived;nUp++;
+  }else{
+    state.foodIng.push(Object.assign({id:'ing'+Date.now()+'_'+(_impSeq++),clientId:CID,
+      createdAt:new Date().toISOString(),importedAt:new Date().toISOString(),
+      priceHist:[{at:new Date().toISOString(),p:r.price}]},o));nNew++;}});
+ impClose();foodTab='ing';ingQ='';ingFilt={cat:'',four:'',tag:'',type:''};ingPage=0;ingSel={};
+ renderClient('food');
+ openConfirm('Import terminé','',null,'Parfait',false,true);
+ fcHtmlMsg('<div style="text-align:left"><p style="margin:0 0 10px"><b>'+nNew+'</b> ingrédient(s) créé(s)'+(nUp?(', <b>'+nUp+'</b> mis à jour'):'')+'.</p>'
+  +'<ul class="tsub" style="margin:0;padding-left:18px;line-height:1.7">'
+  +(nCat?'<li>'+nCat+' catégorie(s) créée(s)</li>':'')
+  +(nFour?'<li>'+nFour+' fournisseur(s) créé(s) — ils sont aussi disponibles en réception marchandise sur la tablette</li>':'')
+  +'<li>Les prix au poids ont été recalculés à partir du conditionnement</li>'
+  +'</ul></div>');}
+
 /* ---------- VUE D'ENSEMBLE FOOD COST ---------- */
 function foodTarget(){var t=Number(state.foodTarget);return (t>0&&t<100)?t:30;}
 function foodTargetSet(){openForm('Objectif de food cost',[{key:'t',label:'Objectif (% du prix de vente HT)',type:'number',value:foodTarget(),ph:'Ex. 30'}],
@@ -2395,7 +2622,7 @@ function ingToolbar(){
   +(act?'<button class="btn ghost sm" onclick="ingClear()">✕ Réinitialiser</button>':'')
   +'<span style="flex:1;min-width:0"></span>'
   +archToggleBtn('food','foodIng',CID)
-  +' <button class="btn ghost sm" onclick="ingCsv()">⤓ Exporter</button> <button class="btn ghost sm" onclick="ingPrint()">🖨 Imprimer</button>'
+  +' <button class="btn" onclick="impOpen()">⤒ Importer un fichier</button> <button class="btn ghost sm" onclick="ingCsv()">⤓ Exporter</button> <button class="btn ghost sm" onclick="ingPrint()">🖨 Imprimer</button>'
   +'</div>';}
 function ingRefresh(){var z=document.getElementById('food_ing_zone');if(z)z.innerHTML=ingPanel();}
 function ingRow(g){
@@ -2432,6 +2659,7 @@ function ingPanel(){
    +'<button class="btn sm" onclick="ingBulkCat()">Catégorie</button>'
    +'<button class="btn sm" onclick="ingBulkFour()">Fournisseur</button>'
    +'<button class="btn sm" onclick="ingBulkTag()">Tag</button>'
+   +'<button class="btn sm" onclick="ingBulkType()">Alim. / non alim.</button>'
    +'<button class="btn sm" onclick="ingBulkArch()">🗄 Archiver</button>'
    +'<span style="flex:1;min-width:0"></span><button class="btn sm" onclick="ingSel={};ingRefresh()">Tout désélectionner</button></div>';
   if(!n)return h+'<div class="panel"><div class="pb"><div class="empty" style="padding:40px 20px">'+(tot?'Aucun ingrédient ne correspond à cette recherche.':'Aucun ingrédient. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix appliqué se calcule automatiquement.')+'</div></div></div>';
@@ -2498,6 +2726,10 @@ function ingBulkTag(){var n=ingSelIds().length;if(!n)return;
     ingBulkApply(function(g){var a=fcTags(g).slice(),i=a.indexOf(tag);
       if(v.m==='Retirer le tag'){if(i>=0)a.splice(i,1);}else if(i<0)a.push(tag);
       g.tags=a;},'ingrédient(s) mis à jour');});}
+function ingBulkType(){var n=ingSelIds().length;if(!n)return;
+  openForm('Type de coût — '+n+' ingrédient(s)',[{key:'t',label:'Type',type:'select',options:['Alimentaire','Non alimentaire (packaging)']}],
+   function(v){var c=(String(v.t||'').indexOf('Non')===0)?'nonalim':'alim';
+    ingBulkApply(function(g){g.cat=c;},'ingrédient(s) mis à jour');});}
 function ingBulkArch(){var ids=ingSelIds();if(!ids.length)return;
   var rs={};ids.forEach(function(id){ingUsedR(id).forEach(function(r){rs[r.id]=r;});});
   var lst=Object.keys(rs).map(function(k){return rs[k];});
