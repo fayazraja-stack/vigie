@@ -151,6 +151,17 @@
   .planwrap{max-height:calc(100vh - 252px);overflow:auto}
   /* --- liste ingrédients : filtres, tri, sélection multiple --- */
   .kpis.six{grid-template-columns:repeat(3,1fr)}
+  .stat4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .mtile{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:12px 14px}
+  .mtile .ml{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px;line-height:1.3}
+  .mtile .mv{font-size:21px;font-weight:800;margin-top:5px;letter-spacing:-.3px;font-variant-numeric:tabular-nums}
+  .mtile .ms{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .mtile.bad{border-color:#ffc9b7;background:#fff6f3}
+  .mtile.warn{border-color:#f6dcb4;background:#fffaf2}
+  .score{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .scoreN{font-size:44px;font-weight:900;letter-spacing:-1.5px;line-height:1}
+  @media(max-width:1100px){.stat4{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:640px){.stat4{grid-template-columns:1fr}}
   .fcgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
   @media(max-width:1100px){.kpis.six{grid-template-columns:repeat(2,1fr)}.fcgrid{grid-template-columns:1fr}}
   .ingbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
@@ -1633,22 +1644,327 @@ function buildClientSide(){const c=state.clients.find(x=>x.id===CID)||{contact:'
   +'<div class="who"><div class="av">'+(nm[0]||'—').toUpperCase()+'</div><div><div class="nm">'+(nm.split(' ')[0]||'—')+'</div><div class="rl">'+(c.name||'')+'</div></div></div>';}
 function navToggle(gi){const g=NAV_GROUPS[gi];NAV_OPEN[g.t]=!NAV_OPEN[g.t];buildClientSide();}
 function clientNav(v){clientView=v;buildClientSide();renderClient(v);}
+/* ================= INDICATEURS & ALERTES — calculs sur données réelles ================= */
+var VG_DAY=864e5;
+function vgT(x){if(!x)return 0;if(x instanceof Date)return x.getTime();var d=new Date(x);var t=d.getTime();return isNaN(t)?0:t;}
+function vgMidnight(){var t=new Date();t.setHours(0,0,0,0);return t.getTime();}
+function vgPct(a,b){return b>0?Math.round(100*a/b):null;}
+function vgNum(n,s){return n+(s?' '+s:'');}
+
+/* ---------- Températures ---------- */
+function vgFroid(cid){return cEquip(cid).filter(function(e){return isFroid(e)&&e.active!==false;});}
+function vgRelStats(cid){
+  var eqs=vgFroid(cid),rs=cRel(cid),t0=vgMidnight(),nowT=Date.now();
+  var today=rs.filter(function(r){return vgT(r.at)>=t0;});
+  var exp=eqs.length*2;
+  var okT=today.filter(function(r){return r.status==='ok';}).length;
+  var d7=t0-6*VG_DAY,last7=rs.filter(function(r){return vgT(r.at)>=d7;}).length,exp7=exp*7;
+  var mute=eqs.filter(function(e){var l=rs.find(function(r){return r.equipId===e.id;});return !l||(nowT-vgT(l.at))>48*36e5;});
+  var d30=t0-29*VG_DAY;
+  var nc30=rs.filter(function(r){return r.status==='alerte'&&vgT(r.at)>=d30;});
+  var open=rs.filter(function(r){return r.status==='alerte'&&!r.closedAt&&eqById(r.equipId);});
+  var closed=nc30.filter(function(r){return r.closedAt;});
+  var delay=closed.length?closed.reduce(function(s,r){return s+Math.max(0,vgT(r.closedAt)-vgT(r.at));},0)/closed.length/36e5:null;
+  return {eqs:eqs,today:today,exp:exp,ok:okT,
+    conform:today.length?Math.round(100*okT/today.length):null,
+    last7:last7,exp7:exp7,rate7:exp7?Math.min(100,Math.round(100*last7/exp7)):null,
+    mute:mute,nc30:nc30.length,open:open,delay:delay};
+}
+
+/* ---------- Nettoyages ---------- */
+var VG_FREQD={'Plusieurs fois par jour':1,'Quotidien':1,'À chaque service':1,'Après chaque usage':1,
+ 'Hebdomadaire':7,'Bimensuel':14,'Mensuel':30,'Trimestriel':90,'Semestriel':180,'Annuel':365};
+function vgFreqDays(f){return VG_FREQD[f]||1;}
+function vgCleanStats(cid){
+  var ts=(state.postes||[]).filter(function(p){return p.clientId===cid&&!p.archived;});
+  var t0=vgMidnight(),nowT=Date.now();
+  var daily=ts.filter(function(p){return vgFreqDays(p.freq)===1;});
+  var dailyDone=daily.filter(function(p){return p.done&&vgT(p.at)>=t0;});
+  var late=ts.filter(function(p){var last=vgT(p.at);return !last||(nowT-last)>vgFreqDays(p.freq)*VG_DAY;});
+  var lateD={};late.forEach(function(p){var f=p.freq||'Quotidien';lateD[f]=(lateD[f]||0)+1;});
+  var signed=ts.filter(function(p){return p.done&&p.by;}).length,done=ts.filter(function(p){return p.done;}).length;
+  return {all:ts,daily:daily,dailyDone:dailyDone,late:late,lateByFreq:lateD,
+    rate:ts.length?Math.round(100*(ts.length-late.length)/ts.length):null,
+    signRate:done?Math.round(100*signed/done):null};
+}
+
+/* ---------- Huiles ---------- */
+function vgOilStats(cid){
+  var fr=(state.friteuses||[]).filter(function(h){return h.clientId===cid&&!h.archived;});
+  var tests=(state.huileTests||[]).filter(function(x){return x.clientId===cid;});
+  var nowT=Date.now();
+  var rows=fr.map(function(f){
+    var l=null;tests.forEach(function(x){if(x.friteuse!==f.name)return;if(!l||vgT(x.at)>vgT(l.at))l=x;});
+    var pol=l?Number(l.polarity):Number(f.polarity);
+    var days=l?Math.floor((nowT-vgT(l.at))/VG_DAY):null;
+    var per=vgFreqDays(f.freq);
+    return {f:f,last:l,pol:isNaN(pol)?null:pol,days:days,bad:(pol>24),miss:(days===null||days>per)};});
+  return {rows:rows,bad:rows.filter(function(r){return r.bad;}),miss:rows.filter(function(r){return r.miss;})};
+}
+
+/* ---------- DLC ---------- */
+function vgDlcStats(cid){
+  var ds=(state.dlc||[]).filter(function(d){return d.clientId===cid&&!d.archived&&vgT(d.dlcAt);});
+  var nowT=Date.now();
+  var exp=ds.filter(function(d){var t=vgT(d.dlcAt);return t<nowT&&t>nowT-7*VG_DAY;});
+  var soon=ds.filter(function(d){var t=vgT(d.dlcAt);return t>=nowT&&t-nowT<24*36e5;});
+  var act=ds.filter(function(d){return vgT(d.dlcAt)>=nowT;});
+  return {all:ds,actifs:act,exp:exp,soon:soon};
+}
+
+/* ---------- Réceptions / pertes / traçabilité ---------- */
+function vgFlowStats(cid){
+  var t30=vgMidnight()-29*VG_DAY;
+  var rec=(state.reception||[]).filter(function(r){return r.clientId===cid&&vgT(r.at)>=t30;});
+  var per=(state.pertes||[]).filter(function(p){return p.clientId===cid&&vgT(p.at)>=t30;});
+  var tra=(state.tracabilite||[]).filter(function(t){return t.clientId===cid&&vgT(t.at)>=t30;});
+  return {rec:rec,recNc:rec.filter(function(r){return r.conforme===false;}),pertes:per,tracas:tra};
+}
+
+/* ---------- Documents ---------- */
+function vgDocStats(cid){
+  var ds=(state.documents||[]).filter(function(d){return d.clientId===cid&&!d.archived;});
+  var wi=ds.filter(function(d){return d.expiresAt;}),nowT=Date.now();
+  return {all:ds,withExp:wi,
+    exp:wi.filter(function(d){return vgT(d.expiresAt)<nowT;}),
+    soon:wi.filter(function(d){var t=vgT(d.expiresAt);return t>=nowT&&t-nowT<30*VG_DAY;})};
+}
+
+/* ---------- Score « prêt pour un contrôle » ---------- */
+function vgScore(cid){
+  var R=vgRelStats(cid),C=vgCleanStats(cid),O=vgOilStats(cid),D=vgDlcStats(cid),X=vgDocStats(cid);
+  var p=[];
+  if(R.eqs.length){
+    p.push({k:'Relevés de température',w:30,v:R.exp7?Math.min(1,R.last7/R.exp7):0});
+    p.push({k:'Non-conformités traitées',w:15,v:R.nc30?Math.max(0,1-R.open.length/R.nc30):1});}
+  if(C.all.length)p.push({k:'Plan de nettoyage',w:25,v:(C.all.length-C.late.length)/C.all.length});
+  if(O.rows.length)p.push({k:'Suivi des huiles',w:10,v:Math.max(0,1-(O.bad.length+O.miss.length)/(O.rows.length*2))});
+  if(D.actifs.length||D.exp.length)p.push({k:'Suivi des DLC',w:10,v:D.exp.length?0:(D.soon.length?0.6:1)});
+  if(X.withExp.length)p.push({k:'Documents obligatoires',w:10,v:X.exp.length?0:(X.soon.length?0.6:1)});
+  var tw=p.reduce(function(s,x){return s+x.w;},0);
+  return {score:tw?Math.round(p.reduce(function(s,x){return s+x.w*x.v;},0)/tw*100):null,parts:p};
+}
+
+/* ---------- Moteur d'alertes unifié ---------- */
+function vgAlerts(cid){
+  var out=[],R=vgRelStats(cid),C=vgCleanStats(cid),O=vgOilStats(cid),D=vgDlcStats(cid),X=vgDocStats(cid);
+  var nowT=Date.now();
+  R.open.forEach(function(r){var e=eqById(r.equipId)||{name:'Équipement',min:null,max:null};
+    out.push({sev:'bad',ic:'🌡',t:escH(e.name)+' — '+r.value+' °C',
+      s:'Seuil '+seuilTxt(e)+' · '+escH(r.action||'aucune action corrective saisie')+(r.by?' · '+escH(r.by):''),
+      at:vgT(r.at),act:'<button class="btn ghost sm" onclick="vgAlertClose(\''+r.id+'\')">Traiter</button>'});});
+  if(R.eqs.length&&!R.today.length)
+    out.push({sev:'bad',ic:'📋',t:'Aucun relevé de température aujourd\'hui',
+      s:R.exp+' relevé(s) attendu(s) sur '+R.eqs.length+' enceinte(s) active(s)',at:nowT,
+      act:'<button class="btn ghost sm" onclick="clientNav(\'h_suivi\')">Voir</button>'});
+  R.mute.forEach(function(e){var l=cRel(cid).find(function(r){return r.equipId===e.id;});
+    out.push({sev:'warn',ic:'❄️',t:escH(e.name)+' — aucun relevé depuis '+(l?Math.floor((nowT-vgT(l.at))/VG_DAY)+' jour(s)':'toujours'),
+      s:'Enceinte active sans contrôle : la chaîne du froid n\'est pas tracée',at:l?vgT(l.at):0,
+      act:'<button class="btn ghost sm" onclick="clientNav(\'h_equip\')">Voir</button>'});});
+  D.exp.forEach(function(d){
+    out.push({sev:'bad',ic:'🗓',t:'DLC dépassée — '+escH(d.produit),
+      s:'Limite le '+new Date(vgT(d.dlcAt)).toLocaleDateString('fr-FR')+' · étiquette imprimée le '+new Date(vgT(d.ouvertAt)).toLocaleDateString('fr-FR')+(d.by?' par '+escH(d.by):''),
+      at:vgT(d.dlcAt),act:'<button class="btn ghost sm" onclick="clientNav(\'h_suivi\')">Voir</button>'});});
+  D.soon.forEach(function(d){var h=Math.max(0,Math.round((vgT(d.dlcAt)-nowT)/36e5));
+    out.push({sev:'warn',ic:'⏳',t:escH(d.produit)+' — DLC dans '+h+' h',
+      s:'Étiquette imprimée le '+new Date(vgT(d.ouvertAt)).toLocaleDateString('fr-FR')+' · à consommer ou à retirer',
+      at:vgT(d.dlcAt),act:'<button class="btn ghost sm" onclick="clientNav(\'h_suivi\')">Voir</button>'});});
+  O.bad.forEach(function(r){
+    out.push({sev:'bad',ic:'🛢',t:escH(r.f.name)+' — '+r.pol+' % de composés polaires',
+      s:'Au-delà de 24 %, l\'huile doit être changée (arrêté du 8 septembre 1988)',
+      at:r.last?vgT(r.last.at):nowT,act:'<button class="btn ghost sm" onclick="clientNav(\'h_friteuses\')">Voir</button>'});});
+  O.miss.forEach(function(r){
+    out.push({sev:'warn',ic:'🛢',t:escH(r.f.name)+' — contrôle d\'huile en retard',
+      s:r.days===null?'Aucun test de polarité enregistré':('Dernier test il y a '+r.days+' jour(s) · fréquence attendue : '+(r.f.freq||'Quotidien').toLowerCase()),
+      at:r.last?vgT(r.last.at):0,act:'<button class="btn ghost sm" onclick="clientNav(\'h_friteuses\')">Voir</button>'});});
+  if(C.late.length){
+    var lf=Object.keys(C.lateByFreq).map(function(k){return C.lateByFreq[k]+' '+k.toLowerCase();}).join(' · ');
+    out.push({sev:C.late.length>5?'bad':'warn',ic:'🧽',t:C.late.length+' nettoyage(s) en retard',
+      s:lf,at:nowT,act:'<button class="btn ghost sm" onclick="clientNav(\'h_zones\')">Voir</button>'});}
+  X.exp.forEach(function(d){
+    out.push({sev:'bad',ic:'📄',t:'Document expiré — '+escH(d.name),
+      s:'Échéance le '+new Date(vgT(d.expiresAt)).toLocaleDateString('fr-FR'),
+      at:vgT(d.expiresAt),act:'<button class="btn ghost sm" onclick="clientNav(\'h_docs\')">Voir</button>'});});
+  X.soon.forEach(function(d){var j=Math.max(0,Math.ceil((vgT(d.expiresAt)-nowT)/VG_DAY));
+    out.push({sev:'warn',ic:'📄',t:escH(d.name)+' — expire dans '+j+' jour(s)',
+      s:'Échéance le '+new Date(vgT(d.expiresAt)).toLocaleDateString('fr-FR'),
+      at:vgT(d.expiresAt),act:'<button class="btn ghost sm" onclick="clientNav(\'h_docs\')">Voir</button>'});});
+  out.sort(function(a,b){if(a.sev!==b.sev)return a.sev==='bad'?-1:1;return b.at-a.at;});
+  return out;
+}
+function vgAlertClose(id){
+  var r=(state.releves||[]).find(function(x){return x.id===id;});if(!r)return;
+  var e=eqById(r.equipId)||{name:'Équipement'};
+  openForm('Traiter la non-conformité',[
+    {key:'action',label:'Action corrective réalisée',value:r.action||'',ph:'Ex. réglage du thermostat, produit retiré, recontrôle à 14 h'},
+    {key:'by',label:'Traité par',value:r.closedBy||'',ph:'Nom du responsable'}
+  ],function(v){
+    if(!(v.action||'').trim()){toast('Décrivez l\'action corrective');return;}
+    r.action=v.action.trim();r.closedBy=(v.by||'').trim()||'—';r.closedAt=new Date().toISOString();
+    renderClient('dash');toast('Non-conformité clôturée — '+e.name);
+  });
+}
+
+/* ---------- RH & Planning (données réelles) ---------- */
+function vgRhStats(cid){
+  var emps=(state.employees||[]).filter(function(e){return e.clientId===cid&&e.active!==false;});
+  var open=emps.filter(function(e){return rhOpenBadge(cid,e.id||e.name);});
+  var wk=rhWeekKey(new Date());
+  var sh=(typeof rhShiftsOf==='function')?rhShiftsOf(cid,wk):(state.shifts||[]).filter(function(s){return s.clientId===cid&&s.week===wk;});
+  var tpl=function(id){return (state.shiftTemplates||[]).find(function(t){return t.id===id;});};
+  var mins=function(a,b){if(!a||!b)return 0;var p=a.split(':'),q=b.split(':');
+    var m=(+q[0]*60+ +q[1])-(+p[0]*60+ +p[1]);return m<0?m+1440:m;};
+  var planned=sh.reduce(function(s,x){var t=x.templateId?tpl(x.templateId):null;
+    return s+(t?mins(t.start,t.end):mins(x.start,x.end));},0);
+  var mon=new Date();mon.setHours(0,0,0,0);mon.setDate(mon.getDate()-((mon.getDay()+6)%7));
+  var sess=rhBadgeSessions(cid).filter(function(s){return s.inAt>=mon;});
+  var real=sess.reduce(function(s,x){return s+(x.min||0);},0);
+  var cp=emps.reduce(function(s,e){return s+(Number(e.cpRest)||0);},0);
+  var t0=vgMidnight();
+  var todaySess=rhBadgeSessions(cid).filter(function(s){return vgT(s.inAt)>=t0;});
+  var badged={};todaySess.forEach(function(s){badged[s.empId||s.name]=1;});
+  var dow=(new Date().getDay()+6)%7;
+  var planToday=sh.filter(function(s){return s.day===dow;});
+  var absent=planToday.filter(function(s){return !badged[s.empId];}).length;
+  return {emps:emps,open:open,planned:planned,real:real,sess:sess.length,cp:cp,
+    planToday:planToday.length,absent:absent};
+}
+
+/* ---------- Food Cost (données réelles) ---------- */
+function vgFcStats(cid){
+  var tgt=foodTarget();
+  var rs=(state.recipes||[]).filter(function(r){return r.clientId===cid&&!r.archived;});
+  var ig=(state.foodIng||[]).filter(function(g){return g.clientId===cid&&!g.archived;});
+  var sb=(state.foodSubs||[]).filter(function(s){return s.clientId===cid&&!s.archived;});
+  var wp=rs.filter(function(r){return foodPvHT(r.prix,r.tva||0)>0;});
+  var cm=wp.length?Math.round(wp.reduce(function(s,r){return s+recCm(r);},0)/wp.length*100):null;
+  var mg=wp.length?Math.round(wp.reduce(function(s,r){var h=foodPvHT(r.prix,r.tva||0);return s+recMargeUnit(r)/h;},0)/wp.length*100):null;
+  var hors=wp.filter(function(r){return recCm(r)>tgt/100;});
+  var noPrice=ig.filter(function(g){return !(foodIngUnitPrice(g)>0);});
+  return {tgt:tgt,rs:rs,ig:ig,sb:sb,wp:wp,cm:cm,mg:mg,hors:hors,noPrice:noPrice,noPv:rs.length-wp.length};
+}
+
+/* ================= VUE D'ENSEMBLE — rendu ================= */
+function vgTile(l,v,s,tone){return '<div class="mtile'+(tone?' '+tone:'')+'"><div class="ml">'+l+'</div><div class="mv">'+v+'</div><div class="ms">'+(s||'')+'</div></div>';}
+function vgBar(l,pct,val,col){return '<div class="progline"><div class="lbl">'+l+'</div><div class="track"><div class="fill" style="width:'+Math.max(0,Math.min(100,pct))+'%;background:'+(col||'var(--brand)')+'"></div></div><div class="pv">'+val+'</div></div>';}
+function vgScoreColor(s){return s>=85?'#0e9f6e':(s>=65?'#e07b1f':'#ff4e12');}
+
+function vgScorePanel(cid){
+  var S=vgScore(cid);
+  if(S.score===null)return '<div class="panel" style="margin-bottom:16px"><div class="pb"><div class="empty" style="padding:26px 16px">Configurez vos équipements, votre plan de nettoyage et vos friteuses : le score de conformité se calcule automatiquement.</div></div></div>';
+  var col=vgScoreColor(S.score);
+  var verdict=S.score>=85?'Vous êtes prêt pour un contrôle':(S.score>=65?'Quelques points à rattraper avant un contrôle':'Dossier incomplet en cas de contrôle');
+  return '<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>Prêt pour un contrôle</h3>'
+   +'<span class="chip muted">score de conformité</span></div><div class="pb">'
+   +'<div class="score"><div style="min-width:150px"><div class="scoreN" style="color:'+col+'">'+S.score+'<span style="font-size:20px;color:var(--muted)"> /100</span></div>'
+   +'<div class="tsub" style="margin-top:6px;max-width:170px">'+verdict+'</div></div>'
+   +'<div style="flex:1;min-width:280px">'
+   +S.parts.map(function(p){var v=Math.round(p.v*100);return vgBar(p.k,v,v+' %',v>=85?'#0e9f6e':(v>=65?'var(--warn)':'var(--bad)'));}).join('')
+   +'</div></div>'
+   +'<div class="tsub" style="margin-top:12px">Pondération : seuls les modules que vous utilisez entrent dans le calcul.</div>'
+   +'</div></div>';
+}
+
+function vgHaccpPanel(cid){
+  var R=vgRelStats(cid),C=vgCleanStats(cid),O=vgOilStats(cid),D=vgDlcStats(cid),F=vgFlowStats(cid),X=vgDocStats(cid);
+  var t=[];
+  t.push(vgTile('Taux de relevé · 7 j',R.rate7===null?'—':R.rate7+' %',R.last7+' relevé(s) sur '+R.exp7+' attendus',R.rate7!==null&&R.rate7<80?'warn':''));
+  t.push(vgTile('Enceintes muettes',R.mute.length,R.mute.length?'sans relevé depuis + de 48 h':'toutes les enceintes sont suivies',R.mute.length?'bad':''));
+  t.push(vgTile('Non-conformités · 30 j',R.nc30,R.open.length+' encore à traiter',R.open.length?'bad':''));
+  t.push(vgTile('Délai moyen de correction',R.delay===null?'—':(R.delay<24?Math.round(R.delay)+' h':Math.round(R.delay/24)+' j'),R.delay===null?'aucune non-conformité clôturée':'entre le relevé et l\'action',''));
+  t.push(vgTile('Nettoyages en retard',C.late.length,C.all.length?'sur '+C.all.length+' tâches du plan':'aucun plan de nettoyage',C.late.length>5?'bad':(C.late.length?'warn':'')));
+  t.push(vgTile('Tâches signées',C.signRate===null?'—':C.signRate+' %','nettoyages avec un salarié identifié',''));
+  t.push(vgTile('DLC à surveiller',D.exp.length+D.soon.length,D.exp.length+' dépassée(s) · '+D.soon.length+' sous 24 h',D.exp.length?'bad':(D.soon.length?'warn':'')));
+  t.push(vgTile('Huiles',O.bad.length+' / '+O.rows.length,O.miss.length?O.miss.length+' contrôle(s) en retard':(O.rows.length?'toutes contrôlées à temps':'aucune friteuse'),O.bad.length?'bad':(O.miss.length?'warn':'')));
+  t.push(vgTile('Réceptions · 30 j',F.rec.length,F.recNc.length+' non conforme(s) à réception',F.recNc.length?'warn':''));
+  t.push(vgTile('Pertes · 30 j',F.pertes.length,F.tracas.length+' lot(s) tracé(s) sur la période',''));
+  t.push(vgTile('Documents à échéance',X.exp.length+X.soon.length,X.withExp.length?X.exp.length+' expiré(s) · sur '+X.withExp.length+' suivis':'aucune date d\'échéance renseignée',X.exp.length?'bad':(X.soon.length?'warn':'')));
+  t.push(vgTile('Étiquettes DLC actives',D.actifs.length,'produits ouverts encore valables',''));
+  return '<div class="panel" style="margin-bottom:16px"><div class="ph"><h3>HACCP — indicateurs</h3><span class="chip muted">données du registre</span></div>'
+   +'<div class="pb"><div class="stat4">'+t.join('')+'</div></div></div>';
+}
+
+function vgRhPanel(cid){
+  var H=vgRhStats(cid);
+  var pct=H.planned?Math.min(100,Math.round(100*H.real/H.planned)):0;
+  var d=H.real-H.planned;
+  return '<div class="panel"><div class="ph"><h3>RH & Planning</h3><span class="chip blue">cette semaine</span></div><div class="pb">'
+   +vgBar('Présents à l\'instant',H.emps.length?100*H.open.length/H.emps.length:0,H.open.length+'/'+H.emps.length,'var(--blue)')
+   +vgBar('Heures pointées / prévu',pct,H.planned?pct+' %':'—','var(--blue)')
+   +vgBar('Écart d\'heures',H.sess?Math.min(100,Math.abs(d)/Math.max(60,H.planned||60)*100):0,H.sess?((d>=0?'+':'−')+fmtDur(Math.abs(d))):'—',d>0?'var(--warn)':'var(--brand)')
+   +vgBar('Absents non pointés',H.planToday?100*H.absent/H.planToday:0,H.absent+'/'+H.planToday,H.absent?'var(--bad)':'var(--brand)')
+   +vgBar('Solde congés (jours)',Math.min(100,H.cp/Math.max(1,H.emps.length*25)*100),String(Math.round(H.cp)),'var(--purple)')
+   +'</div></div>';
+}
+
+function vgFcPanel(cid){
+  var F=vgFcStats(cid);
+  if(!F.rs.length&&!F.ig.length)
+    return '<div class="panel"><div class="ph"><h3>Food Cost</h3><span class="chip muted">à configurer</span></div><div class="pb"><div class="empty" style="padding:22px 10px">Créez vos ingrédients puis vos recettes : le food cost se calcule tout seul.</div></div></div>';
+  var cm=F.cm===null?0:F.cm;
+  return '<div class="panel"><div class="ph"><h3>Food Cost</h3><span class="chip '+(F.cm!==null&&F.cm<=F.tgt?'ok':'warn')+'">objectif ≤ '+F.tgt+' %</span></div><div class="pb">'
+   +vgBar('Food cost moyen',Math.min(100,cm/Math.max(1,F.tgt*5/3)*100),F.cm===null?'—':F.cm+' %',F.cm!==null&&F.cm<=F.tgt?'var(--brand)':'var(--bad)')
+   +vgBar('Marge brute moyenne',F.mg===null?0:Math.max(0,Math.min(100,F.mg)),F.mg===null?'—':F.mg+' %','var(--purple)')
+   +vgBar('Recettes hors objectif',F.wp.length?100*F.hors.length/F.wp.length:0,String(F.hors.length),F.hors.length?'var(--warn)':'var(--brand)')
+   +vgBar('Recettes sans prix de vente',F.rs.length?100*F.noPv/F.rs.length:0,String(F.noPv),F.noPv?'var(--warn)':'var(--brand)')
+   +vgBar('Ingrédients sans prix',F.ig.length?100*F.noPrice.length/F.ig.length:0,String(F.noPrice.length),F.noPrice.length?'var(--warn)':'var(--brand)')
+   +'</div></div>';
+}
+
+function vgAlertsPanel(cid){
+  var a=vgAlerts(cid);
+  if(!a.length)return '<div class="empty" style="padding:30px 14px">✓ Aucune alerte. Tout est conforme aujourd\'hui.</div>';
+  var shown=VG_ALL_ALERTS?a:a.slice(0,8);
+  return shown.map(function(x){
+    return '<div class="alert-i"><div class="ai '+x.sev+'">'+x.ic+'</div><div style="min-width:0"><div class="at">'+x.t+'</div><div class="as">'+x.s+'</div></div>'
+     +'<div class="aw">'+(x.at?ago(new Date(x.at)):'')+(x.act?'<div style="margin-top:6px">'+x.act+'</div>':'')+'</div></div>';
+  }).join('')+(a.length>8?'<div style="text-align:center;padding-top:10px"><button class="btn ghost sm" onclick="vgToggleAlerts()">'+(VG_ALL_ALERTS?'Réduire':'Voir les '+a.length+' alertes')+'</button></div>':'');
+}
+var VG_ALL_ALERTS=false;
+function vgToggleAlerts(){VG_ALL_ALERTS=!VG_ALL_ALERTS;renderClient('dash');}
+
+/* Courbe des températures — vraies enceintes froides du client */
+function vgTempChart(cid){
+  var eqs=cEquip(cid).filter(function(e){return e.cat==='froidpos'&&e.active!==false;});
+  if(!eqs.length)return '<div class="empty" style="padding:40px 14px">Aucune enceinte en froid positif active. Ajoutez vos équipements pour suivre la chaîne du froid.</div>';
+  var ids={};eqs.forEach(function(e){ids[e.id]=1;});
+  var days=[],t=new Date();t.setHours(0,0,0,0);
+  for(var i=6;i>=0;i--){var d=new Date(t);d.setDate(d.getDate()-i);days.push(d);}
+  var rs=cRel(cid).filter(function(r){return ids[r.equipId];});
+  var data=days.map(function(d){var nd=new Date(d);nd.setDate(nd.getDate()+1);
+    var dr=rs.filter(function(r){return vgT(r.at)>=d.getTime()&&vgT(r.at)<nd.getTime();});
+    var avg=dr.length?dr.reduce(function(s,r){return s+Number(r.value);},0)/dr.length:null;
+    return {d:d,avg:avg,n:dr.length,bad:dr.some(function(r){return r.status==='alerte';})};});
+  var vals=data.filter(function(x){return x.avg!==null;}).map(function(x){return x.avg;});
+  if(!vals.length)return '<div class="empty" style="padding:40px 14px">Aucun relevé sur les 7 derniers jours.</div>';
+  var mx=Math.max(6,Math.ceil(Math.max.apply(null,vals)+1));
+  return '<div class="bars">'+data.map(function(x){
+    var h=x.avg===null?4:Math.max(6,(x.avg/mx)*130);
+    return '<div class="bar '+(x.avg===null?'':(x.bad?'b-bad':'b-ok'))+'" style="height:'+h+'px" title="'+x.d.toLocaleDateString('fr-FR')+' — '+(x.avg===null?'aucun relevé':x.n+' relevé(s), moyenne '+x.avg.toFixed(1)+' °C')+'"><span class="cap">'+(x.avg===null?'–':x.avg.toFixed(1)+'°')+'</span><span class="xl">'+x.d.toLocaleDateString('fr-FR',{weekday:'short'})+'</span></div>';
+  }).join('')+'</div><p style="text-align:center;color:var(--muted);font-size:12px;margin-top:26px">Moyenne des '+eqs.length+' enceinte(s) en froid positif · 7 derniers jours</p>';
+}
+
 function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.clients.find(x=>x.id===cid);const m=document.getElementById('client_main');
   const vmod=NAV_MOD[clientView];if(vmod&&!modOn(vmod)){m.innerHTML=moduleBlockHTML(vmod);return;}
   const eqs=cEquip(cid);const today=todayRel(cid);const alerts=openAlerts(cid);
   const conform=today.length?Math.round(100*today.filter(r=>r.status==='ok').length/today.length):100;
   const expected=eqs.filter(e=>isFroid(e)&&e.active!==false).length*2;
   if(clientView==='dash'){
-    const cleanDone=state.postes.filter(p=>p.clientId===cid&&p.done).length,cleanTot=state.postes.filter(p=>p.clientId===cid).length;
-    m.innerHTML='<div class="topbar"><div><h1>Vue d\'ensemble</h1><div class="sub">'+c.name+' · '+fmtDate(now())+'</div></div><div class="actions"><button class="btn ghost" onclick="clientNav(\'h_report\')"> Rapport</button><button class="btn" onclick="go(\'app_terrain\')"> Tablette</button></div></div>'
-    +'<div class="kpis">'+kpi('Conformité HACCP',conform+'%',today.length+' relevés',conform>=90?'up':'down')+kpi('Relevés du jour',today.length+' / '+expected,'chaîne du froid',today.length>=expected?'up':'down')+kpi('Alertes ouvertes',alerts.length,alerts.length?'à traiter':'tout bon',alerts.length?'down':'up')+kpi('Nettoyages',cleanDone+' / '+cleanTot,'postes du jour','up')+'</div>'
-    +(modOn('stock')&&typeof stkVal==='function'?'<div class="panel" style="margin-bottom:16px;cursor:pointer" onclick="clientNav(\'stock\')"><div class="pb" style="display:flex;align-items:center;gap:14px;padding:13px 18px"><span style="width:38px;height:38px;border-radius:11px;background:#fdf6e3;display:grid;place-items:center;font-size:18px">📦</span><div style="flex:1"><b>Stock : '+stkEur(stkVal())+'</b><div class="tsub">'+stkProds().length+' produit(s)'+(stkUnder().length?' · <b style="color:#d97706">'+stkUnder().length+' sous le seuil</b>':' · aucun produit sous le seuil')+'</div></div><span style="color:#a6b0be;font-weight:800">›</span></div></div>':'')
-    +'<div class="grid3" style="margin-bottom:16px">'
-     +'<div class="panel"><div class="ph"><h3> HACCP</h3><span class="chip '+(conform>=90?'ok':'bad')+'">'+conform+'%</span></div><div class="pb"><div class="progline"><div class="lbl">Températures</div><div class="track"><div class="fill" style="width:'+Math.round(100*today.length/Math.max(1,expected))+'%;background:var(--brand)"></div></div><div class="pv">'+today.length+'/'+expected+'</div></div><div class="progline"><div class="lbl">Nettoyages</div><div class="track"><div class="fill" style="width:'+Math.round(100*cleanDone/cleanTot)+'%;background:var(--brand)"></div></div><div class="pv">'+cleanDone+'/'+cleanTot+'</div></div><div class="progline"><div class="lbl">Non-conformités</div><div class="track"><div class="fill" style="width:'+(alerts.length?100:0)+'%;background:var(--bad)"></div></div><div class="pv">'+alerts.length+'</div></div></div></div>'
-     +'<div class="panel"><div class="ph"><h3> RH & Planning</h3><span class="chip blue">aujourd\'hui</span></div><div class="pb"><div class="progline"><div class="lbl">Présents</div><div class="track"><div class="fill" style="width:83%;background:var(--blue)"></div></div><div class="pv">5/6</div></div><div class="progline"><div class="lbl">Congés en attente</div><div class="track"><div class="fill" style="width:33%;background:var(--warn)"></div></div><div class="pv">2</div></div><div class="progline"><div class="lbl">Heures / prévu</div><div class="track"><div class="fill" style="width:100%;background:var(--blue)"></div></div><div class="pv">+2h</div></div></div></div>'
-     +'<div class="panel"><div class="ph"><h3> Food Cost</h3><span class="chip purple">marge</span></div><div class="pb"><div class="progline"><div class="lbl">Marge moyenne</div><div class="track"><div class="fill" style="width:68%;background:var(--purple)"></div></div><div class="pv">68%</div></div><div class="progline"><div class="lbl">Plats sous seuil</div><div class="track"><div class="fill" style="width:25%;background:var(--warn)"></div></div><div class="pv">1</div></div><div class="progline"><div class="lbl">Fidélité (jeux)</div><div class="track"><div class="fill" style="width:76%;background:var(--pink)"></div></div><div class="pv">460</div></div></div></div>'
+    var _R=vgRelStats(cid),_C=vgCleanStats(cid),_A=vgAlerts(cid);
+    var _crit=_A.filter(function(x){return x.sev==='bad';}).length;
+    m.innerHTML='<div class="topbar"><div><h1>Vue d\'ensemble</h1><div class="sub">'+escH(c.name)+' \u00b7 '+fmtDate(now())+'</div></div><div class="actions"><button class="btn ghost" onclick="clientNav(\'h_report\')">Rapport</button><button class="btn" onclick="go(\'app_terrain\')">Tablette</button></div></div>'
+    +'<div class="kpis">'
+     +kpi('Conformit\u00e9 du jour',_R.conform===null?'\u2014':_R.conform+' %',_R.today.length?_R.ok+' relev\u00e9(s) conforme(s) sur '+_R.today.length:'aucun relev\u00e9 aujourd\'hui',_R.conform===null?'down':(_R.conform>=90?'up':'down'))
+     +kpi('Relev\u00e9s du jour',_R.today.length+' / '+_R.exp,_R.eqs.length+' enceinte(s) froide(s)',_R.exp&&_R.today.length>=_R.exp?'up':'down')
+     +kpi('Alertes \u00e0 traiter',_A.length,_crit?_crit+' critique(s)':(_A.length?'\u00e0 surveiller':'tout bon'),_A.length?'down':'up')
+     +kpi('Nettoyages du jour',_C.dailyDone.length+' / '+_C.daily.length,_C.late.length?_C.late.length+' t\u00e2che(s) en retard':'plan \u00e0 jour',_C.late.length?'down':'up')
     +'</div>'
-    +'<div class="grid2"><div class="panel"><div class="ph"><h3>Températures — 5 derniers jours</h3><span class="chip muted">moyenne / relevé</span></div><div class="pb">'+tempChart(cid)+'</div></div><div class="panel"><div class="ph"><h3>Alertes à traiter</h3></div><div class="pb">'+clientAlerts(cid)+'</div></div></div>';
+    +vgScorePanel(cid)
+    +(modOn('stock')&&typeof stkVal==='function'?'<div class="panel" style="margin-bottom:16px;cursor:pointer" onclick="clientNav(\'stock\')"><div class="pb" style="display:flex;align-items:center;gap:14px;padding:13px 18px"><span style="width:38px;height:38px;border-radius:11px;background:#fdf6e3;display:grid;place-items:center;font-size:18px">\ud83d\udce6</span><div style="flex:1"><b>Stock : '+stkEur(stkVal())+'</b><div class="tsub">'+stkProds().length+' produit(s)'+(stkUnder().length?' \u00b7 <b style="color:#d97706">'+stkUnder().length+' sous le seuil</b>':' \u00b7 aucun produit sous le seuil')+'</div></div><span style="color:#a6b0be;font-weight:800">\u203a</span></div></div>':'')
+    +vgHaccpPanel(cid)
+    +'<div class="grid2" style="margin-bottom:16px">'+vgRhPanel(cid)+vgFcPanel(cid)+'</div>'
+    +'<div class="grid2"><div class="panel"><div class="ph"><h3>Temp\u00e9ratures \u2014 7 derniers jours</h3><span class="chip muted">moyenne / relev\u00e9</span></div><div class="pb">'+vgTempChart(cid)+'</div></div>'
+     +'<div class="panel"><div class="ph"><h3>Alertes \u00e0 traiter</h3>'+(_A.length?'<span class="chip '+(_crit?'bad':'warn')+'">'+_A.length+'</span>':'<span class="chip ok">0</span>')+'</div><div class="pb">'+vgAlertsPanel(cid)+'</div></div></div>';
   } else if(clientView==='h_zones'){
     const tasks=archFilter(state.postes.filter(p=>p.clientId===cid));const zones=archFilter(state.zones.filter(z=>z.clientId===cid));
     m.innerHTML=topbar('Zones & Tâches','Plan de nettoyage — zones & tâches synchronisées avec la tablette','<button class="btn ghost" onclick="zlibOpen()">📚 Bibliothèque</button><button class="btn ghost" onclick="formZone()">＋ Nouvelle zone</button><button class="btn" onclick="formTask()">＋ Nouvelle tâche</button>')
@@ -1699,7 +2015,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       m.innerHTML=topbar('<span style="cursor:pointer;color:#005a8c" onclick="docBack()">Documents</span> <span style="color:#a6b0be">/</span> '+escH(open.name), fd.length+' fichier(s) — PDF, images, Word, Excel et plus','<button class="btn ghost" onclick="docBack()">← Retour</button> <label class="btn" style="cursor:pointer">↑ Importer des fichiers<input type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx" onchange="docUpload(\''+open.id+'\',event)"></label>')
       +'<div class="drive-drop" id="doc_drop" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="docDrop(event,\''+open.id+'\')">Glissez-déposez vos fichiers ici<br><span class="tsub">ou utilisez le bouton « Importer des fichiers »</span><div id="doc_progress" style="margin-top:8px;font-size:13px;color:#005a8c;font-weight:700"></div></div>'
       +(fd.length?('<div class="drive-files">'+fd.map(d=>{const ext=(d.type||d.name.split('.').pop()||'').toLowerCase();
-        return '<div class="drive-file"><div class="dfi dfi-'+docKind(ext)+'">'+ext.slice(0,4).toUpperCase()+'</div><div class="dfd"><div class="tname" style="word-break:break-word">'+escH(d.name)+'</div><div class="tsub">'+(d.at&&d.at.toLocaleDateString?d.at.toLocaleDateString('fr-FR'):'')+(d.size?' · '+docFmtSize(d.size):'')+'</div></div><div class="dfa">'+(d.url?'<button class="btn ghost sm" onclick="window.open(\''+d.url+'\',\'_blank\')">Ouvrir</button> ':'')+'<button class="btn ghost sm" onclick="docDelFile(\''+d.id+'\')">Suppr.</button></div></div>';}).join('')+'</div>')
+        return '<div class="drive-file"><div class="dfi dfi-'+docKind(ext)+'">'+ext.slice(0,4).toUpperCase()+'</div><div class="dfd"><div class="tname" style="word-break:break-word">'+escH(d.name)+'</div><div class="tsub">'+(d.at&&d.at.toLocaleDateString?d.at.toLocaleDateString('fr-FR'):'')+(d.size?' · '+docFmtSize(d.size):'')+docExpChip(d)+'</div></div><div class="dfa">'+(d.url?'<button class="btn ghost sm" onclick="window.open(\''+d.url+'\',\'_blank\')">Ouvrir</button> ':'')+'<button class="btn ghost sm" onclick="docSetExp(\''+d.id+'\')" title="Date d\'échéance / de validité">Échéance</button> <button class="btn ghost sm" onclick="docDelFile(\''+d.id+'\')">Suppr.</button></div></div>';}).join('')+'</div>')
       :'<div class="empty" style="padding:36px 20px">Dossier vide — importez vos premiers fichiers.</div>');
     }
   } else if(clientView==='h_suivi'){
@@ -6744,6 +7060,14 @@ function formFolder(id){const fo=id?state.docFolders.find(x=>x.id===id):null;
   v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}if(fo){fo.name=v.name;}else{state.docFolders.push({id:'fld'+Date.now(),clientId:CID,name:v.name});}renderClient('h_docs');toast(fo?'Dossier renommé':'Dossier créé');});}
 /* ---- Documents façon Drive : navigation + stockage réel ---- */
 let docOpenFolder=null;
+function docExpChip(d){if(!d||!d.expiresAt)return '';
+  var t=vgT(d.expiresAt),n=Date.now(),j=Math.ceil((t-n)/864e5);
+  if(t<n)return ' · <b style="color:#b83504">expiré le '+new Date(t).toLocaleDateString('fr-FR')+'</b>';
+  if(j<=30)return ' · <b style="color:#b45309">expire dans '+j+' j</b>';
+  return ' · échéance '+new Date(t).toLocaleDateString('fr-FR');}
+function docSetExp(id){var d=(state.documents||[]).find(function(x){return x.id===id;});if(!d)return;
+  openForm('Date d\'échéance — '+d.name,[{key:'e',label:'Valable jusqu\'au (laisser vide pour retirer)',type:'date',value:d.expiresAt?new Date(vgT(d.expiresAt)).toISOString().slice(0,10):''}],
+   function(v){if((v.e||'').trim()){d.expiresAt=v.e;toast('Échéance enregistrée');}else{delete d.expiresAt;toast('Échéance retirée');}renderClient('h_docs');});}
 function docEnter(id){docOpenFolder=id;renderClient('h_docs');}
 function docBack(){docOpenFolder=null;renderClient('h_docs');}
 function docKind(ext){ext=(ext||'').toLowerCase();if(ext==='pdf')return 'pdf';if(['png','jpg','jpeg','webp','gif'].indexOf(ext)>=0)return 'img';if(['doc','docx','txt'].indexOf(ext)>=0)return 'doc';if(['xls','xlsx','csv'].indexOf(ext)>=0)return 'xls';if(['ppt','pptx'].indexOf(ext)>=0)return 'ppt';return 'other';}
