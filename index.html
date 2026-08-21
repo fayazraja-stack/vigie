@@ -150,6 +150,9 @@
   .pwk thead th{position:sticky;top:0;background:#fff;z-index:2}
   .planwrap{max-height:calc(100vh - 252px);overflow:auto}
   /* --- liste ingrédients : filtres, tri, sélection multiple --- */
+  .kpis.six{grid-template-columns:repeat(3,1fr)}
+  .fcgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+  @media(max-width:1100px){.kpis.six{grid-template-columns:repeat(2,1fr)}.fcgrid{grid-template-columns:1fr}}
   .ingbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
   .ingbar .dp-search{flex:1;min-width:180px;width:auto}
   .ingsel{padding:9px 10px;border:1px solid #ccd6e0;border-radius:10px;font-size:12.5px;background:#fff;color:var(--ink);font-weight:600;max-width:185px}
@@ -1771,25 +1774,13 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
     const sousSeuil=withPV.filter(function(r){const h=foodPvHT(r.prix,r.tva||0);return foodCostOf(r)/h>0.30;}).length;
     const caPot=rs.reduce(function(s,r){return s+foodPvHT(r.prix,r.tva||0);},0);
     const coutTot=rs.reduce(function(s,r){return s+foodCostOf(r);},0);
-    const actBtn=tab==='fiches'?'<button class="btn ghost" onclick="foodRecCatAdd()">＋ Catégorie</button> <button class="btn" onclick="foodRecipeOpen()">＋ Nouvelle recette</button>':(tab==='subs'?'<button class="btn" onclick="foodSubOpen()">＋ Nouvelle sous-recette</button>':'<button class="btn ghost" onclick="foodIngCatAdd()">＋ Catégorie</button> <button class="btn" onclick="foodIngForm()">＋ Nouvel ingrédient</button>');
+    const actBtn=tab==='fiches'?'<button class="btn ghost" onclick="foodRecCatAdd()">＋ Catégorie</button> <button class="btn" onclick="foodRecipeOpen()">＋ Nouvelle recette</button>':(tab==='subs'?'<button class="btn" onclick="foodSubOpen()">＋ Nouvelle sous-recette</button>':(tab==='ing'?'<button class="btn ghost" onclick="foodIngCatAdd()">＋ Catégorie</button> <button class="btn" onclick="foodIngForm()">＋ Nouvel ingrédient</button>':''));
     m.innerHTML=topbar('Food Cost','Recettes, sous-recettes, ingrédients — coût matière & marges automatiques',actBtn)
-    +'<div class="kpis">'+kpi('Recettes',rs.length,'au menu','up')+kpi('Food cost moyen',avgCM+'%','objectif ≤ 30%',avgCM<=30?'up':'down')+kpi('Marge brute moyenne',avgMarge+'%','sur PV HT',avgMarge>=70?'up':'down')+kpi('À surveiller',sousSeuil,'food cost > 30%',sousSeuil?'down':'up')+'</div>';
-    if(rs.length&&tab==='fiches'){
-      const pos=Math.min(100,Math.max(0,avgCM*2)); // jauge 0→50%
-      const watch=withPV.filter(function(r){const h=foodPvHT(r.prix,r.tva||0);return foodCostOf(r)/h>0.30;}).sort(function(a,b){return foodCostOf(b)/foodPvHT(b.prix,b.tva||0)-foodCostOf(a)/foodPvHT(a.prix,a.tva||0);}).slice(0,5);
-      const best=withPV.slice().sort(function(a,b){return (foodPvHT(b.prix,b.tva||0)-foodCostOf(b))-(foodPvHT(a.prix,a.tva||0)-foodCostOf(a));}).slice(0,3);
-      m.innerHTML+='<div class="panel" style="margin-bottom:16px"><div class="pb">'
-      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><b>Objectif food cost</b><b style="color:'+(avgCM<=30?'#006fab':'#b83504')+'">'+avgCM+'%</b></div>'
-      +'<div style="position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,#3fb3f0 0%,#3fb3f0 50%,#fbbf24 50%,#fbbf24 66%,#f87171 66%,#f87171 100%)"><div style="position:absolute;top:-4px;left:calc('+pos+'% - 2px);width:4px;height:20px;background:#0a1020;border-radius:2px"></div></div>'
-      +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#a6b0be;margin-top:4px"><span>0%</span><span>25%</span><span>33%</span><span>50%</span></div>'
-      +'<div class="grid2" style="margin-top:14px"><div><div class="tsub">Coût matière total</div><b>'+coutTot.toFixed(2)+' €</b></div><div><div class="tsub">CA potentiel (HT, 1 vente/recette)</div><b>'+caPot.toFixed(2)+' €</b></div></div>'
-      +(watch.length?'<div style="margin-top:14px"><div class="tsub" style="font-weight:800;margin-bottom:6px">Recettes à surveiller (food cost &gt; 30%)</div>'+watch.map(function(r){const h=foodPvHT(r.prix,r.tva||0);return '<div class="progline"><div class="lbl">'+escH(r.name)+'</div><div style="font-weight:800;color:#b83504">'+Math.round(foodCostOf(r)/h*100)+'%</div></div>';}).join('')+'</div>':'<div class="tsub" style="margin-top:14px">Toutes vos recettes sont sous les 30 % de food cost.</div>')
-      +(best.length?'<div style="margin-top:14px"><div class="tsub" style="font-weight:800;margin-bottom:6px">Meilleures marges</div>'+best.map(function(r,i){const h=foodPvHT(r.prix,r.tva||0);return '<div class="progline"><div class="lbl">#'+(i+1)+' '+escH(r.name)+'</div><div style="font-weight:800;color:#006fab">'+(h-foodCostOf(r)).toFixed(2)+' €</div></div>';}).join('')+'</div>':'')
-      +'</div></div>';
-    }
-    m.innerHTML+='<div class="seg-mini" style="margin-bottom:16px"><button class="'+(tab==='fiches'?'active':'')+'" onclick="setFoodTab(\'fiches\')">Recettes ('+rs.length+')</button><button class="'+(tab==='subs'?'active':'')+'" onclick="setFoodTab(\'subs\')">Sous-recettes ('+subs.length+')</button><button class="'+(tab==='ing'?'active':'')+'" onclick="setFoodTab(\'ing\')">Ingrédients ('+ings.length+')</button></div>';
-    var foodHelp=helpBox([['Créer vos ingrédients','renseignez le prix d\'achat HT du conditionnement et l\'unité d\'achat — le prix unitaire se calcule seul.'],['Préparer vos sous-recettes','une préparation maison (pâte, sauce…) avec sa quantité produite : son coût par unité s\'utilise ensuite dans vos recettes.'],['Composer vos recettes','ajoutez sous-recettes et ingrédients bruts avec quantités et % de perte — coûts, marges et food cost se mettent à jour en direct.'],['Surveiller vos marges','visez un food cost sous 30 % ; la jauge et la liste « à surveiller » vous alertent.']]);
-    if(tab==='fiches'){
+    +'<div class="seg-mini" style="margin-bottom:16px"><button class="'+(tab==='over'?'active':'')+'" onclick="setFoodTab(\'over\')">Vue d\'ensemble</button><button class="'+(tab==='fiches'?'active':'')+'" onclick="setFoodTab(\'fiches\')">Recettes ('+rs.length+')</button><button class="'+(tab==='subs'?'active':'')+'" onclick="setFoodTab(\'subs\')">Sous-recettes ('+subs.length+')</button><button class="'+(tab==='ing'?'active':'')+'" onclick="setFoodTab(\'ing\')">Ingrédients ('+ings.length+')</button></div>';
+    var foodHelp=helpBox([['Créer vos ingrédients','renseignez le prix d\'achat HT du conditionnement et l\'unité d\'achat — le prix unitaire se calcule seul.'],['Préparer vos sous-recettes','une préparation maison (pâte, sauce…) avec sa quantité produite : son coût par unité s\'utilise ensuite dans vos recettes.'],['Composer vos recettes','ajoutez sous-recettes et ingrédients bruts avec quantités et % de perte — coûts, marges et food cost se mettent à jour en direct.'],['Surveiller vos marges','visez un food cost sous '+foodTarget()+' % ; la vue d\'ensemble et la liste « à surveiller » vous alertent.']]);
+    if(tab==='over'){
+      m.innerHTML+=foodOverview();
+    } else if(tab==='fiches'){
       state.foodRecCats=state.foodRecCats||[];
       m.innerHTML+=recToolbar()+'<div id="food_rec_zone"></div>';
     } else if(tab==='subs'){
@@ -2211,7 +2202,7 @@ function adminCrmExport(){if(!ACRM_ROWS.length){toast('Aucune donnée à exporte
   ACRM_ROWS.forEach(function(w){rows.push([adminEstName(w.est_code),w.customer_name||'',w.customer_email||'',w.customer_phone||'',w.prize||'',w.status==='redeemed'?'remis':'a remettre',(w.claimed_at||w.created_at||'').slice(0,10)]);});
   const csv='﻿'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='base-clients-global.csv';a.click();}
 /* ============ FOOD COST ============ */
-let foodTab='fiches', FOOD_EDIT=null, foodIngFilter='', foodRecFilter='';
+let foodTab='over', FOOD_EDIT=null, foodIngFilter='', foodRecFilter='';
 function setFoodTab(t){foodTab=t;renderClient('food');}
 function foodIngById(id){return (state.foodIng||[]).find(function(x){return x.id===id;});}
 function foodSubById(id){return (state.foodSubs||[]).find(function(x){return x.id===id;});}
@@ -2257,6 +2248,92 @@ function foodIngForm(id){state.foodIng=state.foodIng||[];state.foodIngCats=state
     renderClient('food');toast('Ingrédient enregistré');});
 }
 function foodIngCatAdd(){state.foodIngCats=state.foodIngCats||[];openForm('Nouvelle catégorie d\'ingrédients',[{key:'name',label:'Nom de la catégorie',value:'',ph:'Ex. Viandes, Légumes, Emballages…'}],function(v){const n=(v.name||'').trim();if(!n){toast('Nom requis');return;}if(state.foodIngCats.indexOf(n)<0)state.foodIngCats.push(n);renderClient('food');toast('Catégorie créée');});}
+/* ---------- VUE D'ENSEMBLE FOOD COST ---------- */
+function foodTarget(){var t=Number(state.foodTarget);return (t>0&&t<100)?t:30;}
+function foodTargetSet(){openForm('Objectif de food cost',[{key:'t',label:'Objectif (% du prix de vente HT)',type:'number',value:foodTarget(),ph:'Ex. 30'}],
+  function(v){var n=Number(String(v.t).replace(',','.'));if(!(n>0&&n<100)){toast('Indiquez une valeur entre 1 et 99');return;}
+   state.foodTarget=n;renderClient('food');toast('Objectif fixé à '+n+' %');});}
+function foodEur(n){return (Math.round((Number(n)||0)*100)/100).toFixed(2).replace('.',',')+' €';}
+function foodOverview(){
+  var tgt=foodTarget();
+  var rs=recAll(),ings=ingAll();
+  var subs=archFilter((state.foodSubs||[]).filter(function(s){return s.clientId===CID;}));
+  var withPV=rs.filter(function(r){return foodPvHT(r.prix,r.tva||0)>0;});
+  var avgCM=withPV.length?Math.round(withPV.reduce(function(s,r){return s+foodCostOf(r)/foodPvHT(r.prix,r.tva||0);},0)/withPV.length*100):0;
+  var avgMg=withPV.length?Math.round(withPV.reduce(function(s,r){var h=foodPvHT(r.prix,r.tva||0);return s+(h-foodCostOf(r))/h;},0)/withPV.length*100):0;
+  var avgEur=withPV.length?withPV.reduce(function(s,r){return s+(foodPvHT(r.prix,r.tva||0)-foodCostOf(r));},0)/withPV.length:0;
+  var hors=withPV.filter(function(r){return foodCostOf(r)/foodPvHT(r.prix,r.tva||0)>tgt/100;});
+  var sansPrix=ings.filter(function(g){return !(foodIngUnitPrice(g)>0);}).length;
+  var sansPV=rs.length-withPV.length;
+
+  var h='<div class="kpis six">'
+   +kpi('Food cost moyen',avgCM+' %','objectif ≤ '+tgt+' %',avgCM<=tgt?'up':'down')
+   +kpi('Marge brute moyenne',avgMg+' %','sur le prix de vente HT',avgMg>=100-tgt?'up':'down')
+   +kpi('Marge par recette',foodEur(avgEur),'moyenne sur '+withPV.length+' recette(s)','up')
+   +kpi('Recettes hors objectif',hors.length,'food cost > '+tgt+' %',hors.length?'down':'up')
+   +kpi('Recettes au menu',rs.length,subs.length+' sous-recette(s)','up')
+   +kpi('Ingrédients référencés',ings.length,sansPrix?(sansPrix+' sans prix renseigné'):'tous valorisés',sansPrix?'down':'up')
+   +'</div>';
+
+  if(!rs.length&&!ings.length)
+    return h+'<div class="panel"><div class="pb"><div class="empty" style="padding:40px 20px">Commencez par créer vos ingrédients, puis vos recettes : le food cost, les marges et les alertes se calculent tout seuls.</div></div></div>';
+
+  /* jauge d'objectif */
+  var max=tgt*5/3,pos=Math.min(100,Math.max(0,avgCM/max*100));
+  var s1=Math.round(tgt/max*100),s2=Math.round(tgt*1.12/max*100);
+  h+='<div class="panel" style="margin-bottom:16px"><div class="pb">'
+   +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b>Objectif food cost</b>'
+   +'<span><button class="btn ghost sm" onclick="foodTargetSet()" title="Modifier l\'objectif">✎ Objectif '+tgt+' %</button> <b style="font-size:17px;margin-left:8px;color:'+(avgCM<=tgt?'var(--brand-d)':'#b83504')+'">'+avgCM+' %</b></span></div>'
+   +'<div style="position:relative;height:12px;border-radius:6px;background:linear-gradient(90deg,#3fb3f0 0%,#3fb3f0 '+s1+'%,#fbbf24 '+s1+'%,#fbbf24 '+s2+'%,#f87171 '+s2+'%,#f87171 100%)"><div style="position:absolute;top:-4px;left:calc('+pos+'% - 2px);width:4px;height:20px;background:#0a1020;border-radius:2px"></div></div>'
+   +'<div style="display:flex;justify-content:space-between;font-size:11px;color:#a6b0be;margin-top:5px"><span>0 %</span><span>'+Math.round(tgt/2)+' %</span><span>'+tgt+' %</span><span>'+Math.round(max)+' %</span></div>'
+   +'<div class="grid3" style="margin-top:16px">'
+   +'<div><div class="tsub">Coût matière total de la carte</div><b>'+foodEur(rs.reduce(function(s,r){return s+foodCostOf(r);},0))+'</b></div>'
+   +'<div><div class="tsub">CA potentiel HT (1 vente par recette)</div><b>'+foodEur(rs.reduce(function(s,r){return s+foodPvHT(r.prix,r.tva||0);},0))+'</b></div>'
+   +'<div><div class="tsub">Recettes sans prix de vente</div><b style="color:'+(sansPV?'#b45309':'inherit')+'">'+sansPV+'</b></div>'
+   +'</div></div></div>';
+
+  /* répartition par catégorie */
+  var cats={};
+  withPV.forEach(function(r){var c=r.cat||'Sans catégorie';cats[c]=cats[c]||{n:0,cm:0,mg:0};
+    var pv=foodPvHT(r.prix,r.tva||0);cats[c].n++;cats[c].cm+=foodCostOf(r)/pv;cats[c].mg+=pv-foodCostOf(r);});
+  var catList=Object.keys(cats).map(function(c){return {name:c,n:cats[c].n,cm:Math.round(cats[c].cm/cats[c].n*100),mg:cats[c].mg/cats[c].n};})
+    .sort(function(a,b){return b.cm-a.cm;});
+  var catHtml=catList.length?catList.map(function(c){
+     var w=Math.min(100,c.cm/max*100);
+     return '<div class="progline"><div class="lbl" title="'+escH(c.name)+'">'+escH(c.name)+' <span class="tsub">('+c.n+')</span></div>'
+      +'<div class="track"><div class="fill" style="width:'+w+'%;background:'+(c.cm>tgt*1.12?'#f87171':(c.cm>tgt?'#fbbf24':'#3fb3f0'))+'"></div></div>'
+      +'<div class="pv" style="color:'+(c.cm>tgt?'#b83504':'var(--brand-d)')+'">'+c.cm+'%</div></div>';}).join('')
+    :'<div class="tsub">Renseignez un prix de vente sur vos recettes pour voir cette répartition.</div>';
+
+  /* ingrédients dont le prix a bougé */
+  var moves=ings.map(function(g){var t=ingTrend(g);return t?{g:g,t:t,n:ingUsedR(g.id).length}:null;})
+    .filter(Boolean).sort(function(a,b){return Math.abs(b.t)-Math.abs(a.t);}).slice(0,6);
+  var moveHtml=moves.length?moves.map(function(m){
+     return '<div class="progline"><div class="lbl" style="width:auto;flex:1" title="'+escH(m.g.name)+'">'+escH(m.g.name)
+      +'<div class="tsub">'+(m.n?m.n+' recette'+(m.n>1?'s':'')+' impactée'+(m.n>1?'s':''):'aucune recette')+'</div></div>'
+      +'<span class="trend '+(m.t>0?'up':'dn')+'">'+(m.t>0?'▲ +':'▼ ')+m.t+' %</span></div>';}).join('')
+    :'<div class="tsub">Aucun mouvement de prix enregistré pour l\'instant. Dès que vous modifierez un prix d\'achat, la variation apparaîtra ici.</div>';
+
+  /* recettes à surveiller et meilleures marges */
+  var watch=hors.slice().sort(function(a,b){return foodCostOf(b)/foodPvHT(b.prix,b.tva||0)-foodCostOf(a)/foodPvHT(a.prix,a.tva||0);}).slice(0,6);
+  var best=withPV.slice().sort(function(a,b){return (foodPvHT(b.prix,b.tva||0)-foodCostOf(b))-(foodPvHT(a.prix,a.tva||0)-foodCostOf(a));}).slice(0,6);
+  var watchHtml=watch.length?watch.map(function(r){var pv=foodPvHT(r.prix,r.tva||0);
+     return '<div class="progline"><div class="lbl" style="width:auto;flex:1"><span class="usel" onclick="foodRecipeOpen(\''+r.id+'\')">'+escH(r.name)+'</span></div>'
+      +'<div style="font-weight:800;color:#b83504">'+Math.round(foodCostOf(r)/pv*100)+' %</div></div>';}).join('')
+    :'<div class="tsub">Toutes vos recettes sont dans l\'objectif de '+tgt+' %.</div>';
+  var bestHtml=best.length?best.map(function(r,i){var pv=foodPvHT(r.prix,r.tva||0);
+     return '<div class="progline"><div class="lbl" style="width:auto;flex:1">#'+(i+1)+' <span class="usel" onclick="foodRecipeOpen(\''+r.id+'\')">'+escH(r.name)+'</span></div>'
+      +'<div style="font-weight:800;color:var(--brand-d)">'+foodEur(pv-foodCostOf(r))+'</div></div>';}).join('')
+    :'<div class="tsub">Aucune recette avec un prix de vente renseigné.</div>';
+
+  h+='<div class="fcgrid">'
+   +'<div class="panel"><div class="ph"><h3>Food cost par catégorie</h3></div><div class="pb">'+catHtml+'</div></div>'
+   +'<div class="panel"><div class="ph"><h3>Ingrédients dont le prix a bougé</h3></div><div class="pb">'+moveHtml+'</div></div>'
+   +'<div class="panel"><div class="ph"><h3>Recettes à surveiller</h3></div><div class="pb">'+watchHtml+'</div></div>'
+   +'<div class="panel"><div class="ph"><h3>Meilleures marges</h3></div><div class="pb">'+bestHtml+'</div></div>'
+   +'</div>';
+  return h;}
+
 /* ================= LISTES FOOD COST : filtres, tri, sélection multiple, pagination ================= */
 function fcOpt(v,l,cur){return '<option value="'+escH(v)+'"'+(String(cur)===String(v)?' selected':'')+'>'+escH(l)+'</option>';}
 function fcCreated(x){if(!x)return null;if(x.createdAt)return new Date(x.createdAt);var m=/(\d{12,})/.exec(String(x.id||''));return m?new Date(Number(m[1])):null;}
@@ -2451,8 +2528,9 @@ function recMatch(r){var q=recQ.trim().toLowerCase();
   if(q){var hay=((r.name||'')+' '+(r.cat||'')+' '+(r.desc||'')+' '+fcTags(r).join(' ')).toLowerCase();if(hay.indexOf(q)<0)return false;}
   if(recFilt.cat){if(recFilt.cat==='__none__'){if(r.cat)return false;}else if((r.cat||'')!==recFilt.cat)return false;}
   if(recFilt.tag&&fcTags(r).indexOf(recFilt.tag)<0)return false;
-  if(recFilt.watch==='1'&&!(recCm(r)>0.30))return false;
-  if(recFilt.watch==='0'&&!(recCm(r)>0&&recCm(r)<=0.30))return false;
+  var tg=foodTarget()/100;
+  if(recFilt.watch==='1'&&!(recCm(r)>tg))return false;
+  if(recFilt.watch==='0'&&!(recCm(r)>0&&recCm(r)<=tg))return false;
   return true;}
 function recSv(r,k){if(k==='name')return (r.name||'').toLowerCase();
   if(k==='cat')return (r.cat||'￿').toLowerCase();
@@ -2475,7 +2553,7 @@ function recToolbar(){
   +'<input class="dp-search" id="rec_q" placeholder="Rechercher : nom, catégorie, tag…" value="'+escH(recQ)+'" oninput="recQ=this.value;recPage=0;recRefresh()">'
   +'<select class="ingsel" onchange="recFilt.cat=this.value;recPage=0;recRefresh()">'+fcOpt('','Toutes les catégories',recFilt.cat)+fcOpt('__none__','Sans catégorie',recFilt.cat)+cats.map(function(c){return fcOpt(c,c,recFilt.cat);}).join('')+'</select>'
   +(tags.length?('<select class="ingsel" onchange="recFilt.tag=this.value;recPage=0;recRefresh()">'+fcOpt('','Tous les tags',recFilt.tag)+tags.map(function(c){return fcOpt(c,c,recFilt.tag);}).join('')+'</select>'):'')
-  +'<select class="ingsel" onchange="recFilt.watch=this.value;recPage=0;recRefresh()">'+fcOpt('','Tous les food costs',recFilt.watch)+fcOpt('1','À surveiller (> 30 %)',recFilt.watch)+fcOpt('0','Dans l\'objectif (≤ 30 %)',recFilt.watch)+'</select>'
+  +'<select class="ingsel" onchange="recFilt.watch=this.value;recPage=0;recRefresh()">'+fcOpt('','Tous les food costs',recFilt.watch)+fcOpt('1','À surveiller (> '+foodTarget()+' %)',recFilt.watch)+fcOpt('0','Dans l\'objectif (≤ '+foodTarget()+' %)',recFilt.watch)+'</select>'
   +(act?'<button class="btn ghost sm" onclick="recClear()">✕ Réinitialiser</button>':'')
   +(cats.length?'<button class="btn ghost sm" onclick="foodRecCatDel()">Gérer les catégories</button>':'')
   +'<span style="flex:1;min-width:0"></span>'
@@ -2499,7 +2577,7 @@ function recRow(r){
    +'</div></div></td>'
   +'<td>'+(r.cat?'<span class="chip muted">'+escH(r.cat)+'</span>':'—')+'</td>'
   +'<td style="text-align:right;white-space:nowrap"><b>'+pvht.toFixed(2).replace('.',',')+' €</b><div class="tsub">'+(Number(r.prix)||0).toFixed(2).replace('.',',')+' € TTC</div></td>'
-  +'<td style="text-align:center"><span class="chip '+(cm>35?'bad':(cm>30?'warn':'ok'))+'">'+cm+' %</span></td>'
+  +'<td style="text-align:center"><span class="chip '+(cm>foodTarget()*1.15?'bad':(cm>foodTarget()?'warn':'ok'))+'">'+cm+' %</span></td>'
   +'<td class="tsub" style="white-space:nowrap">'+fcDate(d)+'</td>'
   +'<td style="text-align:right;white-space:nowrap">'+(r.archived
      ?'<button class="btn ghost sm" onclick="crudRestore(\'recipes\',\''+r.id+'\',\'food\')">↩ Restaurer</button>'
