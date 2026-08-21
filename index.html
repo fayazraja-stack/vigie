@@ -176,8 +176,13 @@
   .usel{cursor:pointer;color:var(--brand);font-weight:700}
   .tname.lk{cursor:pointer}
   .tname.lk:hover{color:var(--brand);text-decoration:underline}
-  .fedit{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start}
-  @media(max-width:1050px){.fedit{grid-template-columns:1fr}}
+  .fedit{display:grid;grid-template-columns:390px 1fr;gap:16px;align-items:start}
+  .fedit .field{margin-bottom:14px}
+  .fedit .cm-grid{row-gap:14px}
+  .fedit .cm-grid .field{margin-bottom:0}
+  .fedit .pb>.field:last-child,.fedit .pb>.cm-grid:last-child{margin-bottom:0}
+  .fedit select,.fedit input{width:100%;box-sizing:border-box}
+  @media(max-width:1150px){.fedit{grid-template-columns:1fr}}
   .fkpis{display:grid;grid-template-columns:1fr 1.2fr;gap:16px;margin-bottom:16px}
   @media(max-width:820px){.fkpis{grid-template-columns:1fr}}
   .ftot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:13.5px}
@@ -191,8 +196,10 @@
   .ltbl th{font-size:10.5px;padding:10px 8px;white-space:nowrap}
   .ltbl td{padding:7px 8px;font-size:13px;vertical-align:middle}
   .ltbl input{padding:7px 8px;border:1px solid #ccd6e0;border-radius:8px;font-size:13px;width:78px;box-sizing:border-box;text-align:right}
-  .faddrow{display:grid;grid-template-columns:1fr 118px 104px 52px;gap:10px;align-items:end}
-  @media(max-width:760px){.faddrow{grid-template-columns:1fr 1fr}}
+  .faddrow{display:grid;grid-template-columns:1fr 118px 104px 42px 52px;gap:10px;align-items:end}
+  .faddunit{height:40px;display:flex;align-items:center;justify-content:center;font-weight:700}
+  .faddhelp{margin-top:9px;font-size:12.5px}
+  @media(max-width:760px){.faddrow{grid-template-columns:1fr 1fr}.faddunit{justify-content:flex-start}}
   .fcedit .cm-grid{grid-template-columns:repeat(3,1fr);row-gap:18px}
   .fcedit .field,.iepage .field{margin-bottom:16px}
   .fcedit .cm-grid .field,.iepage .cm-grid .field{margin-bottom:0}
@@ -1812,7 +1819,7 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       m.innerHTML+=recToolbar()+'<div id="food_rec_zone"></div>';
     } else if(tab==='subs'){
       m.innerHTML+='<div class="ingbar"><input class="dp-search" id="food_sub_search" placeholder="Rechercher une sous-recette…" oninput="foodTableFilter(\'food_sub_search\',\'food_sub_tbody\')"><span style="flex:1;min-width:0"></span>'+archToggleBtn('food','foodSubs',cid)+'</div>'
-      +'<div class="panel"><div class="pb" style="padding:0">'+(subs.length?('<table><thead><tr><th>Sous-recette</th><th>Production</th><th>Coût total</th><th>Coût / unité</th><th>Utilisée dans</th><th></th></tr></thead><tbody id="food_sub_tbody">'+subs.map(function(sb){const tot=foodSubTotal(sb);const cpu=foodSubCostPerUnit(sb);const used=rs.filter(function(r){return (r.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===sb.id;});}).length;return '<tr data-s="'+escH((sb.name||'').toLowerCase())+'"><td><div class="tname lk" onclick="foodSubOpen(\''+sb.id+'\')" title="Ouvrir la sous-recette">'+escH(sb.name)+'</div><div class="tsub">'+((sb.lines||[]).length)+' ingrédient(s)</div></td><td>'+(Number(sb.yieldQty)||0)+' '+escH(sb.yieldUnit||'')+'</td><td>'+tot.toFixed(2)+' €</td><td>'+cpu.toFixed(3)+' € / '+escH(sb.yieldUnit||'u')+'</td><td>'+used+' recette(s)</td><td style="text-align:right;white-space:nowrap">'+(sb.archived?('<button class="btn ghost sm" onclick="crudRestore(\'foodSubs\',\''+sb.id+'\',\'food\')">↩ Restaurer</button>'):('<button class="btn ghost sm" onclick="foodSubOpen(\''+sb.id+'\')">Modifier</button> <button class="btn ghost sm" title="Exporter en PDF" onclick="subPdf(\''+sb.id+'\')">⤓ PDF</button> <button class="btn ghost sm" onclick="foodSubDel(\''+sb.id+'\')">🗄 Archiver</button>'))+'</td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucune sous-recette. Une sous-recette (ex. pâte à naan, sauce maison) se prépare à partir d\'ingrédients et s\'utilise ensuite dans vos recettes — son coût remonte automatiquement.</div>')+'</div></div>';
+      +'<div class="panel"><div class="pb" style="padding:0">'+(subs.length?('<table><thead><tr><th>Sous-recette</th><th>Production</th><th>Coût total</th><th>Coût / unité</th><th>Utilisée dans</th><th></th></tr></thead><tbody id="food_sub_tbody">'+subs.map(function(sb){const tot=foodSubTotal(sb);const cpu=foodSubCostPerUnit(sb);const used=rs.filter(function(r){return (r.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===sb.id;});}).length;return '<tr data-s="'+escH((sb.name||'').toLowerCase())+'"><td><div class="tname lk" onclick="foodSubOpen(\''+sb.id+'\')" title="Ouvrir la sous-recette">'+escH(sb.name)+'</div><div class="tsub">'+((sb.lines||[]).length)+' ingrédient(s)</div></td><td>'+(Number(sb.yieldQty)||0)+' '+escH(sb.yieldUnit||'')+'</td><td>'+tot.toFixed(2)+' €</td><td>'+cpu.toFixed(3)+' € / '+escH(sb.yieldUnit||'u')+'</td><td>'+used+' recette(s)</td><td style="text-align:right;white-space:nowrap">'+(sb.archived?('<button class="btn ghost sm" onclick="crudRestore(\'foodSubs\',\''+sb.id+'\',\'food\')">↩ Restaurer</button>'):('<button class="btn ghost sm" onclick="foodSubOpen(\''+sb.id+'\')" title="Modifier">✎</button> <button class="btn ghost sm" onclick="subDup(\''+sb.id+'\')" title="Dupliquer">⧉</button> <button class="btn ghost sm" title="Exporter en PDF" onclick="subPdf(\''+sb.id+'\')">⤓ PDF</button> <button class="btn ghost sm" onclick="foodSubDel(\''+sb.id+'\')" title="Supprimer">🗑</button>'))+'</td></tr>';}).join('')+'</tbody></table>'):'<div class="empty" style="padding:40px 20px">Aucune sous-recette. Une sous-recette (ex. pâte à naan, sauce maison) se prépare à partir d\'ingrédients et s\'utilise ensuite dans vos recettes — son coût remonte automatiquement.</div>')+'</div></div>';
     } else {
       state.foodIngCats=state.foodIngCats||[];
       m.innerHTML+=ingToolbar()+'<div id="food_ing_zone"></div>';
@@ -2516,6 +2523,136 @@ async function recBulkPdf(){
     toast('✓ PDF téléchargé — '+d.nbPages()+' pages');
   }catch(e){toast('Échec de la génération : '+(e.message||e));}}
 
+/* ---------- Suppression réelle (Food Cost) ---------- */
+function fcUsedByIng(id){
+  const r=(state.recipes||[]).filter(function(x){return x.clientId===CID&&(x.lines||[]).some(function(l){return l.kind!=='sub'&&(l.refId||l.ingId)===id;});});
+  const s=(state.foodSubs||[]).filter(function(x){return x.clientId===CID&&(x.lines||[]).some(function(l){return l.kind!=='sub'&&(l.refId||l.ingId)===id;});});
+  return {rec:r,sub:s};}
+function fcUsedBySub(id){
+  const r=(state.recipes||[]).filter(function(x){return x.clientId===CID&&(x.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===id;});});
+  const s=(state.foodSubs||[]).filter(function(x){return x.clientId===CID&&x.id!==id&&(x.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===id;});});
+  return {rec:r,sub:s};}
+function fcStripLines(pred){
+  (state.recipes||[]).forEach(function(r){if(r.lines)r.lines=r.lines.filter(function(l){return !pred(l);});});
+  (state.foodSubs||[]).forEach(function(s){if(s.lines)s.lines=s.lines.filter(function(l){return !pred(l);});});}
+function fcImpactHtml(intro,u,extra){
+  return '<div style="text-align:left"><p style="margin:0">'+intro+'</p>'
+   +fcListBlock('Recettes concernées',u.rec)+fcListBlock('Sous-recettes concernées',u.sub)
+   +((u.rec.length||u.sub.length)?('<p class="tsub" style="margin:12px 0 0;color:#b83504"><b>'+(u.rec.length+u.sub.length)+' fiche(s)</b> perdront cette ligne et leur coût matière sera recalculé aussitôt.</p>'):'<p class="tsub" style="margin:12px 0 0">Aucune fiche ne l\'utilise : la suppression est sans conséquence.</p>')
+   +(extra||'')+'</div>';}
+function ingDel(id){
+  const g=foodIngById(id);if(!g)return;
+  const u=fcUsedByIng(id);
+  openConfirm('Supprimer « '+g.name+' » ?','',function(){
+    fcStripLines(function(l){return l.kind!=='sub'&&(l.refId||l.ingId)===id;});
+    state.foodIng=(state.foodIng||[]).filter(function(x){return x.id!==id;});
+    delete ingSel[id];if(ING_EDIT&&ING_EDIT.id===id)ING_EDIT=null;
+    renderClient('food');toast('🗑 '+g.name+' supprimé');},'Supprimer définitivement',true);
+  fcHtmlMsg(fcImpactHtml('Cet ingrédient sera <b>définitivement supprimé</b>. Cette action est irréversible.',u));}
+function ingBulkDel(){
+  const ids=ingSelIds();if(!ids.length)return;
+  const u={rec:[],sub:[]};
+  ids.forEach(function(id){const x=fcUsedByIng(id);
+    x.rec.forEach(function(r){if(u.rec.indexOf(r)<0)u.rec.push(r);});
+    x.sub.forEach(function(s){if(u.sub.indexOf(s)<0)u.sub.push(s);});});
+  openConfirm('Supprimer '+ids.length+' ingrédient(s) ?','',function(){
+    fcStripLines(function(l){return l.kind!=='sub'&&ids.indexOf(l.refId||l.ingId)>=0;});
+    state.foodIng=(state.foodIng||[]).filter(function(x){return ids.indexOf(x.id)<0;});
+    ingSel={};renderClient('food');toast('🗑 '+ids.length+' ingrédient(s) supprimé(s)');},'Supprimer définitivement',true);
+  fcHtmlMsg(fcImpactHtml('Ces ingrédients seront <b>définitivement supprimés</b>. Cette action est irréversible.',u));}
+function ingDup(id){
+  const g=foodIngById(id);if(!g)return;
+  const c=JSON.parse(JSON.stringify(g));
+  c.id='ing'+Date.now();c.name=g.name+' (copie)';c.createdAt=new Date().toISOString();
+  delete c.archived;delete c.archivedAt;delete c.updatedAt;
+  state.foodIng.push(c);foodTab='ing';renderClient('food');toast('Ingrédient dupliqué');}
+function subDup(id){
+  const s=foodSubById(id);if(!s)return;
+  const c=JSON.parse(JSON.stringify(s));
+  c.id='sub'+Date.now();c.name=s.name+' (copie)';c.createdAt=new Date().toISOString();
+  delete c.archived;delete c.archivedAt;delete c.updatedAt;
+  state.foodSubs.push(c);foodTab='subs';renderClient('food');toast('Sous-recette dupliquée');}
+function recDel(id){
+  const r=(state.recipes||[]).find(function(x){return x.id===id;});if(!r)return;
+  openConfirm('Supprimer « '+r.name+' » ?','',function(){
+    state.recipes=(state.recipes||[]).filter(function(x){return x.id!==id;});
+    delete recSel[id];if(FOOD_EDIT&&FOOD_EDIT.id===id&&FOOD_EDIT.mode!=='sub')FOOD_EDIT=null;
+    renderClient('food');toast('🗑 '+r.name+' supprimée');},'Supprimer définitivement',true);
+  const lines=(r.lines||[]).map(function(l){
+    if(l.kind==='sub'){const sb=foodSubById(l.refId);return {name:(sb?sb.name:'Sous-recette')+' — '+pdfNum(l.qty,3)+' '+((sb&&sb.yieldUnit)||'')};}
+    const g=foodIngById(l.refId||l.ingId);return {name:(g?g.name:'Ingrédient')+' — '+pdfNum(l.qty,3)+' '+((g&&g.unit)||'')};});
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Cette recette sera <b>définitivement supprimée</b>. Cette action est irréversible — pensez à exporter sa fiche technique en PDF si vous voulez en garder une trace.</p>'
+   +fcListBlock('Composition qui sera perdue',lines)+'</div>');}
+function recBulkDel(){
+  const ids=recSelIds();if(!ids.length)return;
+  const lst=(state.recipes||[]).filter(function(r){return ids.indexOf(r.id)>=0;});
+  openConfirm('Supprimer '+ids.length+' recette(s) ?','',function(){
+    state.recipes=(state.recipes||[]).filter(function(x){return ids.indexOf(x.id)<0;});
+    recSel={};renderClient('food');toast('🗑 '+ids.length+' recette(s) supprimée(s)');},'Supprimer définitivement',true);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Ces recettes seront <b>définitivement supprimées</b>. Cette action est irréversible.</p>'+fcListBlock('Recettes concernées',lst)+'</div>');}
+/* ---------- PDF d'un ingrédient ---------- */
+async function ingPdf(id){
+  const g=foodIngById(id);if(!g)return;
+  toast('Génération du PDF…');
+  try{
+    const M=42,d=pdfNew(),W=d.W,CW=W-2*M;
+    d.page();let y=62;
+    d.text(M,y,'Ingrédient',{size:11,col:PDF_MUT});y+=19;
+    d.text(M,y,g.name||'',{size:17,bold:true,w:CW});y+=23;
+    if(g.updatedAt||g.createdAt){d.text(M,y,'Dernière modification',{size:8.5,col:PDF_MUT});
+      d.text(M+108,y,new Date(g.updatedAt||g.createdAt).toLocaleDateString('fr-FR'),{size:9.5,bold:true});y+=16;}
+    d.text(M,y,(g.group?g.group+'   |   ':'')+(g.fournisseur||'Sans fournisseur')+(Array.isArray(g.tags)&&g.tags.length?('   |   '+g.tags.join(', ')):''),{size:9.5,col:PDF_MUT,w:CW});
+    y+=34;
+    const cells=[['Prix appliqué',pdfEur(foodIngUnitPrice(g),3)+' / '+(g.unit||'u')],
+      ['Prix d\'achat HT',pdfEur(g.priceHT||0)],
+      ['Conditionnement',pdfNum(g.purchQty||1,(g.purchQty%1)?3:0)+' '+(g.purchUnit||g.unit||'')],
+      ['TVA',pdfNum(g.tva||0,1)+' %'],
+      ['Type',g.cat==='nonalim'?'Non alimentaire':'Alimentaire']];
+    d.line(M,y-13,M+CW,y-13,PDF_LINE,0.8);
+    const cw=CW/cells.length;
+    cells.forEach(function(c,i){const cx=M+i*cw;
+      if(i)d.line(cx-8,y-13,cx-8,y+18,PDF_LINE,0.6);
+      d.text(cx,y,c[0],{size:7.5,col:PDF_MUT,w:cw-12});
+      d.text(cx,y+13,c[1],{size:10,bold:true,w:cw-12});});
+    y+=32;d.line(M,y-9,M+CW,y-9,PDF_LINE,0.8);y+=10;
+    const u=fcUsedByIng(id);
+    d.rect(M-6,y-11,CW+12,19,PDF_BAND);
+    d.text(M,y+2,'Utilisé dans',{size:9});d.text(M+300,y+2,'Type',{size:9});
+    d.text(M+420,y+2,'Quantité',{size:9,align:'right'});d.text(M+CW,y+2,'Coût dans la fiche',{size:9,align:'right'});
+    y+=22;
+    const rows=[];
+    u.rec.forEach(function(r){(r.lines||[]).forEach(function(l){if(l.kind!=='sub'&&(l.refId||l.ingId)===id)rows.push([r.name,'Recette',l]);});});
+    u.sub.forEach(function(s){(s.lines||[]).forEach(function(l){if(l.kind!=='sub'&&(l.refId||l.ingId)===id)rows.push([s.name,'Sous-recette',l]);});});
+    if(!rows.length){d.text(M,y,'Cet ingrédient n\'est utilisé dans aucune fiche.',{size:9,col:PDF_MUT});y+=18;}
+    rows.forEach(function(r){
+      if(y>d.H-90){d.page();y=62;}
+      d.text(M,y,r[0],{size:9,w:290});
+      d.text(M+300,y,r[1],{size:9,col:PDF_MUT,w:110});
+      d.text(M+420,y,pdfNum(r[2].qty,3)+' '+(g.unit||''),{size:9,align:'right'});
+      d.text(M+CW,y,pdfEur(foodLineCost(r[2]),3),{size:9,align:'right'});
+      y+=15;d.line(M,y-5,M+CW,y-5,[0.96,0.97,0.98],0.5);});
+    y+=14;
+    const hist=(g.priceHist||[]).slice().reverse();
+    if(hist.length){
+      if(y>d.H-140){d.page();y=62;}
+      d.rect(M-6,y-11,CW+12,19,PDF_BAND);
+      d.text(M,y+2,'Historique du prix d\'achat',{size:9});
+      d.text(M+300,y+2,'Prix du conditionnement',{size:9,align:'right'});
+      d.text(M+CW,y+2,'Variation',{size:9,align:'right'});
+      y+=22;
+      hist.forEach(function(h,i){
+        if(y>d.H-80){d.page();y=62;}
+        const prev=hist[i+1],dv=(prev&&Number(prev.p))?Math.round((Number(h.p)-Number(prev.p))/Number(prev.p)*100):null;
+        d.text(M,y,new Date(h.at).toLocaleDateString('fr-FR'),{size:9});
+        d.text(M+300,y,pdfEur(h.p),{size:9,align:'right'});
+        d.text(M+CW,y,dv?((dv>0?'+':'')+dv+' %'):'—',{size:9,align:'right',col:dv?(dv>0?PDF_WARN:PDF_BRAND):PDF_MUT});
+        y+=15;d.line(M,y-5,M+CW,y-5,[0.96,0.97,0.98],0.5);});}
+    const est=(state.clients||[]).filter(function(c){return c.id===CID;})[0];
+    pdfFooters(d,est?(est.nom||est.name||''):'');
+    d.save('ingredient-'+pdfSlug(g.name)+'.pdf');
+    toast('✓ PDF téléchargé');
+  }catch(e){toast('Échec de la génération : '+(e.message||e));}}
+
 /* ---------- ÉDITION EN PLEINE PAGE ---------- */
 let ING_EDIT=null;
 function foodEditCancel(){FOOD_EDIT=null;renderClient('food');}
@@ -2539,7 +2676,9 @@ function foodEditTop(){
    +'<div><div class="tsub" style="font-weight:700">'+eyebrow+'</div><h1 style="margin-top:1px">'+t+'</h1></div></div>'
    +'<div class="actions">'+act+'</div></div>'
    +'<div id="food_body"></div>'
-   +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px"><button class="btn ghost" onclick="foodEditCancel()">Annuler</button><button class="btn" onclick="foodSave()">Enregistrer</button></div>';}
+   +'<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">'
+   +(e.id?('<button class="btn ghost" style="margin-right:auto" onclick="'+(isSub?'foodSubDel':'recDel')+'(\''+e.id+'\')">🗑 Supprimer cette '+(isSub?'préparation':'recette')+'</button>'):'')
+   +'<button class="btn ghost" onclick="foodEditCancel()">Annuler</button><button class="btn" onclick="foodSave()">Enregistrer</button></div>';}
 function foodEditDup(id){FOOD_EDIT=null;foodDuplicate(id);}
 
 /* ---------- INGRÉDIENT EN PLEINE PAGE ---------- */
@@ -2603,7 +2742,7 @@ function ingEditPage(){
      +'</div></div></div>';
   }
   h+='<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">'
-   +(g?'<button class="btn ghost" style="margin-right:auto" onclick="ingEditArch()">🗄 Archiver cet ingrédient</button>':'')
+   +(g?'<button class="btn ghost" style="margin-right:auto" onclick="ingEditDel()">🗑 Supprimer cet ingrédient</button>':'')
    +'<button class="btn ghost" onclick="ingEditCancel()">Annuler</button><button class="btn" onclick="ingEditSave()">Enregistrer</button></div>';
   setTimeout(ingEditRecap,0);
   return h;}
@@ -2639,7 +2778,7 @@ function ingEditSave(){
   else{const nid='ing'+Date.now();state.foodIng.push(Object.assign({id:nid,clientId:CID,createdAt:new Date().toISOString(),
         priceHist:[{at:new Date().toISOString(),p:o.priceHT}]},o));ING_EDIT.id=nid;}
   foodTab='ing';foodKeepScroll(function(){renderClient('food');});toast('✓ Ingrédient enregistré');}
-function ingEditArch(){if(!ING_EDIT.id)return;const id=ING_EDIT.id;ING_EDIT=null;renderClient('food');ingArch(id);}
+function ingEditDel(){if(!ING_EDIT.id)return;ingDel(ING_EDIT.id);}
 
 function foodIngCatAdd(){state.foodIngCats=state.foodIngCats||[];openForm('Nouvelle catégorie d\'ingrédients',[{key:'name',label:'Nom de la catégorie',value:'',ph:'Ex. Viandes, Légumes, Emballages…'}],function(v){const n=(v.name||'').trim();if(!n){toast('Nom requis');return;}if(state.foodIngCats.indexOf(n)<0)state.foodIngCats.push(n);renderClient('food');toast('Catégorie créée');});}
 /* ================= IMPORT CSV — INGRÉDIENTS ================= */
@@ -3235,7 +3374,10 @@ function ingRow(g){
   +'<td style="text-align:center">'+(g.cat==='nonalim'?'<span class="chip warn" title="Non alimentaire (packaging)">✕</span>':'<span class="chip ok" title="Produit alimentaire">✓</span>')+'</td>'
   +'<td style="text-align:right;white-space:nowrap">'+(g.archived
      ?'<button class="btn ghost sm" onclick="crudRestore(\'foodIng\',\''+g.id+'\',\'food\')">↩ Restaurer</button>'
-     :'<button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')">Modifier</button> <button class="btn ghost sm" onclick="ingArch(\''+g.id+'\')">🗄 Archiver</button>')+'</td></tr>';}
+     :'<button class="btn ghost sm" onclick="foodIngForm(\''+g.id+'\')" title="Modifier">✎</button>'
+      +' <button class="btn ghost sm" onclick="ingDup(\''+g.id+'\')" title="Dupliquer">⧉</button>'
+      +' <button class="btn ghost sm" onclick="ingPdf(\''+g.id+'\')" title="Exporter la fiche en PDF">⤓ PDF</button>'
+      +' <button class="btn ghost sm" onclick="ingDel(\''+g.id+'\')" title="Supprimer">🗑</button>')+'</td></tr>';}
 function ingPanel(){
   var rows=ingRows(),tot=ingAll().length,n=rows.length;
   var per=ingPer||50,pages=per>=99999?1:Math.max(1,Math.ceil(n/per));
@@ -3247,7 +3389,7 @@ function ingPanel(){
    +'<button class="btn sm" onclick="ingBulkFour()">Fournisseur</button>'
    +'<button class="btn sm" onclick="ingBulkTag()">Tag</button>'
    +'<button class="btn sm" onclick="ingBulkType()">Alim. / non alim.</button>'
-   +'<button class="btn sm" onclick="ingBulkArch()">🗄 Archiver</button>'
+   +'<button class="btn sm" onclick="ingBulkDel()">🗑 Supprimer</button>'
    +'<span style="flex:1;min-width:0"></span><button class="btn sm" onclick="ingSel={};ingRefresh()">Tout désélectionner</button></div>';
   if(!n)return h+'<div class="panel"><div class="pb"><div class="empty" style="padding:40px 20px">'+(tot?'Aucun ingrédient ne correspond à cette recherche.':'Aucun ingrédient. Ajoutez vos matières premières : prix d\'achat HT du conditionnement, unité d\'achat et unité de recette — le prix appliqué se calcule automatiquement.')+'</div></div></div>';
   var allOn=rows.length>0&&rows.every(function(g){return !!ingSel[g.id];});
@@ -3406,7 +3548,7 @@ function recRow(r){
      :'<button class="btn ghost sm" onclick="foodRecipeOpen(\''+r.id+'\')" title="Modifier la fiche">✎</button>'
       +' <button class="btn ghost sm" onclick="foodDuplicate(\''+r.id+'\')" title="Dupliquer la recette">⧉</button>'
       +' <button class="btn ghost sm" onclick="recPdf(\''+r.id+'\')" title="Exporter la fiche technique en PDF">⤓ PDF</button>'
-      +' <button class="btn ghost sm" onclick="recArch(\''+r.id+'\')" title="Archiver">🗄</button>')+'</td></tr>';}
+      +' <button class="btn ghost sm" onclick="recDel(\''+r.id+'\')" title="Supprimer">🗑</button>')+'</td></tr>';}
 function recPanel(){
   var rows=recRows(),tot=recAll().length,n=rows.length;
   var per=recPer||50,pages=per>=99999?1:Math.max(1,Math.ceil(n/per));
@@ -3417,7 +3559,7 @@ function recPanel(){
    +'<button class="btn sm" onclick="recBulkCat()">Catégorie</button>'
    +'<button class="btn sm" onclick="recBulkTag()">Tag</button>'
    +'<button class="btn sm" onclick="recBulkPdf()">⤓ PDF</button>'
-   +'<button class="btn sm" onclick="recBulkArch()">🗄 Archiver</button>'
+   +'<button class="btn sm" onclick="recBulkDel()">🗑 Supprimer</button>'
    +'<span style="flex:1;min-width:0"></span><button class="btn sm" onclick="recSel={};recRefresh()">Tout désélectionner</button></div>';
   if(!n)return h+'<div class="panel"><div class="pb"><div class="empty" style="padding:40px 20px">'+(tot?'Aucune recette ne correspond à cette recherche.':'Aucune recette. Créez vos ingrédients et sous-recettes, puis composez vos recettes : les coûts se calculent automatiquement.')+'</div></div></div>';
   var allOn=rows.length>0&&rows.every(function(r){return !!recSel[r.id];});
@@ -3641,13 +3783,34 @@ function foodAddRow(kind){
   const n=isS?state.foodSubs.filter(function(s){return s.clientId===CID&&s.id!==FOOD_EDIT.id&&!s.archived;}).length
              :state.foodIng.filter(function(g){return g.clientId===CID&&!g.archived;}).length;
   if(!n)return '<div class="tsub" style="padding:14px 2px">'+(isS?'Aucune autre préparation disponible. Créez-en une dans l\'onglet Sous-recettes.':'Aucun ingrédient. Créez-les d\'abord dans l\'onglet Ingrédients, ou importez-les.')+'</div>';
+  const kd=' onkeydown="if(event.key===\'Enter\'){event.preventDefault();foodLineAddQuick(\''+kind+'\');}" oninput="foodAddHint(\''+kind+'\')"';
   return '<div class="faddrow">'
    +'<div class="field" style="margin:0"><label>'+(isS?'Préparation':'Ingrédient')+'</label>'
-     +'<input id="fadd_ref_'+kind+'" list="'+(isS?'food_dl_sub':'food_dl_ing')+'" placeholder="'+(isS?'Rechercher une préparation…':'Rechercher un ingrédient…')+'" onkeydown="if(event.key===\'Enter\'){event.preventDefault();foodLineAddQuick(\''+kind+'\');}"></div>'
-   +'<div class="field" style="margin:0"><label>Qté brute</label><input id="fadd_qty_'+kind+'" type="number" min="0" step="0.001" placeholder="Ex. 0,15" onkeydown="if(event.key===\'Enter\'){event.preventDefault();foodLineAddQuick(\''+kind+'\');}"></div>'
-   +'<div class="field" style="margin:0"><label>Perte %</label><input id="fadd_loss_'+kind+'" type="number" min="0" max="100" step="1" value="0" onkeydown="if(event.key===\'Enter\'){event.preventDefault();foodLineAddQuick(\''+kind+'\');}"></div>'
+     +'<input id="fadd_ref_'+kind+'" list="'+(isS?'food_dl_sub':'food_dl_ing')+'" placeholder="'+(isS?'Rechercher une préparation…':'Rechercher un ingrédient…')+'"'+kd+' onchange="foodAddHint(\''+kind+'\')"></div>'
+   +'<div class="field" style="margin:0"><label>Qté brute</label><input id="fadd_qty_'+kind+'" type="number" min="0" step="0.001" placeholder="Ex. 0,15"'+kd+'></div>'
+   +'<div class="field" style="margin:0"><label>Perte %</label><input id="fadd_loss_'+kind+'" type="number" min="0" max="100" step="1" value="0"'+kd+'></div>'
+   +'<div class="faddunit"><span id="fadd_unit_'+kind+'" class="tsub">—</span></div>'
    +'<button class="btn" style="height:40px;padding:0 16px" title="Ajouter" onclick="foodLineAddQuick(\''+kind+'\')">＋</button>'
-   +'</div>';}
+   +'</div>'
+   +'<div class="tsub faddhelp" id="fadd_help_'+kind+'">'+(isS?'Choisissez une préparation pour voir son coût et son unité.':'Choisissez un ingrédient pour voir son prix et son unité.')+'</div>';}
+function foodAddHint(kind){
+  const el=document.getElementById('fadd_ref_'+kind);
+  const uEl=document.getElementById('fadd_unit_'+kind),hEl=document.getElementById('fadd_help_'+kind);
+  if(!el||!hEl)return;
+  const id=foodResolveRef(kind,el.value);
+  let unit='',price=0,name='';
+  if(kind==='sub'){const sb=foodSubById(id);if(sb){unit=sb.yieldUnit||'u';price=foodSubCostPerUnit(sb);name=sb.name;}}
+  else{const g=foodIngById(id);if(g){unit=g.unit||'u';price=foodIngUnitPrice(g);name=g.name;}}
+  if(uEl)uEl.textContent=unit||'—';
+  if(!id){hEl.innerHTML=(kind==='sub'?'Choisissez une préparation pour voir son coût et son unité.':'Choisissez un ingrédient pour voir son prix et son unité.');return;}
+  const qEl=document.getElementById('fadd_qty_'+kind),lEl=document.getElementById('fadd_loss_'+kind);
+  const q=Number(String((qEl&&qEl.value)||'').replace(',','.'))||0;
+  const loss=Number((lEl&&lEl.value)||0)||0;
+  const net=q*(1-Math.min(100,Math.max(0,loss))/100);
+  hEl.innerHTML='<b>'+escH(name)+'</b> — '+price.toFixed(3).replace('.',',')+' € / '+escH(unit)
+   +(q>0?(' &nbsp;·&nbsp; vous ajoutez <b>'+String(q).replace('.',',')+' '+escH(unit)+'</b>'
+     +(loss>0?(' (net '+(Math.round(net*1000)/1000).toString().replace('.',',')+' '+escH(unit)+')'):'')
+     +' &nbsp;·&nbsp; coût <b style="color:var(--brand-d)">'+(q*price).toFixed(3).replace('.',',')+' €</b>'):'');}
 function foodLinesTable(kind,lines,idx){
   const isS=kind==='sub';
   if(!lines.length)return '<div class="empty" style="padding:26px 20px">'+(isS?'Aucune préparation dans cette fiche.':'Aucun ingrédient dans cette fiche.')+'</div>';
@@ -3676,19 +3839,18 @@ function foodRecipeBody(){
      +(e.photo?'<button class="btn ghost sm" onclick="foodPhotoRemove()">Retirer</button>':'')
      +'</div><div id="food_photomsg" class="tsub" style="margin-top:6px"></div></div></div>';}
   left+='<div class="panel"><div class="pb">'
-   +'<div class="field"><label>Nom '+(isSub?'de la préparation':'de la recette')+' *</label><input id="food_name" value="'+escH(e.name)+'" placeholder="'+(isSub?'Ex. Pâte à naan':'Ex. Sandwich naan poulet')+'"></div>';
+   +'<div class="field"><label>Nom '+(isSub?'de la préparation':'de la recette')+' *</label><input id="food_name" value="'+escH(e.name)+'" title="'+escH(e.name)+'" placeholder="'+(isSub?'Ex. Pâte à naan':'Ex. Sandwich naan poulet')+'"></div>';
   if(isSub){
     left+='<div class="cm-grid"><div class="field"><label>Quantité produite *</label><input id="food_yq" type="number" min="0" step="0.01" value="'+escH(e.yieldQty)+'" oninput="foodRecap()"></div>'
      +'<div class="field"><label>Unité</label><select id="food_yu" onchange="foodRecap()">'+units.map(function(u){return '<option'+(u===e.yieldUnit?' selected':'')+'>'+u+'</option>';}).join('')+'</select></div></div>'
      +'<p class="tsub" style="margin:2px 0 0">Cette préparation produit cette quantité : le coût par unité est calculé seul et réutilisé dans vos recettes.</p>';
   } else {
-    left+='<div class="cm-grid">'
-     +'<div class="field"><label>Catégorie</label><select id="food_cat">'+['Aucune'].concat(state.foodRecCats).map(function(c){return '<option'+(c===(e.cat||'Aucune')?' selected':'')+'>'+escH(c)+'</option>';}).join('')+'</select></div>'
-     +'<div class="field"><label>Quantité produite</label><div style="display:flex;gap:6px;align-items:center"><input id="food_portions" type="number" min="0.001" step="0.001" value="'+escH(e.portions!=null?e.portions:1)+'" oninput="foodRecap()" style="flex:1"><span class="tsub" style="white-space:nowrap">'+escH(e.punit||'portion(s)')+'</span></div></div>'
-     +'</div><div class="cm-grid">'
+    left+='<div class="field"><label>Catégorie</label><select id="food_cat" title="'+escH(e.cat||'Aucune')+'">'+['Aucune'].concat(state.foodRecCats).map(function(c){return '<option'+(c===(e.cat||'Aucune')?' selected':'')+'>'+escH(c)+'</option>';}).join('')+'</select></div>'
+     +'<div class="cm-grid">'
+     +'<div class="field"><label>Quantité produite</label><div style="display:flex;gap:6px;align-items:center"><input id="food_portions" type="number" min="0.001" step="0.001" value="'+escH(e.portions!=null?e.portions:1)+'" oninput="foodRecap()" style="flex:1;min-width:0"><span class="tsub" style="white-space:nowrap">'+escH(e.punit||'portion(s)')+'</span></div></div>'
      +'<div class="field"><label>TVA (%)</label><select id="food_tva" onchange="foodRecap()">'+['10','5,5','20','0'].map(function(t){return '<option'+(Number(t.replace(',','.'))===(e.tva!=null?Number(e.tva):10)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
-     +'<div class="field"><label>Prix de vente TTC (€)</label><input id="food_prix" type="number" step="0.01" value="'+escH(e.prix)+'" oninput="foodRecap()"></div>'
      +'</div>'
+     +'<div class="field"><label>Prix de vente TTC (€)</label><input id="food_prix" type="number" step="0.01" value="'+escH(e.prix)+'" oninput="foodRecap()"></div>'
      +'<div class="field"><label>Description</label><input id="food_desc" value="'+escH(e.desc||'')+'" placeholder="Facultatif"></div>';}
   if(!e.id){
     left+='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:14px;padding-top:14px">'
@@ -3800,13 +3962,13 @@ function foodSubSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name||''
   foodTab='subs';foodKeepScroll(function(){renderClient('food');});toast('✓ Sous-recette enregistrée');
 }
 function foodSubDel(id){const sb=foodSubById(id);if(!sb)return;
-  const usedR=(state.recipes||[]).filter(function(r){return r.clientId===CID&&!r.archived&&(r.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===id;});});
-  const usedS=(state.foodSubs||[]).filter(function(x){return x.clientId===CID&&x.id!==id&&!x.archived&&(x.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===id;});});
-  openConfirm('Archiver « '+sb.name+' » ?','',function(){
-    sb.archived=true;sb.archivedAt=new Date().toISOString();
-    renderClient('food');toast('🗄 '+sb.name+' archivée — données conservées');},'Archiver',true);
-  fcHtmlMsg('<div style="text-align:left"><p style="margin:0">Elle disparaît des listes de sélection, mais <b>toutes ses données restent conservées</b> et les fiches qui l\'utilisent gardent leur coût. Vous pourrez la restaurer à tout moment.</p>'
-   +fcListBlock('Recettes qui l\'utilisent',usedR)+fcListBlock('Préparations qui l\'utilisent',usedS)+'</div>');
+  const u=fcUsedBySub(id);
+  openConfirm('Supprimer « '+sb.name+' » ?','',function(){
+    fcStripLines(function(l){return l.kind==='sub'&&l.refId===id;});
+    state.foodSubs=(state.foodSubs||[]).filter(function(x){return x.id!==id;});
+    if(FOOD_EDIT&&FOOD_EDIT.id===id&&FOOD_EDIT.mode==='sub')FOOD_EDIT=null;
+    renderClient('food');toast('🗑 '+sb.name+' supprimée');},'Supprimer définitivement',true);
+  fcHtmlMsg(fcImpactHtml('Cette préparation sera <b>définitivement supprimée</b>. Cette action est irréversible — exportez sa fiche en PDF si vous voulez en garder une trace.',u));
 }
 async function fidLoad(){
   const body=document.getElementById('fid_body');if(!body)return;
