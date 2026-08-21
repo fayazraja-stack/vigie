@@ -277,6 +277,13 @@
   .trace-thumb{position:relative;display:inline-block;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
   .trace-thumb img{display:block;width:150px;height:112px;object-fit:cover}
   .trace-thumb .x{position:absolute;top:5px;right:5px;background:rgba(11,18,32,.72);color:#fff;border:0;border-radius:8px;width:26px;height:26px;font-size:13px;cursor:pointer}
+  .trace-gal{display:flex;flex-wrap:wrap;gap:9px}
+  .trace-gal .trace-thumb img{width:118px;height:88px}
+  .trace-gal .add{width:118px;height:88px;border:1.5px dashed var(--line);border-radius:14px;background:#f8fafc;color:var(--muted);font-weight:700;font-size:12.5px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-family:inherit}
+  .trace-gal .add:hover{border-color:var(--brand);color:var(--brand-d)}
+  .trace-gal .add .p{font-size:20px}
+  .zoomgal{display:flex;flex-wrap:wrap;gap:10px}
+  .zoomgal img{width:100%;border-radius:12px;display:block}
   .tbdate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin-bottom:16px}
   .tbdate.compact{margin-bottom:12px;padding:9px 12px}
   .tbdate-l{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;color:var(--slate)}
@@ -288,6 +295,12 @@
   .tbdate-w{flex-basis:100%;font-size:12.5px;color:#9a3412;font-weight:600;line-height:1.45}
   .tbdate-w button{background:transparent;border:0;color:#9a3412;font-weight:800;text-decoration:underline;cursor:pointer;font-size:12.5px;font-family:inherit;padding:0}
   .sheet .tbdate{margin:12px 0 0}
+  .kp-per{margin-top:14px}
+  .kp-per .lb{font-size:11.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .kp-per .opts{display:flex;gap:8px}
+  .kp-per button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:11px 6px;font-weight:800;font-size:13.5px;color:var(--slate);display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;cursor:pointer}
+  .kp-per button:active{transform:scale(.97)}
+  .kp-per button.on{background:var(--brand);border-color:var(--brand);color:#fff}
   .haccp6{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;max-width:980px;margin:0 auto}
   @media(max-width:860px){.haccp6{grid-template-columns:1fr 1fr;gap:10px}}
   .h6{border-radius:16px;padding:13px 15px;cursor:pointer;position:relative;transition:.15s;border:1px solid transparent}
@@ -689,6 +702,7 @@
         <button onclick="kpKey('1')">1</button><button onclick="kpKey('2')">2</button><button onclick="kpKey('3')">3</button>
         <button onclick="kpKey('-')">±</button><button onclick="kpKey('0')">0</button><button onclick="kpKey('.')">,</button>
       </div>
+      <div class="kp-per" id="kp_per"></div>
       <div id="kp_date"></div>
       <div class="corr" id="kp_corr"><label> Hors seuil — action corrective obligatoire</label>
         <select id="kp_action"><option>Produit transféré vers une autre enceinte</option><option>Réglage du thermostat + recontrôle</option><option>Produit retiré / détruit</option><option>Appel maintenance frigoriste</option></select></div>
@@ -3310,12 +3324,12 @@ function _sameEmp(a,b){if(!a||!b)return false;return String(a).split(' ')[0].toL
 function tbArchEntries(cid){
   const inDay=d=>!tbArchDate||new Date(d).toISOString().slice(0,10)===tbArchDate;
   const empOk=by=>!tbArchEmp||_sameEmp(by,tbArchEmp);
-  if(tbArchTab==='temp')return cRel(cid).filter(r=>inDay(r.at)&&empOk(r.by)).map(r=>{const e=eqById(r.equipId)||{};return {coll:'releves',id:r.id,icon:e.icon||'',bg:r.status==='alerte'?'#fde7ec':'#e7f7f0',title:(e.name||'')+' — '+r.value+'°',sub:_fmtD(r.at)+' · '+(new Date(r.at).getHours()<14?'Matin':'Soir')+' · '+r.by,badge:r.status==='alerte'?'<span class="chip bad">alerte</span>':'<span class="chip ok">ok</span>',row:[_fmtD(r.at),e.name||'',r.value+'°C',r.by,r.status]};});
+  if(tbArchTab==='temp')return cRel(cid).filter(r=>inDay(r.at)&&empOk(r.by)).map(r=>{const e=eqById(r.equipId)||{};return {coll:'releves',id:r.id,icon:e.icon||'',bg:r.status==='alerte'?'#fde7ec':'#e7f7f0',title:(e.name||'')+' — '+r.value+'°',sub:_fmtD(r.at)+' · '+relPeriod(r)+' · '+r.by,badge:r.status==='alerte'?'<span class="chip bad">alerte</span>':'<span class="chip ok">ok</span>',row:[_fmtD(r.at),e.name||'',r.value+'°C',r.by,r.status]};});
   if(tbArchTab==='clean')return state.postes.filter(p=>p.clientId===cid&&p.done&&p.at&&inDay(p.at)&&empOk(p.by)).map(p=>({coll:'postes',id:p.id,icon:'',bg:'#e9fbf1',title:p.name,sub:_fmtD(p.at)+' · '+p.zone+' · '+(p.by||''),badge:'<span class="chip ok">fait</span>',row:[_fmtD(p.at),p.zone,p.name,p.by||'']}));
   if(tbArchTab==='oil')return state.huileTests.filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'huileTests',id:t.id,icon:'',bg:'#fdeee6',title:t.friteuse+' — '+t.polarity+'%',sub:_fmtD(t.at)+' · '+(t.by||''),badge:t.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>',row:[_fmtD(t.at),t.friteuse,t.polarity+'%',t.status]}));
   if(tbArchTab==='dlc')return state.dlc.filter(d=>d.clientId===cid&&inDay(d.ouvertAt)&&empOk(d.by)).map(d=>({coll:'dlc',id:d.id,icon:'',bg:'#f0e9fd',title:d.produit,sub:_fmtD(d.ouvertAt)+' → DLC '+_fmtD(d.dlcAt)+' · '+(d.by||''),badge:'',row:[_fmtD(d.ouvertAt),d.produit,_fmtD(d.dlcAt),d.by||'']}));
   if(tbArchTab==='recep')return state.reception.filter(r=>r.clientId===cid&&inDay(r.at)&&empOk(r.by)).map(r=>({coll:'reception',id:r.id,icon:'',bg:'#fdf6e3',title:r.produit+' · '+r.fournisseur,sub:_fmtD(r.at)+' · lot '+r.lot+' · '+(r.by||''),badge:r.conforme?'<span class="chip ok">conforme</span>':'<span class="chip bad">non</span>',row:[_fmtD(r.at),r.fournisseur,r.produit,r.lot,r.temp!=null?r.temp+'°C':'-']}));
-  if(tbArchTab==='prod')return state.tracabilite.filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'tracabilite',id:t.id,icon:'',bg:'#fde9f1',title:t.produit,sub:_fmtD(t.at)+' · lot '+(t.lot||'—')+' · '+(t.by||''),badge:(t.photo?'<button class="btn ghost sm" onclick="event.stopPropagation();rhPhotoZoom(\''+t.photo+'\',\'Photo — \'+'+JSON.stringify(JSON.stringify(t.produit))+')">📷 Photo</button>':''),row:[_fmtD(t.at),t.produit,t.lot||'',t.by||'']}));
+  if(tbArchTab==='prod')return state.tracabilite.filter(t=>t.clientId===cid&&inDay(t.at)&&empOk(t.by)).map(t=>({coll:'tracabilite',id:t.id,icon:'',bg:'#fde9f1',title:t.produit,sub:_fmtD(t.at)+' · lot '+(t.lot||'—')+' · '+(t.by||''),badge:(tracePhotosOf(t).length?'<button class="btn ghost sm" onclick="event.stopPropagation();traceZoom(\''+t.id+'\')">📷 '+tracePhotosOf(t).length+' photo'+(tracePhotosOf(t).length>1?'s':'')+'</button>':''),row:[_fmtD(t.at),t.produit,t.lot||'',t.by||'']}));
   if(tbArchTab==='perte')return state.pertes.filter(p=>p.clientId===cid&&inDay(p.at)&&empOk(p.by)).map(p=>({coll:'pertes',id:p.id,icon:'',bg:'#fde7ec',title:p.produit,sub:_fmtD(p.at)+' · '+p.motif+' · '+(p.by||''),badge:'<span class="chip bad">'+p.qte+'</span>',row:[_fmtD(p.at),p.produit,p.motif,p.qte,p.by||'']}));
   return [];
 }
@@ -3333,7 +3347,7 @@ let tbArchFrom='',tbArchTo='';
 function _dk(d){const x=new Date(d);if(isNaN(x))return '';return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');}
 function _fr(dk){if(!dk)return '';const p=dk.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
 const ARCH_KINDS=[
- {k:'temp', t:'Relevés de températures',      heads:['Date','Heure','Équipement','Valeur','Seuil','État','Action corrective','Par']},
+ {k:'temp', t:'Relevés de températures',      heads:['Date','Heure','Période','Équipement','Valeur','Seuil','État','Action corrective','Par']},
  {k:'clean',t:'Plan de nettoyage',            heads:['Date','Heure','Zone','Tâche','Fréquence','Par']},
  {k:'oil',  t:'Contrôle des huiles',          heads:['Date','Heure','Friteuse','Polarité','État','Par']},
  {k:'dlc',  t:'Étiquettes DLC',               heads:['Date de pose','Heure','Produit','DLC','Par']},
@@ -3349,7 +3363,7 @@ function tbArchRange(cid,kind,from,to,emp){
     if(emp&&!_sameEmp(by,emp))return false;return true;};
   const out=[];
   if(kind==='temp')cRel(cid).forEach(function(r){if(!ok(r.at,r.by))return;const e=eqById(r.equipId)||{};
-    out.push({at:r.at,bad:r.status==='alerte',row:[_fr(_dk(r.at)),_hm(r.at),e.name||'',(r.value!=null?r.value+' °C':''),(e.min!=null?e.min+' à '+e.max+' °C':''),(r.status==='alerte'?'HORS SEUIL':'Conforme'),r.action||'—',r.by||'']});});
+    out.push({at:r.at,bad:r.status==='alerte',row:[_fr(_dk(r.at)),_hm(r.at),relPeriod(r),e.name||'',(r.value!=null?r.value+' °C':''),(e.min!=null?e.min+' à '+e.max+' °C':''),(r.status==='alerte'?'HORS SEUIL':'Conforme'),r.action||'—',r.by||'']});});
   if(kind==='clean')(state.postes||[]).forEach(function(x){if(!x.clientId||x.clientId!==cid||!x.done||!x.at)return;if(!ok(x.at,x.by))return;
     out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.zone||'',x.name||'',x.freq||'',x.by||'']});});
   if(kind==='oil')(state.huileTests||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
@@ -3359,7 +3373,7 @@ function tbArchRange(cid,kind,from,to,emp){
   if(kind==='recep')(state.reception||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
     out.push({at:x.at,bad:!x.conforme,row:[_fr(_dk(x.at)),_hm(x.at),x.fournisseur||'',x.produit||'',x.lot||'',(x.temp!=null?x.temp+' °C':'—'),(x.conforme?'Conforme':'NON CONFORME'),x.by||'']});});
   if(kind==='prod')(state.tracabilite||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
-    out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.lot||'—',(x.photo?'Oui':'—'),x.by||'']});});
+    out.push({at:x.at,bad:false,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.lot||'—',(tracePhotosOf(x).length||'—'),x.by||'']});});
   if(kind==='perte')(state.pertes||[]).forEach(function(x){if(x.clientId!==cid||!ok(x.at,x.by))return;
     out.push({at:x.at,bad:true,row:[_fr(_dk(x.at)),_hm(x.at),x.produit||'',x.motif||'',x.qte||'',x.by||'']});});
   out.sort(function(a,b){return new Date(a.at)-new Date(b.at);});
@@ -3590,6 +3604,13 @@ function rhDelCreneau(inId,outId){openConfirm('Supprimer ce créneau','Les point
 function rhBadgeChip(s){const ph=s.photoIn||s.photoOut;
   const tip=escH((s.name||'Salarié')+' — shift pointé par le salarié sur la badgeuse : arrivée '+fmtTime(s.inAt)+(s.outAt?', départ '+fmtTime(s.outAt):', départ non pointé')+' · '+fmtDur(s.min)+(ph?' · cliquez pour voir les photos':''));
   return '<div class="bdgchip" onclick="'+(ph?'event.stopPropagation();rhBadgeDetail(\''+s.inId+'\')':'event.stopPropagation()')+'" title="'+tip+'"'+(ph?' style="cursor:pointer"':'')+'>⏱ '+fmtDur(s.min)+(s.open?' · en cours':'')+' <span style="font-weight:600;opacity:.85">'+fmtTime(s.inAt)+'–'+(s.outAt?fmtTime(s.outAt):'…')+'</span>'+(ph?' 📷':'')+'</div>';}
+function tracePhotosOf(t){if(!t)return [];if(Array.isArray(t.photos)&&t.photos.length)return t.photos;return t.photo?[t.photo]:[];}
+function traceZoom(id){
+  const t=(state.tracabilite||[]).find(function(x){return x.id===id;});if(!t)return;
+  const ph=tracePhotosOf(t);if(!ph.length){toast('Aucune photo');return;}
+  openInfoHTML(t.produit||'Photos du produit',
+    '<div class="tsub" style="margin:-4px 0 12px">'+escH(new Date(t.at).toLocaleString('fr-FR'))+' · lot '+escH(t.lot||'—')+' · '+escH(t.by||'')+'</div>'
+    +'<div class="zoomgal">'+ph.map(function(u,i){return '<div style="flex:1 1 '+(ph.length>1?'46%':'100%')+'"><img src="'+escH(u)+'" alt="Photo '+(i+1)+'"></div>';}).join('')+'</div>',520);}
 function rhPhotoZoom(url,title){openInfoHTML(title||'Photo de pointage','<img src="'+escH(url)+'" style="width:100%;border-radius:14px;display:block">',460);}
 function rhDayPhotos(empId,dk){
   const e=(state.employees||[]).find(function(x){return x.id===empId;})||{};
@@ -4077,6 +4098,31 @@ function tbSaveRecep(){const p=document.getElementById('rc_prod').value.trim();i
   state.reception.unshift({id:'r'+Date.now(),clientId:CID,fournisseur:rcFour,produit:p,lot:document.getElementById('rc_lot').value.trim()||'—',dlc:document.getElementById('rc_dlc').value||new Date(Date.now()+7*864e5).toISOString().slice(0,10),temp:isNaN(temp)?null:temp,conforme:isNaN(temp)?true:temp<=4,at:tbAt(),by:rcBy});
   toast(' Réception enregistrée');tbHome();
   try{stockAfterReception(p,rcFour,rcBy);}catch(e){}}
+/* ============ PÉRIODE DU RELEVÉ (matin / maintenant / soir) ============ */
+let kpPeriod='now';
+const KP_PERIODS=[['matin','☀️','Matin',9],['now','✋','Maintenant',null],['soir','🌙','Soir',18]];
+function kpPerLabel(k){const f=KP_PERIODS.find(function(x){return x[0]===k;});return f?f[2]:'Maintenant';}
+function kpSetPeriod(k){kpPeriod=k;kpRenderPeriod();}
+function kpRenderPeriod(){const el=document.getElementById('kp_per');if(!el)return;
+  el.innerHTML='<div class="lb">Période</div><div class="opts">'
+   +KP_PERIODS.map(function(o){return '<button class="'+(kpPeriod===o[0]?'on':'')+'" onclick="kpSetPeriod(\''+o[0]+'\')"><span>'+o[1]+'</span>'+o[2]+'</button>';}).join('')
+   +'</div>';}
+/* Horodatage du relevé : la date de saisie + l'heure de la période choisie. */
+function kpAt(){
+  const base=tbAt();
+  const f=KP_PERIODS.find(function(x){return x[0]===kpPeriod;});
+  if(!f||f[3]==null)return base;
+  const d=new Date(base);d.setHours(f[3],0,0,0);
+  /* un relevé « Matin » saisi le matin même garde l'heure réelle */
+  if(!tbIsBack()){const now=new Date();
+    if(kpPeriod==='matin'&&now.getHours()<14)return now;
+    if(kpPeriod==='soir'&&now.getHours()>=14)return now;}
+  return d;}
+/* Période effective d'un relevé enregistré. */
+function relPeriod(r){
+  if(r&&r.periode)return kpPerLabel(r.periode);
+  return new Date(r.at).getHours()<14?'Matin':'Soir';}
+
 /* ============ HISTORIQUE DES TEMPÉRATURES (tablette) ============ */
 let thEq='',thDays=7;
 function thSet(k,v){if(k==='eq')thEq=v;else thDays=Number(v)||7;tbRender('temphist');}
@@ -4113,7 +4159,7 @@ function tbTempHistScreen(cid){
     +'<div class="tlist">'+list.map(function(r){const e=eqById(r.equipId)||{};const bad=r.status==='alerte';
       return '<div class="row"><div class="ic" style="background:'+(bad?'#fde7ec':'#e7f7f0')+'">'+(bad?'⚠':'✓')+'</div>'
         +'<div><div class="nm">'+escH(e.name||'Équipement supprimé')+' — <span style="font-family:ui-monospace,monospace">'+r.value+' °C</span></div>'
-        +'<div class="sub">'+fmtTime(new Date(r.at))+' · '+escH(e.min!=null?seuilTxt(e):'')+' · '+escH(r.by||'')+(bad&&r.action?' · '+escH(r.action):'')+'</div></div>'
+        +'<div class="sub">'+fmtTime(new Date(r.at))+' · '+escH(relPeriod(r))+' · '+escH(e.min!=null?seuilTxt(e):'')+' · '+escH(r.by||'')+(bad&&r.action?' · '+escH(r.action):'')+'</div></div>'
         +'<div class="rt">'+(bad?'<span class="chip bad">hors seuil</span>':'<span class="chip ok">conforme</span>')+'</div></div>';}).join('')+'</div>';}).join('');
   return html+'</div>';}
 
@@ -4190,6 +4236,8 @@ function tbSetDate(v){
   const t=tbToday();
   if(v&&v>t){toast('Impossible de saisir une date future');tbSaveDate='';}
   else tbSaveDate=(v===t?'':v);
+  const km=document.getElementById('kp_mask');
+  if(km&&km.classList.contains('on')){const kd=document.getElementById('kp_date');if(kd)kd.innerHTML=tbDateField(1);return;}
   tbRender(tbCurrent);}
 function tbDateReset(){tbSaveDate='';}
 /* Bloc réutilisable : affiché dans chaque écran de saisie. */
@@ -4204,7 +4252,9 @@ function tbDateField(compact){
     +'</div>';}
 
 /* ============ TRAÇABILITÉ PRODUITS — PHOTO + LISTE DLC ============ */
-let tbTracePhoto='',tbTraceSel='',tbTraceFree='';
+let tbTracePhotos=[],tbTraceSel='',tbTraceFree='';
+const TRACE_MAX_PHOTOS=6;
+function tbTraceDelPhoto(i){tbTracePhotos.splice(i,1);tbRender('trace');}
 function tbTraceProds(cid){return (state.dlcProducts||[]).filter(function(p){return p.clientId===cid&&p.active!==false;});}
 function tbTraceScreen(cid){
   const prods=tbTraceProds(cid);
@@ -4219,15 +4269,18 @@ function tbTraceScreen(cid){
    +'</div>'
   +(free?'<div class="field"><label>'+(prods.length?'Nom du produit':'Produit (saisie libre)')+'</label><input id="tr_prod" value="'+escH(tbTraceFree)+'" oninput="tbTraceFree=this.value" placeholder="Ex. Pâte à pizza"></div>':'')
   +'<div class="field"><label>N° de lot (si applicable)</label><input id="tr_lot" placeholder="Ex. PZ-0812"></div>'
-  +'<div class="field"><label>Photo du produit</label>'
-   +(tbTracePhoto
-     ? '<div class="trace-thumb"><img src="'+tbTracePhoto+'" alt="Photo du produit"><button class="x" onclick="tbTracePhoto=\'\';tbRender(\'trace\')" title="Supprimer la photo">✕</button></div>'
-       +'<div style="margin-top:9px"><button class="btn ghost sm" onclick="tbTraceCam()">📷 Reprendre la photo</button></div>'
+  +'<div class="field"><label>Photos du produit'+(tbTracePhotos.length?' <span class="tsub" style="font-weight:600">('+tbTracePhotos.length+'/'+TRACE_MAX_PHOTOS+')</span>':'')+'</label>'
+   +(tbTracePhotos.length
+     ? '<div class="trace-gal">'
+       +tbTracePhotos.map(function(u,i){return '<div class="trace-thumb"><img src="'+u+'" alt="Photo '+(i+1)+'"><button class="x" onclick="tbTraceDelPhoto('+i+')" title="Supprimer cette photo">✕</button></div>';}).join('')
+       +(tbTracePhotos.length<TRACE_MAX_PHOTOS?'<button class="add" onclick="tbTraceCam()"><span class="p">＋</span>Ajouter</button>':'')
+       +'</div>'
      : '<button class="btn ghost block" onclick="tbTraceCam()">📷 Prendre une photo</button>')
    +'</div>'
   +'<button class="btn block" onclick="tbSaveTrace()">✓ Enregistrer l\'ouverture</button></div>';}
 /* appareil photo avec visée et déclencheur manuel (caméra arrière) */
 function tbTraceCam(){
+  if(tbTracePhotos.length>=TRACE_MAX_PHOTOS){toast('Maximum de '+TRACE_MAX_PHOTOS+' photos');return;}
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Caméra indisponible sur cet appareil');return;}
   let stream=null,done=false;
   const ov=document.createElement('div');ov.id='prodcam';
@@ -4255,17 +4308,23 @@ function tbTraceCam(){
     const row=document.getElementById('pc_row');
     row.innerHTML='<button class="lnk" id="pc_again">↺ Reprendre</button><button class="lnk ok" id="pc_use">✓ Utiliser cette photo</button>';
     document.getElementById('pc_again').onclick=function(){close();tbTraceCam();};
-    document.getElementById('pc_use').onclick=function(){tbTracePhoto=url;close();tbRender('trace');};};}
+    document.getElementById('pc_use').onclick=function(){
+      tbTracePhotos.push(url);close();tbRender('trace');
+      toast(tbTracePhotos.length>=TRACE_MAX_PHOTOS?('Maximum de '+TRACE_MAX_PHOTOS+' photos atteint'):('✓ Photo '+tbTracePhotos.length+' ajoutée'));};};}
 
 async function tbSaveTrace(){
   let p='';
   if(tbTraceSel&&tbTraceSel!=='__autre'){const pr=tbTraceProds(CID).find(function(x){return x.id===tbTraceSel;});p=pr?pr.name:'';}
   else{const el=document.getElementById('tr_prod');p=el?el.value.trim():'';}
   if(!p){toast('Choisissez un produit ou saisissez son nom');return;}
-  let photo=tbTracePhoto;
-  if(photo){const up=await tbUploadBadgePhoto(photo);if(up)photo=up;}
-  state.tracabilite.unshift({id:'tr'+Date.now(),clientId:CID,produit:p,lot:(document.getElementById('tr_lot')||{}).value?document.getElementById('tr_lot').value.trim():'—',photo:photo||'',at:tbAt(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
-  tbTracePhoto='';tbTraceSel='';tbTraceFree='';
+  let photos=[];
+  if(tbTracePhotos.length){
+    toast('Envoi de '+tbTracePhotos.length+' photo'+(tbTracePhotos.length>1?'s':'')+'…');
+    for(let i=0;i<tbTracePhotos.length;i++){
+      const up=await tbUploadBadgePhoto(tbTracePhotos[i]);
+      photos.push(up||tbTracePhotos[i]);}}
+  state.tracabilite.unshift({id:'tr'+Date.now(),clientId:CID,produit:p,lot:(document.getElementById('tr_lot')||{}).value?document.getElementById('tr_lot').value.trim():'—',photo:photos[0]||'',photos:photos,at:tbAt(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'—'});
+  tbTracePhotos=[];tbTraceSel='';tbTraceFree='';
   toast('✓ Ouverture tracée : '+p);tbHome();}
 
 /* ===== HACCP back-office : CRUD, Suivi unifié, formulaire modal ===== */
@@ -5035,7 +5094,7 @@ function suiviTable(cid){
   if(suiviTab==='clean'){const rs=state.postes.filter(p=>p.clientId===cid&&p.done&&empOk(p.by));return wrap(['Zone','Tâche','Date','Par'],rs.map(t=>'<tr><td>'+t.zone+'</td><td class="tname">'+t.name+'</td><td>'+(t.at?t.at.toLocaleDateString('fr-FR'):'—')+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='oil'){const rs=state.huileTests.filter(t=>t.clientId===cid&&empOk(t.by));return wrap(['Friteuse','Polarité','Date','État','Par'],rs.map(t=>'<tr><td class="tname"> '+t.friteuse+'</td><td>'+t.polarity+'%</td><td>'+t.at.toLocaleDateString('fr-FR')+'</td><td>'+(t.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>')+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='dlc'){const rs=state.dlc.filter(d=>d.clientId===cid&&empOk(d.by));return wrap(['Produit','Ouvert/produit le','DLC','Reste','Par',''],rs.map(d=>{const rest=Math.ceil((d.dlcAt-Date.now())/864e5);const exp=rest<=0;const canStk=exp&&modOn('stock')&&typeof stkMatch==='function'&&stkMatch(d.produit)&&!d.stocked;return '<tr><td class="tname">'+d.produit+'</td><td>'+d.ouvertAt.toLocaleDateString('fr-FR')+'</td><td>'+d.dlcAt.toLocaleDateString('fr-FR')+'</td><td>'+(rest<=1?'<span class="chip bad">'+rest+'j</span>':rest<=2?'<span class="chip warn">'+rest+'j</span>':'<span class="chip ok">'+rest+'j</span>')+'</td><td>'+(d.by||'—')+'</td><td style="text-align:right">'+(canStk?'<button class="btn ghost sm" style="color:#e11d48" onclick="stkFromDlc(\''+d.id+'\')" title="Sortir du stock en perte DLC">📦→ Perte</button>':(d.stocked?'<span class="chip muted" style="font-size:9.5px">stock déduit</span>':''))+'</td></tr>';}).join(''));}
-  if(suiviTab==='prod'){const rs=state.tracabilite.filter(t=>t.clientId===cid&&empOk(t.by));return wrap(['Produit','N° lot','Date','Photo','Par'],rs.map(t=>'<tr><td class="tname">'+t.produit+'</td><td class="tsub">'+(t.lot||'—')+'</td><td>'+t.at.toLocaleDateString('fr-FR')+' '+fmtTime(t.at)+'</td><td>'+(t.photo?'<button class="btn ghost sm" onclick="rhPhotoZoom(\''+t.photo+'\',\'Photo produit\')">📷 Voir</button>':'<span class="tsub">—</span>')+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
+  if(suiviTab==='prod'){const rs=state.tracabilite.filter(t=>t.clientId===cid&&empOk(t.by));return wrap(['Produit','N° lot','Date','Photo','Par'],rs.map(t=>'<tr><td class="tname">'+t.produit+'</td><td class="tsub">'+(t.lot||'—')+'</td><td>'+t.at.toLocaleDateString('fr-FR')+' '+fmtTime(t.at)+'</td><td>'+(tracePhotosOf(t).length?'<button class="btn ghost sm" onclick="traceZoom(\''+t.id+'\')">📷 '+tracePhotosOf(t).length+'</button>':'<span class="tsub">—</span>')+'</td><td>'+(t.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='recep'){const rs=state.reception.filter(r=>r.clientId===cid&&empOk(r.by));return wrap(['Date','Fournisseur','Produit','N° lot','Temp.','Conforme','Par'],rs.map(r=>'<tr><td>'+r.at.toLocaleDateString('fr-FR')+'</td><td>'+r.fournisseur+'</td><td class="tname">'+r.produit+'</td><td class="tsub">'+r.lot+'</td><td>'+(r.temp!=null?r.temp+'°':'—')+'</td><td>'+(r.conforme?'<span class="chip ok">✓</span>':'<span class="chip bad">non</span>')+'</td><td>'+(r.by||'—')+'</td></tr>').join(''));}
   if(suiviTab==='perte'){const rs=state.pertes.filter(p=>p.clientId===cid&&empOk(p.by));return wrap(['Produit','Motif','Quantité','Date','Par'],rs.map(p=>'<tr><td class="tname">'+p.produit+'</td><td>'+p.motif+'</td><td>'+p.qte+'</td><td>'+p.at.toLocaleDateString('fr-FR')+'</td><td>'+(p.by||'—')+'</td></tr>').join(''));}
   return '';
@@ -5043,7 +5102,7 @@ function suiviTable(cid){
 
 /* keypad */
 let kpEq=null,kpBuf='';
-function openKp(id){kpEq=eqById(id);kpBuf='';const kd=document.getElementById('kp_date');if(kd)kd.innerHTML=tbDateField(1);document.getElementById('kp_title').textContent=kpEq.icon+' '+kpEq.name;document.getElementById('kp_sub').textContent='Cible '+seuilTxt(kpEq);document.getElementById('kp_corr').classList.remove('on');updateKp();document.getElementById('kp_mask').classList.add('on');}
+function openKp(id){kpEq=eqById(id);kpBuf='';kpPeriod='now';kpRenderPeriod();const kd=document.getElementById('kp_date');if(kd)kd.innerHTML=tbDateField(1);document.getElementById('kp_title').textContent=kpEq.icon+' '+kpEq.name;document.getElementById('kp_sub').textContent='Cible '+seuilTxt(kpEq);document.getElementById('kp_corr').classList.remove('on');updateKp();document.getElementById('kp_mask').classList.add('on');}
 function kpClose(){document.getElementById('kp_mask').classList.remove('on');}
 function kpDel(){if(!kpBuf)return;kpBuf=kpBuf.slice(0,-1);if(kpBuf==='-')kpBuf='';updateKp();}
 function kpClear(){if(!kpBuf)return;kpBuf='';updateKp();}
@@ -5054,7 +5113,7 @@ function updateKp(){const v=parseFloat(kpBuf);document.getElementById('kp_val').
   const bad=v>kpEq.max||v<kpEq.min;
   if(bad){st.textContent=' Hors seuil ('+seuilTxt(kpEq)+')';st.style.color='var(--bad)';corr.classList.add('on');}else{st.textContent='✓ Conforme';st.style.color='var(--ok)';corr.classList.remove('on');}}
 function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une valeur');return;}const bad=v>kpEq.max||v<kpEq.min;
-  state.releves.push({id:'r'+Date.now(),clientId:CID,equipId:kpEq.id,value:+v.toFixed(1),at:tbAt(),by:(state.employees.find(e=>e.id===tbUser)||{}).name||'Terrain',status:bad?'alerte':'ok',action:bad?document.getElementById('kp_action').value:null});
+  state.releves.push({id:'r'+Date.now(),clientId:CID,equipId:kpEq.id,value:+v.toFixed(1),at:kpAt(),periode:kpPeriod,by:(state.employees.find(e=>e.id===tbUser)||{}).name||'Terrain',status:bad?'alerte':'ok',action:bad?document.getElementById('kp_action').value:null});
   kpClose();toast(bad?' Alerte enregistrée + action corrective':'✓ Relevé : '+v.toFixed(1)+' °C');tbRender(tbCurrent);}
 
 /* create-client modal */
