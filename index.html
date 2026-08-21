@@ -2376,11 +2376,11 @@ function pdfNum(x,n){return (Math.round((Number(x)||0)*Math.pow(10,n))/Math.pow(
 function pdfEur(x,n){return pdfNum(x,n==null?2:n)+' €';}
 function pdfSlug(s){return String(s||'fiche').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60).toLowerCase()||'fiche';}
 function pdfRecData(r){return {isSub:false,id:r.id,name:r.name||'',cat:r.cat||'',
-  qty:Math.max(1,Number(r.portions)||1),unit:'Portion(s)',ttc:Number(r.prix)||0,
-  tva:(r.tva!=null?Number(r.tva):10),lines:r.lines||[],date:r.updatedAt||r.createdAt||null,photo:r.photo||''};}
+  qty:Math.max(0.001,Number(r.portions)||1),unit:(r.yieldUnit||'Portion(s)'),ttc:Number(r.prix)||0,
+  tva:(r.tva!=null?Number(r.tva):10),lines:r.lines||[],date:r.updatedAt||r.createdAt||null,photo:r.photo||'',steps:r.steps||[]};}
 function pdfSubData(s){return {isSub:true,id:s.id,name:s.name||'',cat:'',
   qty:Number(s.yieldQty)||1,unit:s.yieldUnit||'',ttc:0,tva:0,lines:s.lines||[],
-  date:s.updatedAt||s.createdAt||null,photo:''};}
+  date:s.updatedAt||s.createdAt||null,photo:'',steps:s.steps||[]};}
 function pdfCollectSubs(lines,acc,depth){
   (lines||[]).forEach(function(l){
     if(l.kind!=='sub')return;
@@ -2389,20 +2389,47 @@ function pdfCollectSubs(lines,acc,depth){
     acc.push(s);
     if((depth||0)<6)pdfCollectSubs(s.lines,acc,(depth||0)+1);});
   return acc;}
-function pdfDrawFiche(d,F,img){
+const PDF_OPTS=[
+ {k:'prices',l:'Afficher les prix et les coûts',d:true},
+ {k:'brut',l:'Afficher les quantités brutes',d:true},
+ {k:'net',l:'Afficher les quantités nettes',d:true},
+ {k:'subs',l:'Afficher le détail des sous-recettes',d:true},
+ {k:'steps',l:'Afficher les étapes de préparation',d:true},
+ {k:'photo',l:'Afficher la photo de la recette',d:true}
+];
+function pdfOptsGet(){const o={};PDF_OPTS.forEach(function(x){
+  o[x.k]=(state.pdfOpts&&state.pdfOpts[x.k]!==undefined)?!!state.pdfOpts[x.k]:x.d;});return o;}
+function pdfOptsAsk(title,run){
+  const cur=pdfOptsGet();
+  openConfirm(title,'',function(){
+    const n={};PDF_OPTS.forEach(function(x){const el=document.getElementById('po_'+x.k);n[x.k]=el?el.checked:cur[x.k];});
+    if(!n.brut&&!n.net)n.brut=true;
+    state.pdfOpts=n;run(n);},'Exporter le PDF',false);
+  fcHtmlMsg('<div style="text-align:left"><p style="margin:0 0 14px" class="tsub">Choisissez ce qui doit apparaître dans le document.</p>'
+   +PDF_OPTS.map(function(x){return '<label style="display:flex;gap:10px;align-items:center;padding:8px 0;cursor:pointer;font-size:14px">'
+     +'<input type="checkbox" class="ingck" id="po_'+x.k+'"'+(cur[x.k]?' checked':'')+'>'+escH(x.l)+'</label>';}).join('')
+   +'<p class="tsub" style="margin:12px 0 0">Sans les prix, le document devient une fiche de fabrication à afficher en cuisine.</p></div>');}
+function pdfCols(defs,M,CW){
+  let fixed=0;defs.forEach(function(c){if(c.k!=='name')fixed+=c.w+14;});
+  const nw=Math.max(120,CW-fixed);let x=M;const out=[];
+  defs.forEach(function(c){const w=(c.k==='name')?nw:c.w;
+    out.push({k:c.k,t:c.t,a:c.a||'left',tx:(c.a==='right')?(x+w):x,x:x,w:w});x+=w+14;});
+  return out;}
+function pdfDrawFiche(d,F,img,O){
+  O=O||pdfOptsGet();
   const M=42,W=d.W,H=d.H,CW=W-2*M,BOT=H-58;
   const sp=F.isSub?foodSubTotalSplit(foodSubById(F.id)||{lines:F.lines}):foodCostSplitOf({lines:F.lines});
   const cost=sp.food+sp.pack;
   d.page();
   let y=62;
-  const hasImg=!!img;
+  const hasImg=!!img&&O.photo;
   const tw=hasImg?CW-180:CW;
   if(F.isSub){d.text(M,y,'Sous-recette',{size:11,col:PDF_MUT});y+=19;}
   d.text(M,y,F.name,{size:F.isSub?15:17,bold:true,w:tw});y+=(F.isSub?19:23);
   if(F.date){d.text(M,y,'Dernière modification',{size:8.5,col:PDF_MUT});
     d.text(M+108,y,new Date(F.date).toLocaleDateString('fr-FR'),{size:9.5,bold:true});y+=16;}
   const meta=F.isSub?('Préparation pour '+pdfNum(F.qty,F.qty%1?3:0)+' '+F.unit)
-                    :((F.cat?F.cat+'   |   ':'')+'Recette pour '+pdfNum(F.qty,0)+' '+F.unit);
+                    :((F.cat?F.cat+'   |   ':'')+'Recette pour '+pdfNum(F.qty,F.qty%1?3:0)+' '+F.unit);
   d.text(M,y,meta,{size:9.5,col:PDF_MUT,w:tw});y+=10;
   if(hasImg){const bw=150,bh=104,sc=Math.min(bw/img.w,bh/img.h),iw=img.w*sc,ih=img.h*sc;
     d.image(W-M-bw+(bw-iw)/2,48+(bh-ih)/2,iw,ih,img.bytes,img.w,img.h,img.comps);
@@ -2412,66 +2439,97 @@ function pdfDrawFiche(d,F,img){
   const cells=[];
   if(F.isSub){
     cells.push(['Quantité produite',pdfNum(F.qty,F.qty%1?3:0)+' '+F.unit]);
-    cells.push(['Coût matière total',pdfEur(cost,3)]);
-    cells.push(['Coût par '+(F.unit||'unité'),pdfEur(F.qty>0?cost/F.qty:0,3)]);
-    cells.push(['Dont non alimentaire',pdfEur(sp.pack,3)]);
+    if(O.prices){cells.push(['Coût matière total',pdfEur(cost,3)]);
+      cells.push(['Coût par '+(F.unit||'unité'),pdfEur(F.qty>0?cost/F.qty:0,3)]);
+      cells.push(['Dont non alimentaire',pdfEur(sp.pack,3)]);}
+    else cells.push(['Composants',(F.lines||[]).length+'']);
   }else{
     const pv=foodPvHT(F.ttc,F.tva),cu=cost/(F.qty||1),mg=pv-cu,cm=pv>0?Math.round(cu/pv*100):0;
-    cells.push(['Prix de vente TTC',pdfEur(F.ttc)]);
-    cells.push(['Prix de vente HT',pdfEur(pv)]);
-    cells.push(['Coût matière',pdfEur(cu,3)+(F.qty>1?' / part':'')]);
-    cells.push(['Marge brute',pdfEur(mg)]);
-    cells.push(['Food cost',pv>0?(cm+' %'):'—']);
-    cells.push(['Ratio',cu>0&&pv>0?(pdfNum(pv/cu,2)+' ×'):'—']);}
+    cells.push(['Quantité produite',pdfNum(F.qty,F.qty%1?3:0)+' '+F.unit]);
+    if(O.prices){
+      cells.push(['Prix de vente TTC',pdfEur(F.ttc)]);
+      cells.push(['Prix de vente HT',pdfEur(pv)]);
+      cells.push(['Coût matière',pdfEur(cu,3)+(F.qty>1?' / part':'')]);
+      cells.push(['Marge brute',pdfEur(mg)]);
+      cells.push(['Food cost',pv>0?(cm+' %'):'—']);
+    }else{
+      cells.push(['Composants',(F.lines||[]).filter(function(l){return l.kind!=='sub';}).length+'']);
+      cells.push(['Sous-recettes',(F.lines||[]).filter(function(l){return l.kind==='sub';}).length+'']);}}
   d.line(M,y-13,M+CW,y-13,PDF_LINE,0.8);
   const cwid=CW/cells.length;
-  cells.forEach(function(c,i){
-    const cx=M+i*cwid;
+  cells.forEach(function(c,i){const cx=M+i*cwid;
     if(i)d.line(cx-8,y-13,cx-8,y+18,PDF_LINE,0.6);
     d.text(cx,y,c[0],{size:7.5,col:PDF_MUT,w:cwid-12});
     d.text(cx,y+13,c[1],{size:10,bold:true,w:cwid-12});});
-  y+=32;
-  d.line(M,y-9,M+CW,y-9,PDF_LINE,0.8);
-  y+=10;
-  /* ingrédients */
-  const iL=(F.lines||[]).filter(function(l){return l.kind!=='sub';});
-  const sL=(F.lines||[]).filter(function(l){return l.kind==='sub';});
-  const xBrut=M+300,xNet=M+375,xUnit=M+390,xPrix=M+CW;
-  const head=function(cols){
-    d.rect(M-6,y-11,CW+12,19,PDF_BAND);
-    cols.forEach(function(c){d.text(c[0],y+2,c[1],{size:9,col:PDF_INK,align:c[2]||'left'});});
-    y+=22;};
+  y+=32;d.line(M,y-9,M+CW,y-9,PDF_LINE,0.8);y+=10;
+  /* colonnes */
+  const iDefs=[{k:'name',t:'Ingrédients'}];
+  if(O.brut)iDefs.push({k:'brut',t:'Quantité brute',a:'right',w:78});
+  if(O.net)iDefs.push({k:'net',t:'Quantité nette',a:'right',w:78});
+  iDefs.push({k:'unit',t:'Unité',w:56});
+  if(O.prices)iDefs.push({k:'prix',t:'Prix',a:'right',w:66});
+  const iC=pdfCols(iDefs,M,CW);
+  const sDefs=[{k:'name',t:'Sous-recette'}];
+  if(O.prices)sDefs.push({k:'pu',t:'Prix unit.',a:'right',w:66});
+  sDefs.push({k:'qty',t:'Quantité',a:'right',w:66});
+  sDefs.push({k:'unit',t:'Unité',w:56});
+  if(O.prices){sDefs.push({k:'cm',t:'Coût matière',a:'right',w:74});sDefs.push({k:'cp',t:'Coût non alim.',a:'right',w:78});}
+  const sC=pdfCols(sDefs,M,CW);
+  const head=function(cols){d.rect(M-6,y-11,CW+12,19,PDF_BAND);
+    cols.forEach(function(c){d.text(c.tx,y+2,c.t,{size:9,align:c.a});});y+=22;};
   const brk=function(cols){if(y>BOT-24){d.page();y=62;head(cols);}};
+  const iL=(F.lines||[]).filter(function(l){return l.kind!=='sub';});
+  const sL=O.subs?(F.lines||[]).filter(function(l){return l.kind==='sub';}):[];
   if(iL.length){
-    head([[M,'Ingrédients'],[xBrut,'Quantité brute','right'],[xNet,'Quantité nette','right'],[xUnit,'Unité'],[xPrix,'Prix','right']]);
-    iL.forEach(function(l){
-      brk([[M,'Ingrédients'],[xBrut,'Quantité brute','right'],[xNet,'Quantité nette','right'],[xUnit,'Unité'],[xPrix,'Prix','right']]);
+    head(iC);
+    iL.forEach(function(l){brk(iC);
       const g=foodIngById(l.refId||l.ingId);
-      d.text(M,y,g?g.name:'— ingrédient supprimé —',{size:9,w:245,col:g?PDF_INK:PDF_WARN});
-      d.text(xBrut,y,pdfNum(l.qty,3),{size:9,align:'right'});
-      d.text(xNet,y,pdfNum(foodLineNet(l),3),{size:9,align:'right'});
-      d.text(xUnit,y,(g&&g.unit)||'',{size:9,col:PDF_MUT,w:60});
-      d.text(xPrix,y,pdfEur(foodLineCost(l),3),{size:9,align:'right'});
+      iC.forEach(function(c){
+        let v='';
+        if(c.k==='name')v=g?g.name:'— ingrédient supprimé —';
+        else if(c.k==='brut')v=pdfNum(l.qty,3);
+        else if(c.k==='net')v=pdfNum(foodLineNet(l),3);
+        else if(c.k==='unit')v=(g&&g.unit)||'';
+        else if(c.k==='prix')v=pdfEur(foodLineCost(l),3);
+        d.text(c.tx,y,v,{size:9,align:c.a,w:c.w,col:(c.k==='name'&&!g)?PDF_WARN:(c.k==='unit'?PDF_MUT:PDF_INK)});});
       y+=15;d.line(M,y-5,M+CW,y-5,[0.96,0.97,0.98],0.5);});
     y+=10;}
-  /* sous-recettes */
   if(sL.length){
-    const c2=[[M,'Sous-recette'],[M+250,'Prix unit.','right'],[M+320,'Quantité','right'],[M+335,'Unité'],[M+430,'Coût matière','right'],[xPrix,'Coût non alim.','right']];
     if(y>BOT-40){d.page();y=62;}
-    head(c2);
-    sL.forEach(function(l){
-      brk(c2);
-      const s=foodSubById(l.refId);const sp2=foodLineCostSplit(l);
-      d.text(M,y,s?s.name:'— sous-recette supprimée —',{size:9,w:200,col:s?PDF_INK:PDF_WARN});
-      d.text(M+250,y,pdfEur(s?foodSubCostPerUnit(s):0,3),{size:9,align:'right'});
-      d.text(M+320,y,pdfNum(l.qty,3),{size:9,align:'right'});
-      d.text(M+335,y,(s&&s.yieldUnit)||'',{size:9,col:PDF_MUT,w:80});
-      d.text(M+430,y,pdfEur(sp2.food,3),{size:9,align:'right'});
-      d.text(xPrix,y,pdfEur(sp2.pack,3),{size:9,align:'right'});
+    head(sC);
+    sL.forEach(function(l){brk(sC);
+      const sb=foodSubById(l.refId),sp2=foodLineCostSplit(l);
+      sC.forEach(function(c){
+        let v='';
+        if(c.k==='name')v=sb?sb.name:'— sous-recette supprimée —';
+        else if(c.k==='pu')v=pdfEur(sb?foodSubCostPerUnit(sb):0,3);
+        else if(c.k==='qty')v=pdfNum(l.qty,3);
+        else if(c.k==='unit')v=(sb&&sb.yieldUnit)||'';
+        else if(c.k==='cm')v=pdfEur(sp2.food,3);
+        else if(c.k==='cp')v=pdfEur(sp2.pack,3);
+        d.text(c.tx,y,v,{size:9,align:c.a,w:c.w,col:(c.k==='name'&&!sb)?PDF_WARN:(c.k==='unit'?PDF_MUT:PDF_INK)});});
       y+=15;d.line(M,y-5,M+CW,y-5,[0.96,0.97,0.98],0.5);});
     y+=10;}
-  if(!iL.length&&!sL.length)d.text(M,y+4,'Cette fiche ne contient aucun composant.',{size:9.5,col:PDF_MUT});
+  if(!iL.length&&!sL.length){d.text(M,y+4,'Cette fiche ne contient aucun composant.',{size:9.5,col:PDF_MUT});y+=20;}
+  /* étapes de préparation */
+  const steps=(F.steps||[]).filter(function(t){return String(t||'').trim();});
+  if(O.steps&&steps.length){
+    if(y>BOT-60){d.page();y=62;}
+    d.rect(M-6,y-11,CW+12,19,PDF_BAND);
+    d.text(M,y+2,'Étapes de préparation',{size:9});y+=24;
+    steps.forEach(function(t,i){
+      const lines=pdfWrap(String(t).trim(),CW-30,9.5);
+      if(y+lines.length*13>BOT-10){d.page();y=62;}
+      d.text(M,y,(i+1)+'.',{size:9.5,bold:true});
+      lines.forEach(function(ln,k){d.text(M+22,y+k*13,ln,{size:9.5});});
+      y+=lines.length*13+7;});}
 }
+function pdfWrap(txt,maxw,size){
+  const words=String(txt).split(/\s+/);const out=[];let cur='';
+  words.forEach(function(w){const t=cur?cur+' '+w:w;
+    if(pdfTW(t,size,false)<=maxw)cur=t;else{if(cur)out.push(cur);cur=w;}});
+  if(cur)out.push(cur);return out.length?out:[''];}
+
 function pdfFooters(d,est){
   const M=42,W=d.W,H=d.H;
   const dt=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
@@ -2479,44 +2537,47 @@ function pdfFooters(d,est){
     d.line(M,H-46,W-M,H-46,PDF_LINE,0.6);
     d.text(M,H-32,(est||'')+(est?' — ':'')+dt,{size:8,col:PDF_MUT});
     d.text(W-M,H-32,'Page '+n+' / '+tot,{size:8,col:PDF_MUT,align:'right'});});}
-async function recPdf(id){
+function recPdf(id){pdfOptsAsk('Exporter la fiche technique',function(O){recPdfRun(id,O);});}
+async function recPdfRun(id,O){
   const r=(state.recipes||[]).find(function(x){return x.id===id;});if(!r)return;
   toast('Génération du PDF…');
   try{
-    const subs=pdfCollectSubs(r.lines,[],0);
-    const img=await pdfFetchJpeg(r.photo||'');
+    const subs=O.subs?pdfCollectSubs(r.lines,[],0):[];
+    const img=O.photo?await pdfFetchJpeg(r.photo||''):null;
     const d=pdfNew();
-    pdfDrawFiche(d,pdfRecData(r),img);
-    subs.forEach(function(s){pdfDrawFiche(d,pdfSubData(s),null);});
+    pdfDrawFiche(d,pdfRecData(r),img,O);
+    subs.forEach(function(s){pdfDrawFiche(d,pdfSubData(s),null,O);});
     const est=(state.clients||[]).filter(function(c){return c.id===CID;})[0];
     pdfFooters(d,est?(est.nom||est.name||''):'');
     d.save('fiche-technique-'+pdfSlug(r.name)+'.pdf');
     toast('✓ PDF téléchargé'+(subs.length?(' — '+(subs.length+1)+' pages'):''));
   }catch(e){toast('Échec de la génération : '+(e.message||e));}}
-async function subPdf(id){
+function subPdf(id){pdfOptsAsk('Exporter la préparation',function(O){subPdfRun(id,O);});}
+async function subPdfRun(id,O){
   const s=foodSubById(id);if(!s)return;
   toast('Génération du PDF…');
   try{
-    const subs=pdfCollectSubs(s.lines,[],0);
+    const subs=O.subs?pdfCollectSubs(s.lines,[],0):[];
     const d=pdfNew();
-    pdfDrawFiche(d,pdfSubData(s),null);
-    subs.forEach(function(x){pdfDrawFiche(d,pdfSubData(x),null);});
+    pdfDrawFiche(d,pdfSubData(s),null,O);
+    subs.forEach(function(x){pdfDrawFiche(d,pdfSubData(x),null,O);});
     const est=(state.clients||[]).filter(function(c){return c.id===CID;})[0];
     pdfFooters(d,est?(est.nom||est.name||''):'');
     d.save('preparation-'+pdfSlug(s.name)+'.pdf');
     toast('✓ PDF téléchargé');
   }catch(e){toast('Échec de la génération : '+(e.message||e));}}
-async function recBulkPdf(){
+function recBulkPdf(){if(!recSelIds().length)return;pdfOptsAsk('Exporter '+recSelIds().length+' fiche(s) technique(s)',function(O){recBulkPdfRun(O);});}
+async function recBulkPdfRun(O){
   const ids=recSelIds();if(!ids.length)return;
   const list=(state.recipes||[]).filter(function(r){return ids.indexOf(r.id)>=0;});
   toast('Génération du PDF — '+list.length+' fiche(s)…');
   try{
     const d=pdfNew();const all=[];
     for(let i=0;i<list.length;i++){
-      const img=await pdfFetchJpeg(list[i].photo||'');
-      pdfDrawFiche(d,pdfRecData(list[i]),img);
-      pdfCollectSubs(list[i].lines,all,0);}
-    all.forEach(function(s){pdfDrawFiche(d,pdfSubData(s),null);});
+      const img=O.photo?await pdfFetchJpeg(list[i].photo||''):null;
+      pdfDrawFiche(d,pdfRecData(list[i]),img,O);
+      if(O.subs)pdfCollectSubs(list[i].lines,all,0);}
+    all.forEach(function(s){pdfDrawFiche(d,pdfSubData(s),null,O);});
     const est=(state.clients||[]).filter(function(c){return c.id===CID;})[0];
     pdfFooters(d,est?(est.nom||est.name||''):'');
     d.save('fiches-techniques-'+new Date().toISOString().slice(0,10)+'.pdf');
@@ -3664,7 +3725,7 @@ function foodEnsureMask(){let mask=document.getElementById('food_mask');
   return mask;}
 function foodRecipeOpen(id){state.recipes=state.recipes||[];state.foodIng=state.foodIng||[];state.foodSubs=state.foodSubs||[];
   const r=id?state.recipes.find(function(x){return x.id===id;}):null;
-  FOOD_EDIT=r?{mode:'recipe',id:r.id,name:r.name||'',prix:r.prix!=null?r.prix:'',cat:r.cat||'Aucune',portions:r.portions!=null?r.portions:1,punit:r.yieldUnit||'',tva:r.tva!=null?r.tva:10,desc:r.desc||'',photo:r.photo||'',photoPath:r.photoPath||'',lines:(r.lines||[]).map(function(l){const o=foodNormLine(l);o.loss=l.loss!=null?l.loss:0;return o;})}:{mode:'recipe',id:null,name:'',prix:'',cat:'Aucune',portions:1,punit:'',tva:10,desc:'',photo:'',photoPath:'',lines:[]};
+  FOOD_EDIT=r?{mode:'recipe',id:r.id,name:r.name||'',prix:r.prix!=null?r.prix:'',cat:r.cat||'Aucune',portions:r.portions!=null?r.portions:1,punit:r.yieldUnit||'',steps:r.steps||[],tva:r.tva!=null?r.tva:10,desc:r.desc||'',photo:r.photo||'',photoPath:r.photoPath||'',lines:(r.lines||[]).map(function(l){const o=foodNormLine(l);o.loss=l.loss!=null?l.loss:0;return o;})}:{mode:'recipe',id:null,name:'',prix:'',cat:'Aucune',portions:1,punit:'',steps:[],tva:10,desc:'',photo:'',photoPath:'',lines:[]};
   ING_EDIT=null;FOOD_LTAB='ing';renderClient('food');
 }
 function foodSubOpen(id){state.foodIng=state.foodIng||[];state.foodSubs=state.foodSubs||[];
@@ -3851,7 +3912,8 @@ function foodRecipeBody(){
      +'<div class="field"><label>TVA (%)</label><select id="food_tva" onchange="foodRecap()">'+['10','5,5','20','0'].map(function(t){return '<option'+(Number(t.replace(',','.'))===(e.tva!=null?Number(e.tva):10)?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
      +'</div>'
      +'<div class="field"><label>Prix de vente TTC (€)</label><input id="food_prix" type="number" step="0.01" value="'+escH(e.prix)+'" oninput="foodRecap()"></div>'
-     +'<div class="field"><label>Description</label><input id="food_desc" value="'+escH(e.desc||'')+'" placeholder="Facultatif"></div>';}
+     +'<div class="field"><label>Description</label><input id="food_desc" value="'+escH(e.desc||'')+'" placeholder="Facultatif"></div>'
+     +'<div class="field"><label>Étapes de préparation</label><textarea id="food_steps" rows="4" placeholder="Une étape par ligne — elles apparaissent dans le PDF">'+escH((e.steps||[]).join('\n'))+'</textarea></div>';}
   if(!e.id){
     left+='<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid var(--line);margin-top:14px;padding-top:14px">'
      +'<div><b style="font-size:13.5px">Préparation réutilisable</b><div class="tsub">Utilisable comme composant dans d\'autres recettes</div></div>'
@@ -3908,6 +3970,7 @@ function foodCollectLines(){const e=FOOD_EDIT;const refs=document.querySelectorA
   const po=document.getElementById('food_portions');if(po)e.portions=po.value;
   const tv=document.getElementById('food_tva');if(tv)e.tva=Number(tv.value.replace(',','.'))||0;
   const ds=document.getElementById('food_desc');if(ds)e.desc=ds.value;
+  const st=document.getElementById('food_steps');if(st)e.steps=String(st.value||'').split('\n').map(function(t){return t.trim();}).filter(Boolean);
   const yq=document.getElementById('food_yq');if(yq)e.yieldQty=yq.value;
   const yu=document.getElementById('food_yu');if(yu)e.yieldUnit=yu.value;}
 function foodLineAdd(kind){foodCollectLines();FOOD_EDIT.lines.push({kind:kind==='sub'?'sub':'ing',refId:'',qty:''});foodRecipeBody();}
@@ -3958,7 +4021,7 @@ function foodRecipeSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name|
   if(!nm){toast('Nom de la recette requis');return;}
   const lines=e.lines.filter(function(l){return l.refId;});
   state.recipes=state.recipes||[];
-  const meta={cat:(e.cat&&e.cat!=='Aucune')?e.cat:'',portions:Math.max(0.001,Number(String(e.portions).replace(',','.'))||1),yieldUnit:e.punit||'',tva:e.tva!=null?Number(e.tva):10,desc:(e.desc||'').trim()};
+  const meta={cat:(e.cat&&e.cat!=='Aucune')?e.cat:'',portions:Math.max(0.001,Number(String(e.portions).replace(',','.'))||1),yieldUnit:e.punit||'',tva:e.tva!=null?Number(e.tva):10,desc:(e.desc||'').trim(),steps:e.steps||[]};
   if(e.id){const r=state.recipes.find(function(x){return x.id===e.id;});if(r){r.name=nm;r.prix=prix;r.lines=lines;r.photo=e.photo||'';r.photoPath=e.photoPath||'';Object.assign(r,meta);r.updatedAt=new Date().toISOString();delete r.cout;}}
   else{const nid='rec'+Date.now();state.recipes.push(Object.assign({id:nid,clientId:CID,createdAt:new Date().toISOString(),name:nm,prix:prix,lines:lines,photo:e.photo||'',photoPath:e.photoPath||''},meta));e.id=nid;}
   e.name=nm;e.prix=prix;e.lines=lines;
