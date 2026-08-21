@@ -2264,6 +2264,13 @@ function foodIngUnitPrice(g){if(!g)return 0;
 /* ---------- ÉDITION EN PLEINE PAGE ---------- */
 let ING_EDIT=null;
 function foodEditCancel(){FOOD_EDIT=null;renderClient('food');}
+function foodKeepScroll(fn){
+  const el=document.getElementById('client_main');const sc=[];
+  let p=el&&el.parentElement;
+  while(p){if(p.scrollTop)sc.push([p,p.scrollTop]);p=p.parentElement;}
+  const w=window.scrollY||window.pageYOffset||0;
+  fn();
+  requestAnimationFrame(function(){sc.forEach(function(x){try{x[0].scrollTop=x[1];}catch(e){}});try{window.scrollTo(0,w);}catch(e){}});}
 function foodEditTop(){
   const e=FOOD_EDIT,isSub=e.mode==='sub';
   const eyebrow=isSub?'Sous-recette':'Recette';
@@ -2373,9 +2380,9 @@ function ingEditSave(){
     tags:String(ingEditVal('ie_tags')||'').split(',').map(function(t){return t.trim();}).filter(Boolean)};
   const g=ING_EDIT.id?foodIngById(ING_EDIT.id):null;
   if(g){if(Math.abs((Number(g.priceHT)||0)-o.priceHT)>0.0001)ingPushHist(g,o.priceHT);Object.assign(g,o);delete g.price;}
-  else{state.foodIng.push(Object.assign({id:'ing'+Date.now(),clientId:CID,createdAt:new Date().toISOString(),
-        priceHist:[{at:new Date().toISOString(),p:o.priceHT}]},o));}
-  ING_EDIT=null;foodTab='ing';renderClient('food');toast('Ingrédient enregistré');}
+  else{const nid='ing'+Date.now();state.foodIng.push(Object.assign({id:nid,clientId:CID,createdAt:new Date().toISOString(),
+        priceHist:[{at:new Date().toISOString(),p:o.priceHT}]},o));ING_EDIT.id=nid;}
+  foodTab='ing';foodKeepScroll(function(){renderClient('food');});toast('✓ Ingrédient enregistré');}
 function ingEditArch(){if(!ING_EDIT.id)return;const id=ING_EDIT.id;ING_EDIT=null;renderClient('food');ingArch(id);}
 
 function foodIngCatAdd(){state.foodIngCats=state.foodIngCats||[];openForm('Nouvelle catégorie d\'ingrédients',[{key:'name',label:'Nom de la catégorie',value:'',ph:'Ex. Viandes, Légumes, Emballages…'}],function(v){const n=(v.name||'').trim();if(!n){toast('Nom requis');return;}if(state.foodIngCats.indexOf(n)<0)state.foodIngCats.push(n);renderClient('food');toast('Catégorie créée');});}
@@ -3466,7 +3473,7 @@ function foodCollectLines(){const e=FOOD_EDIT;const refs=document.querySelectorA
   const yu=document.getElementById('food_yu');if(yu)e.yieldUnit=yu.value;}
 function foodLineAdd(kind){foodCollectLines();FOOD_EDIT.lines.push({kind:kind==='sub'?'sub':'ing',refId:'',qty:''});foodRecipeBody();}
 function foodLineDel(i){foodCollectLines();FOOD_EDIT.lines.splice(i,1);foodRecipeBody();}
-function foodSave(){return FOOD_EDIT&&FOOD_EDIT.mode==='sub'?foodSubSave():foodRecipeSave();}
+function foodSave(){if(!FOOD_EDIT)return;return FOOD_EDIT.mode==='sub'?foodSubSave():foodRecipeSave();}
 async function foodPhotoPick(ev){
   const f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;
   const msg=document.getElementById('food_photomsg');if(msg)msg.textContent='Envoi de la photo…';
@@ -3501,8 +3508,9 @@ function foodRecipeSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name|
   state.recipes=state.recipes||[];
   const meta={cat:(e.cat&&e.cat!=='Aucune')?e.cat:'',portions:Math.max(1,Number(e.portions)||1),tva:e.tva!=null?Number(e.tva):10,desc:(e.desc||'').trim()};
   if(e.id){const r=state.recipes.find(function(x){return x.id===e.id;});if(r){r.name=nm;r.prix=prix;r.lines=lines;r.photo=e.photo||'';r.photoPath=e.photoPath||'';Object.assign(r,meta);delete r.cout;}}
-  else{state.recipes.push(Object.assign({id:'rec'+Date.now(),clientId:CID,createdAt:new Date().toISOString(),name:nm,prix:prix,lines:lines,photo:e.photo||'',photoPath:e.photoPath||''},meta));}
-  FOOD_EDIT=null;foodTab='fiches';renderClient('food');toast('Recette enregistrée');
+  else{const nid='rec'+Date.now();state.recipes.push(Object.assign({id:nid,clientId:CID,createdAt:new Date().toISOString(),name:nm,prix:prix,lines:lines,photo:e.photo||'',photoPath:e.photoPath||''},meta));e.id=nid;}
+  e.name=nm;e.prix=prix;e.lines=lines;
+  foodTab='fiches';foodKeepScroll(function(){renderClient('food');});toast('✓ Recette enregistrée');
 }
 function foodSubSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name||'').trim();const yq=Number(e.yieldQty)||0;
   if(!nm){toast('Nom de la sous-recette requis');return;}
@@ -3510,8 +3518,9 @@ function foodSubSave(){foodCollectLines();const e=FOOD_EDIT;const nm=(e.name||''
   const lines=e.lines.filter(function(l){return l.refId&&l.refId!==e.id;}).map(function(l){return {kind:(l.kind==='sub'?'sub':'ing'),refId:l.refId,qty:l.qty};});
   state.foodSubs=state.foodSubs||[];
   if(e.id){const sb=state.foodSubs.find(function(x){return x.id===e.id;});if(sb){sb.name=nm;sb.yieldQty=yq;sb.yieldUnit=e.yieldUnit;sb.lines=lines;}}
-  else{state.foodSubs.push({id:'sub'+Date.now(),clientId:CID,name:nm,yieldQty:yq,yieldUnit:e.yieldUnit,lines:lines});}
-  FOOD_EDIT=null;foodTab='subs';renderClient('food');toast('Sous-recette enregistrée');
+  else{const nid='sub'+Date.now();state.foodSubs.push({id:nid,clientId:CID,name:nm,yieldQty:yq,yieldUnit:e.yieldUnit,lines:lines});e.id=nid;}
+  e.name=nm;e.yieldQty=yq;e.lines=lines;
+  foodTab='subs';foodKeepScroll(function(){renderClient('food');});toast('✓ Sous-recette enregistrée');
 }
 function foodSubDel(id){const sb=foodSubById(id);if(!sb)return;
   const used=(state.recipes||[]).filter(function(r){return (r.lines||[]).some(function(l){return l.kind==='sub'&&l.refId===id;});});
