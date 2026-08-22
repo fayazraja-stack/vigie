@@ -2160,27 +2160,32 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +(zt.length?zt.map(t=>'<tr><td class="tname">'+t.name+'</td><td><span class="chip muted">'+t.freq+'</span></td><td class="tsub">'+(t.at?t.at.toLocaleDateString('fr-FR')+' · '+t.by:'—')+'</td><td>'+(t.done?'<span class="chip ok">✓ fait</span>':'<span class="chip warn">à faire</span>')+'</td><td style="text-align:right">'+rowActions('formTask','postes',t.id,'h_zones')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Aucune tâche dans cette zone.</td></tr>')+'</tbody></table></div></div>';}).join(''):'<div class="empty" style="padding:44px 20px;text-align:center"><div style="font-size:38px">🧽</div><div style="font-weight:800;margin:8px 0 4px">Aucune zone pour le moment</div><div class="tsub" style="margin-bottom:14px">Partez de notre bibliothèque : cochez vos zones et vos tâches, tout est créé d\'un coup.</div><button class="btn" onclick="zlibOpen()">📚 Ouvrir la bibliothèque</button></div>');
   } else if(clientView==='h_equip'){
     const eqs=archFilter((state.equip||[]).filter(function(e){return e.clientId===cid;}));
-    m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette',archToggleBtn('h_equip','equip',cid)+'<button class="btn ghost" onclick="eqlibOpen()">📚 Bibliothèque</button><button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>')
-    +syncedNote('Un équipement ajouté ici apparaît aussitôt sur la tablette. L\'interrupteur « Actif » l\'active ou le masque sur la tablette.')
-    +(eqs.length?'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th></th><th>Équipement</th><th>Catégorie</th><th>Local</th><th>Seuil</th><th>Dernier</th><th>Actif</th><th></th></tr></thead><tbody>'
+    m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette',archToggleBtn('h_equip','equip',cid)+(SHOW_ARCH?'':'<button class="btn ghost" onclick="eqlibOpen()">📚 Bibliothèque</button><button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>'))
+    +archBanner()
+    +(SHOW_ARCH?'':syncedNote('Un équipement ajouté ici apparaît aussitôt sur la tablette. L\'interrupteur « Actif » l\'active ou le masque sur la tablette.'))
+    +(eqs.length?'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th></th><th>Équipement</th><th>Catégorie</th><th>Zone</th><th>Seuil</th><th>Dernier</th><th>Actif</th><th></th></tr></thead><tbody>'
     +eqs.map(e=>{const last=cRel(cid).find(r=>r.equipId===e.id);return '<tr'+(e.archived?' style="opacity:.5"':(e.active===false?' style="opacity:.55"':''))+'><td><img src="'+eqImg(e)+'" style="width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--line)"></td><td class="tname">'+e.name+'</td><td><span class="chip '+(e.cat==='chaud'?'warn':'blue')+'">'+catLabel(e.cat)+'</span></td><td>'+e.loc+'</td><td>'+seuilTxt(e)+'</td><td class="tname" style="color:'+(last&&last.status==='alerte'?'var(--bad)':'var(--ink)')+'">'+(last?last.value+' °C':'—')+'</td><td>'+switchTgl('equip',e.id,'h_equip',e.active!==false)+'</td><td style="text-align:right">'+rowActions('formEquip','equip',e.id,'h_equip')+'</td></tr>';}).join('')+'</tbody></table></div></div>'
-    :emptyBlock('🌡','Aucun équipement','Partez de la bibliothèque : cochez vos frigos, congélateurs, chambres froides et meubles chauds, tout est créé d\'un coup avec la photo et les seuils réglementaires.','Ouvrir la bibliothèque','eqlibOpen()')
+    :SHOW_ARCH?archEmptyBlock('équipement')
+     :emptyBlock('🌡','Aucun équipement','Partez de la bibliothèque : cochez vos frigos, congélateurs, chambres froides et meubles chauds, tout est créé d\'un coup avec la photo et les seuils réglementaires.','Ouvrir la bibliothèque','eqlibOpen()')
      +'<p class="tsub" style="text-align:center;margin-top:-6px">ou <a href="#" onclick="event.preventDefault();formEquip()" style="color:var(--brand-d);font-weight:700">créer un équipement à la main</a></p>');
   } else if(clientView==='h_friteuses'){
     const fr=archFilter(state.friteuses.filter(h=>h.clientId===cid));
     m.innerHTML=topbar('Friteuses','Configuration des friteuses & suivi de la polarité des huiles',archToggleBtn('h_friteuses','friteuses',cid)+'<button class="btn" onclick="formFriteuse()">＋ Nouvelle friteuse</button>')
-    +syncedNote('Les friteuses configurées ici apparaissent sur la tablette (module Suivi des huiles).')
+    +archBanner()+(SHOW_ARCH?'':syncedNote('Les friteuses configurées ici apparaissent sur la tablette (module Suivi des huiles).'))
     +(fr.length?'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Friteuse</th><th>Marque</th><th>Capacité</th><th>Zone</th><th>Nettoyage</th><th>Polarité</th><th></th></tr></thead><tbody>'
     +fr.map(h=>'<tr><td class="tname"> '+h.name+'</td><td>'+(h.marque||'—')+'</td><td>'+(h.capacite||'—')+'</td><td>'+(h.zone||'—')+'</td><td><span class="chip muted">'+(h.freq||'—')+'</span></td><td>'+(h.status==='alerte'?'<span class="chip bad">'+h.polarity+'% · à changer</span>':'<span class="chip ok">'+h.polarity+'%</span>')+'</td><td style="text-align:right">'+rowActions('formFriteuse','friteuses',h.id,'h_friteuses')+'</td></tr>').join('')+'</tbody></table></div></div>'
-    :emptyBlock('🍟','Aucune friteuse configurée','Ajoutez vos friteuses pour suivre la polarité de leurs huiles : la tablette proposera le test à la fréquence que vous choisissez, et vous alertera avant le seuil réglementaire de 24 %.','Ajouter une friteuse','formFriteuse()'))
+    :SHOW_ARCH?archEmptyBlock('friteuse')
+     :emptyBlock('🍟','Aucune friteuse configurée','Ajoutez vos friteuses pour suivre la polarité de leurs huiles : la tablette proposera le test à la fréquence que vous choisissez, et vous alertera avant le seuil réglementaire de 24 %.','Ajouter une friteuse','formFriteuse()'))
     +'<p style="color:var(--muted);font-size:13px;margin-top:14px"> Au-delà de 24% de composés polaires, l\'huile doit être changée (arrêté du 8 septembre 1988).</p>';
   } else if(clientView==='h_dlc'){
     const cats=archFilter(state.dlcCats.filter(c2=>c2.clientId===cid));const prods=archFilter(state.dlcProducts.filter(p=>p.clientId===cid));
     m.innerHTML=topbar('Configuration DLC','Catégories & produits — durées par type (Ouvert / Décongelé / Fabriqué)',archToggleBtn('h_dlc','dlcProducts',cid)+(dlcTab==='cats'?'<button class="btn" onclick="formDlcCat()">＋ Nouvelle catégorie</button>':'<button class="btn" onclick="formDlcProduct()">＋ Nouveau produit</button>'))
-    +syncedNote('Les produits configurés ici alimentent l\'étiquetage DLC sur la tablette.')
+    +archBanner()+(SHOW_ARCH?'':syncedNote('Les produits configurés ici alimentent l\'étiquetage DLC sur la tablette.'))
     +'<div class="legend"><span><b style="background:#f0e9fd;color:#7c3aed">O</b>Ouvert le</span><span><b style="background:#e3f2fb;color:#006fab">D</b>Décongelé le</span><span><b style="background:#fef4e6;color:#b45309">F</b>Fabriqué le</span><span class="tsub" style="margin-left:auto">Durée de vie en jours, définie par produit</span></div>'
     +'<div style="margin-bottom:14px"><span class="seg-mini"><button class="'+(dlcTab==='cats'?'active':'')+'" onclick="setDlcTab(\'cats\')">Catégories ('+cats.length+')</button><button class="'+(dlcTab==='prods'?'active':'')+'" onclick="setDlcTab(\'prods\')">Produits ('+prods.length+')</button></span></div>'
-    +(dlcTab==='cats'&&!cats.length
+    +(SHOW_ARCH&&dlcTab==='cats'&&!cats.length?archEmptyBlock('élément')
+    :SHOW_ARCH&&dlcTab==='prods'&&!prods.length?archEmptyBlock('produit')
+    :dlcTab==='cats'&&!cats.length
       ?emptyBlock('🗂','Aucune catégorie','Regroupez vos produits par famille — viandes, crèmerie, sauces maison. La couleur de la catégorie se retrouve sur l\'étiquette imprimée en cuisine.','Créer ma première catégorie','formDlcCat()')
     :dlcTab==='prods'&&!prods.length
       ?emptyBlock('🏷','Aucun produit à étiqueter','Créez vos produits et leurs durées de vie après ouverture, décongélation ou fabrication. La tablette calculera la DLC toute seule au moment d\'imprimer.',cats.length?'Créer mon premier produit':'Créer d\'abord une catégorie',cats.length?'formDlcProduct()':'formDlcCat()')
@@ -2192,10 +2197,11 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
   } else if(clientView==='h_four'){
     const fs=archFilter(state.fournisseurs.filter(f=>f.clientId===cid));
     m.innerHTML=topbar('Fournisseurs','Annuaire pour la traçabilité des réceptions',archToggleBtn('h_four','fournisseurs',cid)+'<button class="btn" onclick="formFour()">＋ Nouveau fournisseur</button>')
-    +syncedNote('Les fournisseurs sont proposés à la saisie des réceptions sur la tablette.')
+    +archBanner()+(SHOW_ARCH?'':syncedNote('Les fournisseurs sont proposés à la saisie des réceptions sur la tablette.'))
     +(fs.length?'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th>Nom</th><th>Contact</th><th>Téléphone</th><th>Email</th><th></th></tr></thead><tbody>'
     +fs.map(f=>'<tr><td class="tname">'+f.nom+'</td><td>'+(f.contact||'—')+'</td><td>'+(f.tel||'—')+'</td><td>'+(f.email||'—')+'</td><td style="text-align:right">'+rowActions('formFour','fournisseurs',f.id,'h_four')+'</td></tr>').join('')+'</tbody></table></div></div>'
-    :emptyBlock('🚚','Aucun fournisseur','Enregistrez vos fournisseurs : ils seront proposés à la saisie des réceptions sur la tablette, et chaque livraison sera rattachée au bon nom pour la traçabilité.','Ajouter mon premier fournisseur','formFour()'));
+    :SHOW_ARCH?archEmptyBlock('fournisseur')
+     :emptyBlock('🚚','Aucun fournisseur','Enregistrez vos fournisseurs : ils seront proposés à la saisie des réceptions sur la tablette, et chaque livraison sera rattachée au bon nom pour la traçabilité.','Ajouter mon premier fournisseur','formFour()'));
   } else if(clientView==='h_docs'){
     const folders=state.docFolders.filter(f=>f.clientId===cid);const docs=state.documents.filter(d=>d.clientId===cid);
     const open=docOpenFolder?folders.find(f=>f.id===docOpenFolder):null;
@@ -5802,13 +5808,13 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
     b.innerHTML=tbTraceScreen(cid);
   } else if(s==='archmenu'){
     b.innerHTML='<div class="tb-title-k">Archives</div><div class="tb-title" style="margin-bottom:22px">Choisissez une action</div><div style="max-width:640px;margin:0 auto"><div class="tlist">'
-    +'<div class="row" onclick="tbGo(\'archives\')"><div><div class="nm">Archives HACCP</div><div class="sub">Historique des relevés et contrôles</div></div><div class="rt">›</div></div>'
+    +'<div class="row" onclick="tbGo(\'archives\')"><div><div class="nm">Historique HACCP</div><div class="sub">Toutes les saisies enregistrées, par date et par salarié</div></div><div class="rt">›</div></div>'
     +'<div class="row" onclick="tbGo(\'documents\')"><div><div class="nm">Documents</div><div class="sub">Fiches techniques et procédures</div></div><div class="rt">›</div></div>'
     +'<div class="row" onclick="tbGo(\'archexport\')"><div><div class="nm">Exporter en PDF</div><div class="sub">Tous les registres sur la période de votre choix</div></div><div class="rt">›</div></div>'
     +'<div class="row" onclick="tbGo(\'declareperte\')"><div><div class="nm" style="color:var(--bad)">Déclarer une perte</div><div class="sub">Enregistrer une casse ou une perte produit</div></div><div class="rt">›</div></div>'
     +'</div></div>';
   } else if(s==='archives'){
-    b.innerHTML='<div class="tb-title-k">Historique</div><div class="tb-title" style="margin-bottom:14px">Archives HACCP</div>'
+    b.innerHTML='<div class="tb-title-k">Consultation</div><div class="tb-title" style="margin-bottom:14px">Historique HACCP</div>'
     +'<div style="display:flex;justify-content:center;margin-bottom:14px"><span class="seg-mini" style="flex-wrap:wrap;justify-content:center">'
      +[['temp','Temp.'],['clean','Nettoy.'],['oil','Huiles'],['dlc','DLC'],['recep','Récep.'],['prod','Traça.'],['perte','Pertes']].map(t=>'<button class="'+(tbArchTab===t[0]?'active':'')+'" onclick="tbSetArch(\''+t[0]+'\')">'+t[1]+'</button>').join('')+'</span></div>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;max-width:760px;margin:0 auto 12px">'
@@ -7256,8 +7262,12 @@ function toggleArch(view){SHOW_ARCH=!SHOW_ARCH;renderClient(view);}
 function archToggleBtn(view,coll,cid){
   const nb=(state[coll]||[]).filter(function(x){return x.clientId===cid&&x.archived;}).length;
   if(!nb&&!SHOW_ARCH)return '';
-  return '<button class="btn ghost sm" onclick="toggleArch(\''+view+'\')">'+(SHOW_ARCH?'Masquer les archivés':'🗄 Archivés ('+nb+')')+'</button>';}
-function archFilter(a){return SHOW_ARCH?a:(a||[]).filter(function(x){return !x.archived;});}
+  return '<button class="btn ghost'+(SHOW_ARCH?'':' sm')+'" onclick="toggleArch(\''+view+'\')">'+(SHOW_ARCH?'← Revenir aux actifs':'🗄 Archivés ('+nb+')')+'</button>';}
+function archEmptyBlock(quoi){return '<div class="panel"><div class="pb"><div class="bempty"><div class="ic">🗄</div><h3>Aucun '+quoi+' archivé</h3><p>Les éléments que vous archivez apparaissent ici. Ils ne sont jamais supprimés : vous pouvez les restaurer à tout moment.</p><button class="btn ghost" onclick="toggleArch(clientView)">← Revenir aux actifs</button></div></div></div>';}
+function archBanner(){return SHOW_ARCH?'<div style="display:flex;align-items:center;gap:10px;background:#f7fafc;border:1px solid var(--line);border-left:3px solid #7d8899;border-radius:0 12px 12px 0;padding:11px 16px;margin-bottom:14px;font-size:13.5px"><b>Vous consultez les archives</b><span class="tsub">Seuls les éléments archivés sont affichés.</span></div>':'';}
+function archFilter(a){a=a||[];
+  return SHOW_ARCH?a.filter(function(x){return !!x.archived;})
+                  :a.filter(function(x){return !x.archived;});}
 function toggleActive(coll,id,view){const it=state[coll].find(x=>x.id===id);if(!it)return;it.active=it.active===false?true:false;renderClient(view);toast(it.active?'✓ Activé — visible sur la tablette':'✕ Désactivé — masqué sur la tablette');}
 function switchTgl(coll,id,view,on){return '<span class="switch '+(on?'on':'')+'" onclick="toggleActive(\''+coll+'\',\''+id+'\',\''+view+'\')" title="Actif sur la tablette"><span class="tk"></span></span>';}
 
