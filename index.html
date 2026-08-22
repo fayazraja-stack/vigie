@@ -2970,12 +2970,25 @@ function adminCrmRender(){
 function adminCrmFilter(){const q=((document.getElementById('acrm_search')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#acrm_tbody tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
 /* ================= DEMANDE D'ESSAI GRATUIT (vitrine) ================= */
 var TR_JOURS=15;
-/* Codes NAF considérés dans la cible : division 56 (restauration) + métiers de bouche */
-var TR_NAF_OK=['5610A','5610B','5610C','5621Z','5629A','5629B','5630Z','1071C','1071D','4724Z','4722Z','4721Z','4729Z','5510Z','5520Z'];
+/* Activités dans la cible. L'API renvoie soit la NAF rév.2 (56.10C), soit la NAF 2025 (56.11J) :
+   on raisonne donc par préfixe — toute la division 56 est de la restauration, quelle que soit la
+   révision — puis on ajoute les métiers de bouche et l'hébergement qui servent des repas. */
+var TR_NAF_PREF=['56','1071','1013','4722','4721','4724','4729','5510','5520'];
 var TR_NAF_TYPE={'5610A':'Restaurant','5610B':'Cafétéria','5610C':'Fast-food','5621Z':'Traiteur',
  '5629A':'Restauration collective','5629B':'Restauration collective','5630Z':'Bar / Café',
- '1071C':'Boulangerie','1071D':'Pâtisserie','4724Z':'Boulangerie','4722Z':'Boucherie',
- '4721Z':'Primeur','4729Z':'Épicerie','5510Z':'Hôtel-restaurant','5520Z':'Hébergement'};
+ '5611A':'Restaurant','5611B':'Cafétéria','5611J':'Fast-food','5612Z':'Traiteur','5613Z':'Bar / Café',
+ '1071C':'Boulangerie','1071D':'Pâtisserie','1071A':'Boulangerie','1071B':'Pâtisserie',
+ '4724Z':'Boulangerie','4722Z':'Boucherie','4721Z':'Primeur','4729Z':'Épicerie',
+ '5510Z':'Hôtel-restaurant','5520Z':'Hébergement'};
+/* L'API ne renvoie que le code, jamais son libellé : on garde notre propre table. */
+var TR_NAF_LIB={'5610A':'Restauration traditionnelle','5610B':'Cafétérias et autres libres-services',
+ '5610C':'Restauration de type rapide','5621Z':'Services des traiteurs',
+ '5629A':'Restauration collective sous contrat','5629B':'Autres services de restauration',
+ '5630Z':'Débits de boissons','5611A':'Restauration traditionnelle','5611J':'Restauration de type rapide',
+ '1071C':'Boulangerie et boulangerie-pâtisserie','1071D':'Pâtisserie',
+ '4724Z':'Commerce de détail de pain, pâtisserie et confiserie','4722Z':'Commerce de détail de viandes',
+ '4721Z':'Commerce de détail de fruits et légumes','4729Z':'Autre commerce de détail alimentaire',
+ '5510Z':'Hôtels et hébergement similaire','5520Z':'Hébergement touristique de courte durée'};
 var TR={siret:'',ok:false,ent:null,busy:false,sent:false};
 
 function trOpen(plan){
@@ -2992,9 +3005,19 @@ function trOpen(plan){
 function trClose(){var m=document.getElementById('tr_mask');if(m)m.classList.remove('on');}
 
 function trSiretClean(v){return String(v||'').replace(/\D/g,'');}
-function trNaf(){return String((TR.ent&&TR.ent.naf)||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();}
-function trInScope(){var n=trNaf();return !n||TR_NAF_OK.indexOf(n)>=0;}
-function trTypeAuto(){return TR_NAF_TYPE[trNaf()]||'';}
+function trNafC(v){return String(v||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();}
+function trNaf(){return trNafC(TR.ent&&TR.ent.naf);}
+function trNaf25(){return trNafC(TR.ent&&TR.ent.naf25);}
+function trPref(n){if(!n)return false;
+  for(var i=0;i<TR_NAF_PREF.length;i++){if(n.indexOf(TR_NAF_PREF[i])===0)return true;}
+  return false;}
+/* Un code inconnu ne bloque jamais : on laisse passer et l'admin arbitre. */
+function trInScope(){var a=trNaf(),b=trNaf25();
+  if(!a&&!b)return true;
+  return trPref(a)||trPref(b);}
+function trTypeAuto(){return TR_NAF_TYPE[trNaf()]||TR_NAF_TYPE[trNaf25()]||'';}
+function trNafLib(){var n=trNaf();
+  return (TR.ent&&TR.ent.nafLabel)||TR_NAF_LIB[n]||TR_NAF_LIB[trNaf25()]||'';}
 
 async function trFetch(){
   var raw=trSiretClean((document.getElementById('tr_siret')||{}).value);
@@ -3017,6 +3040,7 @@ async function trFetch(){
       legal:e.nom_raison_sociale||e.nom_complet||'',
       commercial:ens||e.nom_complet||'',
       naf:me.activite_principale||s.activite_principale||e.activite_principale||'',
+      naf25:me.activite_principale_naf25||s.activite_principale_naf25||e.activite_principale_naf25||'',
       nafLabel:e.libelle_activite_principale||s.libelle_activite_principale||'',
       address:[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ')||s.adresse||'',
       cp:s.code_postal||'',city:s.libelle_commune||'',
@@ -3047,7 +3071,7 @@ async function trSubmit(){
   var g=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
   /* on lit TOUS les champs avant de re-rendre : trRender() reconstruit le formulaire */
   var row={siret:TR.ent.siret,siren:TR.ent.siren,legal_name:TR.ent.legal,commercial_name:TR.ent.commercial,
-    naf:trNaf(),naf_label:TR.ent.nafLabel,in_scope:trInScope(),
+    naf:trNaf()||trNaf25(),naf_label:trNafLib(),in_scope:trInScope(),
     address:TR.ent.address,postal_code:TR.ent.cp,city:TR.ent.city,
     est_type:g('tr_type')||trTypeAuto(),nb_sites:Number(g('tr_sites'))||1,
     contact:g('tr_contact'),email:g('tr_email'),phone:g('tr_phone'),
@@ -3098,7 +3122,9 @@ function trRender(){
      +'<div class="nm">'+escH(e.commercial||e.legal)+'</div>'
      +'<div class="mt">'+escH(e.legal)+(e.commercial&&e.commercial!==e.legal?'':'')+'</div>'
      +'<div class="mt">'+escH([e.address,e.cp,e.city].filter(Boolean).join(' · '))+'</div>'
-     +(e.nafLabel?'<div class="mt" style="margin-top:6px">'+escH(e.nafLabel)+' <span class="tsub">('+escH(trNaf())+')</span></div>':'')
+     +(function(){var l=trNafLib(),c=trNaf()||trNaf25();
+        if(!l&&!c)return '';
+        return '<div class="mt" style="margin-top:6px">'+escH(l||'Activité '+c)+(c?' <span class="tsub">('+escH(c)+')</span>':'')+'</div>';})()
      +'<div style="margin-top:9px">'+(trInScope()
         ?'<span class="chip ok">✓ Activité reconnue</span>'
         :'<span class="chip warn">Activité hors restauration</span>')
