@@ -441,6 +441,16 @@
   .kp-per button.on{background:var(--brand);border-color:var(--brand);color:#fff}
   .haccp6{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;max-width:980px;margin:0 auto}
   @media(max-width:860px){.haccp6{grid-template-columns:1fr 1fr;gap:10px}}
+  .eqlibgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:11px}
+  .eqlibc{position:relative;border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:10px;cursor:pointer;transition:.14s;text-align:center}
+  .eqlibc:hover{border-color:#b9d7ea;box-shadow:var(--shadow)}
+  .eqlibc.on{border-color:var(--brand);background:#f2f9fd;box-shadow:0 0 0 3px rgba(0,134,206,.13)}
+  .eqlibc .thumb{height:84px;display:grid;place-items:center;margin-bottom:7px}
+  .eqlibc .thumb img{max-width:100%;max-height:84px;object-fit:contain}
+  .eqlibc .nm{font-size:12.5px;font-weight:700;line-height:1.3}
+  .eqlibc .nt{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.35}
+  .eqlibc .tick{position:absolute;top:7px;left:7px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+  .eqlibc.on .tick{background:var(--brand);border-color:var(--brand)}
   .bempty{text-align:center;padding:46px 24px}
   .bempty .ic{width:62px;height:62px;border-radius:18px;background:var(--brand-l);display:grid;place-items:center;font-size:27px;margin:0 auto 16px}
   .bempty h3{font-size:19px;margin:0 0 6px;letter-spacing:-.2px}
@@ -1962,6 +1972,146 @@ function vgTempChart(cid){
   }).join('')+'</div><p style="text-align:center;color:var(--muted);font-size:12px;margin-top:26px">Moyenne des '+eqs.length+' enceinte(s) en froid positif · 7 derniers jours</p>';
 }
 
+/* ================= BIBLIOTHÈQUE D'ÉQUIPEMENTS ================= */
+var EQ_IMG='eq/';
+var EQUIP_LIB=[
+ {g:'Froid positif',cat:'froidpos',items:[
+  {k:'armoire-1p-pos',n:'Armoire réfrigérée 1 porte',img:1},
+  {k:'armoire-2p-pos',n:'Armoire réfrigérée 2 portes',img:1},
+  {k:'refrigerateur-menager',n:'Réfrigérateur ménager',img:1},
+  {k:'chambre-froide-pos',n:'Chambre froide positive',img:1},
+  {k:'table-refrigeree',n:'Table réfrigérée',img:1},
+  {k:'table-saladette',n:'Table saladette',img:1},
+  {k:'saladette-2p',n:'Saladette 2 portes',img:1},
+  {k:'saladette-3p',n:'Saladette 3 portes',img:1},
+  {k:'saladette-4p',n:'Saladette 4 portes',img:1},
+  {k:'saladette-comptoir',n:'Saladette de comptoir',img:1},
+  {k:'table-pizza',n:'Table à pizza',img:1},
+  {k:'vitrine-sushi',n:'Vitrine à sushi',img:1},
+  {k:'vitrine-dessert',n:'Vitrine à dessert',img:1},
+  {k:'arriere-bar-2p',n:'Arrière-bar 2 portes',img:1},
+  {k:'arriere-bar-3p',n:'Arrière-bar 3 portes',img:1},
+  {k:'hachoir-refrigere',n:'Hachoir à viande réfrigéré',img:1},
+  {k:'cellule-refroid',n:'Cellule de refroidissement rapide',e:'❄️',
+    note:'+63 à +10 °C en moins de 2 h — obligation réglementaire'},
+  {k:'vitrine-presentation',n:'Vitrine réfrigérée de présentation',e:'🥪'},
+  {k:'vitrine-charcuterie',n:'Vitrine à charcuterie et fromage',e:'🧀'},
+  {k:'meuble-service',n:'Meuble réfrigéré de service',e:'🥙'},
+  {k:'armoire-boissons',n:'Armoire vitrée à boissons',e:'🥤'},
+  {k:'fontaine-boissons',n:'Fontaine à boissons réfrigérée',e:'🥤'},
+  {k:'machine-glacons',n:'Machine à glaçons',e:'🧊',note:'La glace est une denrée alimentaire'},
+  {k:'bac-poisson',n:'Bac à poisson sous glace',e:'🐟',min:0,max:2,note:'Consigne 0 à +2 °C'},
+  {k:'armoire-decongelation',n:'Armoire de décongélation contrôlée',e:'🧊'}
+ ]},
+ {g:'Froid négatif',cat:'froidneg',items:[
+  {k:'armoire-1p-neg',n:'Armoire négative 1 porte',img:1},
+  {k:'armoire-2p-neg',n:'Armoire négative 2 portes',img:1},
+  {k:'chambre-froide-neg',n:'Chambre froide négative',img:1},
+  {k:'congelateur-coffre',n:'Congélateur coffre',e:'🧊'},
+  {k:'congelateur-menager',n:'Congélateur ménager',e:'🧊'},
+  {k:'conservateur-glaces',n:'Conservateur à glaces',e:'🍦'},
+  {k:'cellule-surgelation',n:'Cellule de surgélation',e:'❄️'}
+ ]},
+ {g:'Chaud',cat:'chaud',items:[
+  {k:'bain-marie',n:'Bain-marie',img:1},
+  {k:'buffet-chaud',n:'Buffet chaud',img:1},
+  {k:'vitrine-chauffante',n:'Vitrine chauffante',img:1},
+  {k:'placard-chauffant',n:'Placard chauffant',img:1},
+  {k:'armoire-chauffante',n:'Armoire chauffante (HC5)',img:1},
+  {k:'dhb',n:'Meuble de maintien au chaud (DHB)',img:1},
+  {k:'passe-plat-bin',n:'Passe-plat chauffant (BIN)',img:1},
+  {k:'chauffe-poulet',n:'Chauffe-poulet',img:1},
+  {k:'garde-chaud-pizza',n:'Garde-chaud pizza',img:1},
+  {k:'chauffe-sauce',n:'Chauffe-sauce bouteille',img:1},
+  {k:'cuiseur-riz',n:'Cuiseur à riz',img:1},
+  {k:'rampe-chauffante',n:'Rampe chauffante du passe',e:'💡'},
+  {k:'table-chaude',n:'Table chaude / plaque de maintien',e:'🔥'},
+  {k:'chariot-chauffant',n:'Chariot chauffant',e:'🛒'},
+  {k:'marmite-chauffante',n:'Marmite ou soupière chauffante',e:'🍲'},
+  {k:'distributeur-chaud',n:'Distributeur de boissons chaudes',e:'☕'}
+ ]}
+];
+function eqlibItem(k){var r=null;EQUIP_LIB.forEach(function(g){g.items.forEach(function(it){if(it.k===k)r={it:it,g:g};});});return r;}
+function eqlibImg(it){return it.img?(EQ_IMG+it.k+'.jpg'):emojiImg(it.e||'🌡️','#eff4f8');}
+function eqlibSeuil(g,it){
+  var s=EQ_SEUILS[{froidpos:'froid positif',froidneg:'froid négatif',chaud:'chaud'}[g.cat]];
+  return {min:(it.min!=null?it.min:s.min),max:(it.max!=null?it.max:s.max)};}
+function eqlibHas(n){return (state.equip||[]).some(function(e){return e.clientId===CID&&(e.name||'').toLowerCase()===String(n).toLowerCase();});}
+
+var EQL_SEL={},EQL_Q='',EQL_ZONE='';
+function eqlibOpen(){EQL_SEL={};EQL_Q='';EQL_ZONE=zoneOpts('')[0];
+  openInfoHTML('Bibliothèque d\'équipements','<div id="eqlib_body"></div>',900);eqlibRender();}
+function eqlibCount(){return Object.keys(EQL_SEL).filter(function(k){return EQL_SEL[k];}).length;}
+function eqlibToggle(k){EQL_SEL[k]=!EQL_SEL[k];eqlibRender();}
+function eqlibToggleGroup(gi){var g=EQUIP_LIB[gi];var vis=g.items.filter(eqlibMatch);
+  var all=vis.length&&vis.every(function(it){return EQL_SEL[it.k];});
+  vis.forEach(function(it){EQL_SEL[it.k]=!all;});eqlibRender();}
+function eqlibSearch(v){EQL_Q=(v||'').toLowerCase();eqlibRender();}
+function eqlibSetZone(v){EQL_ZONE=v;}
+function eqlibMatch(it){if(!EQL_Q)return true;return (it.n||'').toLowerCase().indexOf(EQL_Q)>=0;}
+function eqlibRender(){
+  var b=document.getElementById('eqlib_body');if(!b)return;
+  var sc=b.closest?b.closest('.modal'):null,top=sc?sc.scrollTop:0;
+  var n=eqlibCount();
+  var h='<p class="tsub" style="margin:-4px 0 14px">Cochez vos équipements : ils sont créés d\'un coup avec leur photo et les seuils réglementaires. Vous pourrez ensuite renommer ou ajuster chaque fiche.</p>'
+   +'<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">'
+   +'<input id="eqlib_q" placeholder="Rechercher un équipement…" value="'+escH(EQL_Q)+'" oninput="eqlibSearch(this.value)" style="flex:1;min-width:190px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font-size:13.5px">'
+   +'<span class="tsub">Zone</span><select onchange="eqlibSetZone(this.value)" style="padding:9px 10px;border:1px solid var(--line);border-radius:10px;font-size:13px">'
+   +zoneOpts('').map(function(z){return '<option'+(z===EQL_ZONE?' selected':'')+'>'+escH(z)+'</option>';}).join('')+'</select></div>';
+
+  EQUIP_LIB.forEach(function(g,gi){
+    var vis=g.items.filter(eqlibMatch);if(!vis.length)return;
+    var s=EQ_SEUILS[{froidpos:'froid positif',froidneg:'froid négatif',chaud:'chaud'}[g.cat]];
+    var seuil=(g.cat==='chaud')?('≥ '+s.min+' °C'):(s.min+' à '+s.max+' °C');
+    var sel=vis.filter(function(it){return EQL_SEL[it.k];}).length;
+    h+='<div style="display:flex;align-items:center;gap:10px;margin:18px 0 9px;flex-wrap:wrap">'
+     +'<b style="font-size:14.5px">'+g.g+'</b>'
+     +'<span class="chip '+(g.cat==='chaud'?'warn':'blue')+'">'+seuil+'</span>'
+     +'<span class="tsub">'+vis.length+' modèle(s)'+(sel?' · '+sel+' coché(s)':'')+'</span>'
+     +'<button class="btn ghost sm" style="margin-left:auto" onclick="eqlibToggleGroup('+gi+')">Tout cocher / décocher</button></div>'
+     +'<div class="eqlibgrid">';
+    vis.forEach(function(it){
+      var on=!!EQL_SEL[it.k],deja=eqlibHas(it.n);
+      h+='<div class="eqlibc'+(on?' on':'')+'" onclick="eqlibToggle(\''+it.k+'\')">'
+       +'<div class="tick">'+(on?'✓':'')+'</div>'
+       +'<div class="thumb"><img src="'+eqlibImg(it)+'" alt="" loading="lazy"></div>'
+       +'<div class="nm">'+escH(it.n)+'</div>'
+       +(it.note?'<div class="nt">'+escH(it.note)+'</div>':'')
+       +(deja?'<div class="nt" style="color:#b45309">déjà dans votre parc</div>':'')
+       +'</div>';});
+    h+='</div>';
+  });
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)">'
+   +'<span class="tsub">'+(n?(n+' équipement(s) sélectionné(s)'):'Aucun équipement sélectionné')+'</span>'
+   +'<span style="flex:1"></span>'
+   +'<button class="btn ghost" onclick="document.getElementById(\'info_mask\').classList.remove(\'on\')">Annuler</button>'
+   +'<button class="btn"'+(n?'':' disabled style="opacity:.45"')+' onclick="eqlibApply()">Créer '+(n||'')+' équipement(s)</button></div>';
+  b.innerHTML=h;
+  if(sc&&top)setTimeout(function(){try{sc.scrollTop=top;}catch(e){}},0);
+  var q=document.getElementById('eqlib_q');
+  if(q&&EQL_Q){try{q.focus();q.setSelectionRange(q.value.length,q.value.length);}catch(e){}}
+}
+function eqlibApply(){
+  var ks=Object.keys(EQL_SEL).filter(function(k){return EQL_SEL[k];});
+  if(!ks.length)return;
+  var made=0,skip=0;
+  ks.forEach(function(k){
+    var f=eqlibItem(k);if(!f)return;
+    var nm=f.it.n;
+    if(eqlibHas(nm)){
+      var i=2;while(eqlibHas(nm+' '+i)&&i<40)i++;
+      if(eqlibHas(nm+' '+i)){skip++;return;}
+      nm=nm+' '+i;}
+    var s=eqlibSeuil(f.g,f.it);
+    state.equip.push({id:'e'+Date.now()+Math.random().toString(36).slice(2,6),clientId:CID,
+      name:nm,cat:f.g.cat,loc:EQL_ZONE,min:s.min,max:s.max,active:true,icon:'',
+      photo:(f.it.img?(location.origin+location.pathname.replace(/[^/]*$/,'')+EQ_IMG+f.it.k+'.jpg'):emojiImg(f.it.e||'🌡️','#eff4f8'))});
+    made++;});
+  document.getElementById('info_mask').classList.remove('on');
+  renderClient('h_equip');
+  toast(made+' équipement(s) créé(s)'+(skip?' · '+skip+' ignoré(s)':''));
+}
+
 function emptyBlock(ic,title,txt,label,action){
   return '<div class="panel"><div class="pb"><div class="bempty"><div class="ic">'+ic+'</div>'
    +'<h3>'+title+'</h3><p>'+txt+'</p>'
@@ -2010,11 +2160,12 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +(zt.length?zt.map(t=>'<tr><td class="tname">'+t.name+'</td><td><span class="chip muted">'+t.freq+'</span></td><td class="tsub">'+(t.at?t.at.toLocaleDateString('fr-FR')+' · '+t.by:'—')+'</td><td>'+(t.done?'<span class="chip ok">✓ fait</span>':'<span class="chip warn">à faire</span>')+'</td><td style="text-align:right">'+rowActions('formTask','postes',t.id,'h_zones')+'</td></tr>').join(''):'<tr><td colspan="5" class="empty">Aucune tâche dans cette zone.</td></tr>')+'</tbody></table></div></div>';}).join(''):'<div class="empty" style="padding:44px 20px;text-align:center"><div style="font-size:38px">🧽</div><div style="font-weight:800;margin:8px 0 4px">Aucune zone pour le moment</div><div class="tsub" style="margin-bottom:14px">Partez de notre bibliothèque : cochez vos zones et vos tâches, tout est créé d\'un coup.</div><button class="btn" onclick="zlibOpen()">📚 Ouvrir la bibliothèque</button></div>');
   } else if(clientView==='h_equip'){
     const eqs=archFilter((state.equip||[]).filter(function(e){return e.clientId===cid;}));
-    m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette',archToggleBtn('h_equip','equip',cid)+'<button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>')
+    m.innerHTML=topbar('Équipements','Enceintes de relevé — synchronisées avec la tablette',archToggleBtn('h_equip','equip',cid)+'<button class="btn ghost" onclick="eqlibOpen()">📚 Bibliothèque</button><button class="btn" onclick="formEquip()">＋ Nouvel équipement</button>')
     +syncedNote('Un équipement ajouté ici apparaît aussitôt sur la tablette. L\'interrupteur « Actif » l\'active ou le masque sur la tablette.')
     +(eqs.length?'<div class="panel"><div class="pb" style="padding:0"><table><thead><tr><th></th><th>Équipement</th><th>Catégorie</th><th>Local</th><th>Seuil</th><th>Dernier</th><th>Actif</th><th></th></tr></thead><tbody>'
     +eqs.map(e=>{const last=cRel(cid).find(r=>r.equipId===e.id);return '<tr'+(e.archived?' style="opacity:.5"':(e.active===false?' style="opacity:.55"':''))+'><td><img src="'+eqImg(e)+'" style="width:40px;height:40px;border-radius:9px;object-fit:cover;border:1px solid var(--line)"></td><td class="tname">'+e.name+'</td><td><span class="chip '+(e.cat==='chaud'?'warn':'blue')+'">'+catLabel(e.cat)+'</span></td><td>'+e.loc+'</td><td>'+seuilTxt(e)+'</td><td class="tname" style="color:'+(last&&last.status==='alerte'?'var(--bad)':'var(--ink)')+'">'+(last?last.value+' °C':'—')+'</td><td>'+switchTgl('equip',e.id,'h_equip',e.active!==false)+'</td><td style="text-align:right">'+rowActions('formEquip','equip',e.id,'h_equip')+'</td></tr>';}).join('')+'</tbody></table></div></div>'
-    :emptyBlock('🌡','Aucun équipement','Déclarez vos frigos, congélateurs, chambres froides et bains-marie avec leurs seuils. Ils apparaîtront aussitôt sur la tablette pour le relevé quotidien des températures.','Ajouter mon premier équipement','formEquip()'));
+    :emptyBlock('🌡','Aucun équipement','Partez de la bibliothèque : cochez vos frigos, congélateurs, chambres froides et meubles chauds, tout est créé d\'un coup avec la photo et les seuils réglementaires.','Ouvrir la bibliothèque','eqlibOpen()')
+     +'<p class="tsub" style="text-align:center;margin-top:-6px">ou <a href="#" onclick="event.preventDefault();formEquip()" style="color:var(--brand-d);font-weight:700">créer un équipement à la main</a></p>');
   } else if(clientView==='h_friteuses'){
     const fr=archFilter(state.friteuses.filter(h=>h.clientId===cid));
     m.innerHTML=topbar('Friteuses','Configuration des friteuses & suivi de la polarité des huiles',archToggleBtn('h_friteuses','friteuses',cid)+'<button class="btn" onclick="formFriteuse()">＋ Nouvelle friteuse</button>')
@@ -7166,6 +7317,11 @@ function zlibFreqCls(f){const m={'Plusieurs fois par jour':'#ff4e12','Quotidien'
 function zlibChip(f){const c=zlibFreqCls(f);return '<span style="border:1.5px solid '+c+';color:'+c+';border-radius:999px;padding:2px 9px;font-size:10.5px;font-weight:800;white-space:nowrap">'+escH(f)+'</span>';}
 function zlibStep(n){if(n>1&&!zlibCount().t){toast('Cochez au moins un élément');return;}ZLIB_STEP=n;zlibRender();}
 function zlibRender(){const b=document.getElementById('zlib_body');if(!b)return;
+  /* on mémorise la position de défilement : sans ça, cocher une case
+     reconstruit le contenu et renvoie l'utilisateur tout en haut. */
+  var _sc=b.closest?b.closest('.modal'):null,_top=_sc?_sc.scrollTop:0;
+  var _re=function(){if(_sc&&_top)try{_sc.scrollTop=_top;}catch(e){}};
+  setTimeout(_re,0);
   const c=zlibCount();
   const tabs='<div class="seg-mini" style="margin:-4px 0 12px">'
     +[[1,'1 · Choisir'],[2,'2 · Fréquences'],[3,'3 · Récapitulatif']].map(function(s){
