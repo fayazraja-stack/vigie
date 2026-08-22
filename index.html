@@ -441,6 +441,11 @@
   .kp-per button.on{background:var(--brand);border-color:var(--brand);color:#fff}
   .haccp6{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;max-width:980px;margin:0 auto}
   @media(max-width:860px){.haccp6{grid-template-columns:1fr 1fr;gap:10px}}
+  .mgrband{display:flex;align-items:center;gap:9px;background:#e3f2fb;color:#006fab;padding:8px 18px;font-size:12.5px;font-weight:700;border-bottom:1px solid var(--line)}
+  .mgrband .dot{width:7px;height:7px;border-radius:50%;background:#006fab;flex:none}
+  .btn.mgrlock{background:#eef2f6;border:1px dashed #ccd6e0;color:#7d8899;box-shadow:none}
+  .btn.mgrlock:hover{background:#eef2f6;transform:none}
+  .mgrtag{background:#0086ce;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.6px;padding:2px 7px;border-radius:999px;vertical-align:2px;margin-left:6px}
   .h6{border-radius:16px;padding:13px 15px;cursor:pointer;position:relative;transition:.15s;border:1px solid transparent}
   .h6:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
   .h6 .k{font-size:10.5px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}
@@ -1944,6 +1949,20 @@ function vgTempChart(cid){
   }).join('')+'</div><p style="text-align:center;color:var(--muted);font-size:12px;margin-top:26px">Moyenne des '+eqs.length+' enceinte(s) en froid positif · 7 derniers jours</p>';
 }
 
+function mgrLogPanel(cid){
+  var rows=(state.mgrLog||[]).filter(function(x){return x.clientId===cid;}).slice(0,40);
+  var mgrs=(state.employees||[]).filter(function(e){return e.clientId===cid&&e.manager&&e.active!==false;});
+  return '<div class="panel" style="margin-top:16px"><div class="ph"><h3>Journal des managers</h3>'
+   +'<span class="chip muted">'+mgrs.length+' manager(s)</span>'
+   +'<div class="sub" style="width:100%;margin-top:4px">Tout ce qui est créé ou modifié depuis une session manager sur la tablette : qui, quoi, quand.</div></div>'
+   +'<div class="pb" style="padding:0">'
+   +(rows.length?('<table><thead><tr><th>Date</th><th>Manager</th><th>Action</th><th>Détail</th></tr></thead><tbody>'
+     +rows.map(function(r){var d=new Date(vgT(r.at));
+       return '<tr><td class="tsub" style="white-space:nowrap">'+d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})+'</td>'
+        +'<td class="tname">'+escH(r.by||'—')+'</td><td>'+escH(r.action||'')+'</td><td class="tsub">'+escH(r.detail||'')+'</td></tr>';}).join('')
+     +'</tbody></table>')
+    :'<div class="empty" style="padding:28px 18px">Aucune action manager pour le moment.'+(mgrs.length?'':' Désignez un manager depuis la fiche d\'un salarié (RH & Planning > Gestion établissement > Employés).')+'</div>')
+   +'</div></div>';}
 function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.clients.find(x=>x.id===cid);const m=document.getElementById('client_main');
   const vmod=NAV_MOD[clientView];if(vmod&&!modOn(vmod)){m.innerHTML=moduleBlockHTML(vmod);return;}
   const eqs=cEquip(cid);const today=todayRel(cid);const alerts=openAlerts(cid);
@@ -2201,7 +2220,8 @@ function renderClient(v){clientView=v||clientView;const cid=CID;const c=state.cl
       +'<button class="btn block" style="margin-top:14px" onclick="go(\'app_terrain\')">Lancer la tablette sur cet appareil</button>'
       +'<div class="minicard" style="margin-top:14px"><div class="mt">Application Android</div><div class="ms">Application native installable sur toute tablette Android — disponible prochainement. En attendant, ouvrez le lien ci-dessus dans le navigateur de votre tablette : il arrive directement sur votre établissement.</div></div>'
       +'</div></div></div>'
-    +helpBox([['Code PIN','si défini, la tablette demande ce code à l\'ouverture — utile en salle.'],['Modules','désactivez un module pour le masquer de la tablette sans toucher à votre abonnement.'],['Tablette active','désactivez pour bloquer complètement l\'accès à la tablette.']]);
+    +mgrLogPanel(cid)
+    +helpBox([['Code PIN','si défini, la tablette demande ce code à l\'ouverture — utile en salle.'],['Rôle manager','se règle sur la fiche du salarié (RH & Planning > Gestion établissement > Employés). Un manager entre son code personnel à 4 chiffres en ouvrant sa session.'],['Modules','désactivez un module pour le masquer de la tablette sans toucher à votre abonnement.'],['Tablette active','désactivez pour bloquer complètement l\'accès à la tablette.']]);
   } else if(clientView==='support'){
     m.innerHTML='<div class="topbar"><div style="display:flex;align-items:center;gap:14px"><div style="width:52px;height:52px;border-radius:14px;background:#f59e0b;display:grid;place-items:center;font-size:24px">🛟</div><div><h1>Contacter le support</h1><div class="sub">Une question, un bug, une idée ? Notre équipe vous répond directement ici.</div></div></div><div class="actions"><button class="btn" onclick="supNewTicket()">＋ Nouveau ticket</button></div></div>'
     +'<div class="panel"><div class="pb" id="sup_list" style="min-height:280px"><div class="empty" style="padding:50px 20px;text-align:center">Chargement…</div></div></div>';
@@ -5257,7 +5277,7 @@ function exportCsv(){const rows=cRel(CID);let csv='Date,Heure,Equipement,Valeur,
 /* ============ TABLETTE TERRAIN ============ */
 let tbStack=[],tbUser=null;
 let TB_PIN_OK=false;
-function tbInit(){tbStack=[];tbUser=null;tickClock();tbDateReset();
+function tbInit(){tbStack=[];tbUser=null;TB_MGR=false;tickClock();tbDateReset();
   try{prnBadge();offBar();}catch(e){}
   if(state.tabletActive===false){tbRender('inactive');return;}
   if(state.tabletPin&&!TB_PIN_OK){tbRender('pin');return;}
@@ -5270,13 +5290,123 @@ function tbGo(s){tbStack.push(tbCurrent);tbRender(s);}
 function tbBack(){const p=tbStack.pop();tbRender(p||'modules',true);}
 function tbHome(){tbStack=[];tbRender(tbUser?'haccp':'modules');}
 let tbCurrent='modules',tbCat='froid';
+/* ================= SESSION MANAGER (tablette) ================= */
+var TB_MGR=false, TB_MGRPIN='';
+function tbIsMgr(e){return !!(e&&e.manager);}
+function tbMgrList(cid){return (state.employees||[]).filter(function(e){return e.clientId===cid&&e.active!==false&&e.manager;});}
+function tbMgrNames(cid){var l=tbMgrList(cid).map(function(e){return e.name;});
+  if(!l.length)return '';
+  if(l.length===1)return l[0];
+  return l.slice(0,2).join(' ou ')+(l.length>2?' (+'+(l.length-2)+')':'');}
+function tbMgrDenied(){var n=tbMgrNames(CID);
+  toast(n?('Accès réservé aux managers — voir '+n):'Accès réservé aux managers');}
+function tbMgrBtn(label,action,cls){
+  cls=cls||'btn ghost sm';
+  if(TB_MGR)return '<button class="'+cls+'" onclick="'+action+'">'+label+'</button>';
+  return '<button class="'+cls+' mgrlock" onclick="tbMgrDenied()" title="Accès réservé aux managers">🔒 '+label+'</button>';}
+function mgrLog(action,detail){
+  state.mgrLog=state.mgrLog||[];
+  var e=(state.employees||[]).find(function(x){return x.id===tbUser;})||{};
+  state.mgrLog.unshift({id:'ml'+Date.now()+Math.random().toString(36).slice(2,5),clientId:CID,
+    at:new Date().toISOString(),by:e.name||'—',byId:e.id||'',action:action,detail:detail||''});
+  if(state.mgrLog.length>600)state.mgrLog.length=600;}
+function tbMgrPinTry(){
+  var v=((document.getElementById('mgr_pin')||{}).value||'').trim();
+  var e=(state.employees||[]).find(function(x){return x.id===TB_MGRPIN;});
+  if(!e){tbRender('identify');return;}
+  if(v&&v===String(e.pin||'')){TB_MGR=true;tbUser=e.id;tbStack=[];tbRender('haccp');toast('Session manager — '+e.name);}
+  else{var m=document.getElementById('mgr_pinmsg');if(m)m.textContent='Code incorrect.';}}
+/* --- Formulaires d'administration (session manager) --- */
+function tbTeamEdit(id){
+  var e=id?(state.employees||[]).find(function(x){return x.id===id;}):null;
+  var jobs=(state.jobs||[]).filter(function(j){return j.clientId===CID;});
+  openForm(e?('Modifier — '+e.name):'Ajouter un salarié',[
+    {key:'name',label:'Nom complet',value:e?e.name:''},
+    {key:'job',label:'Poste',type:'select',options:jobs.map(function(j){return j.name;}),value:e?(jobs.find(function(j){return j.id===e.jobId;})||{}).name:(jobs[0]||{}).name},
+    {key:'mgr',label:'Rôle sur la tablette',type:'select',options:['Salarié','Manager'],value:(e&&e.manager)?'Manager':'Salarié'},
+    {key:'pin',label:'Code personnel (4 chiffres)',value:e?(e.pin||''):'',ph:'laissez vide : généré automatiquement'},
+    {key:'act',label:'Statut',type:'select',options:['Actif','Désactivé'],value:(e&&e.active===false)?'Désactivé':'Actif'}
+  ],function(v){
+    var nm=(v.name||'').trim();if(!nm){toast('Indiquez le nom');return;}
+    var pin=String(v.pin||'').replace(/\D/g,'').slice(0,4);
+    if(v.pin&&pin.length!==4){toast('Le code doit faire 4 chiffres');return;}
+    if(pin&&(state.employees||[]).some(function(x){return x.clientId===CID&&x.id!==(e?e.id:'')&&String(x.pin||'')===pin;})){toast('Ce code est déjà utilisé');return;}
+    var job=jobs.find(function(j){return j.name===v.job;})||jobs[0];
+    if(e){e.name=nm;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.manager=(v.mgr==='Manager');
+      if(pin)e.pin=pin;e.active=(v.act!=='Désactivé');
+      mgrLog('Salarié modifié',nm+(e.manager?' · manager':'')+(e.active?'':' · désactivé'));}
+    else{var ini=nm.split(' ').map(function(w){return w[0];}).slice(0,2).join('').toUpperCase();
+      state.employees.push({id:'em'+Date.now(),clientId:CID,name:nm,role:job?job.name:'',ini:ini,jobId:job?job.id:null,
+        active:(v.act!=='Désactivé'),manager:(v.mgr==='Manager'),contract:35,hStd:35,hReal:0,contactInfo:'',
+        pin:pin||rhNewPin(),hireDate:new Date().toISOString().slice(0,10),
+        cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});
+      mgrLog('Salarié ajouté',nm+(v.mgr==='Manager'?' · manager':''));}
+    tbRender('mgrteam');toast(e?'Salarié modifié':'Salarié ajouté');});}
+
+function tbTaskEdit(id,zone){
+  var t=id?(state.postes||[]).find(function(x){return x.id===id;}):null;
+  var zs=[];(state.postes||[]).filter(function(x){return x.clientId===CID&&!x.archived;}).forEach(function(x){if(zs.indexOf(x.zone)<0)zs.push(x.zone);});
+  (state.zones||[]).filter(function(z){return z.clientId===CID&&!z.archived;}).forEach(function(z){if(zs.indexOf(z.name)<0)zs.push(z.name);});
+  if(!zs.length)zs=['Cuisine'];
+  openForm(t?('Modifier — '+t.name):'Nouvelle tâche',[
+    {key:'zone',label:'Zone',type:'select',options:zs,value:t?t.zone:(zone||zs[0])},
+    {key:'name',label:'Tâche',value:t?t.name:'',ph:'Ex. Plans de travail'},
+    {key:'freq',label:'Fréquence',type:'select',options:CLEAN_FREQS,value:t?t.freq:'Quotidien'}
+  ],function(v){
+    var nm=(v.name||'').trim();if(!nm){toast('Indiquez la tâche');return;}
+    if(t){t.zone=v.zone;t.name=nm;t.freq=v.freq;mgrLog('Tâche modifiée',v.zone+' · '+nm+' · '+v.freq);}
+    else{state.postes.push({id:'p'+Date.now(),clientId:CID,zone:v.zone,name:nm,freq:v.freq,done:false});
+      mgrLog('Tâche ajoutée',v.zone+' · '+nm+' · '+v.freq);}
+    tbRender('mgrtasks');toast(t?'Tâche modifiée':'Tâche ajoutée');});}
+
+function tbZoneAdd(){
+  openForm('Nouvelle zone',[{key:'name',label:'Nom de la zone',value:'',ph:'Ex. Laboratoire, Salle, Réserve'}],function(v){
+    var n=(v.name||'').trim();if(!n){toast('Indiquez le nom');return;}
+    state.zones=state.zones||[];
+    state.zones.push({id:'z'+Date.now(),clientId:CID,name:n});
+    mgrLog('Zone ajoutée',n);tbRender('mgrtasks');toast('Zone créée');});}
+
+function tbFritEdit(id){
+  var f=id?(state.friteuses||[]).find(function(x){return x.id===id;}):null;
+  openForm(f?('Modifier — '+f.name):'Ajouter une friteuse',[
+    {key:'name',label:'Nom',value:f?f.name:'',ph:'Ex. Friteuse 3'},
+    {key:'marque',label:'Marque',value:f?(f.marque||''):'',ph:'optionnel'},
+    {key:'capacite',label:'Capacité',value:f?(f.capacite||''):'',ph:'Ex. 8L'},
+    {key:'zone',label:'Zone',value:f?(f.zone||''):'',ph:'Ex. Cuisine'},
+    {key:'freq',label:'Fréquence de contrôle',type:'select',options:CLEAN_FREQS,value:f?(f.freq||'Quotidien'):'Quotidien'}
+  ],function(v){
+    var nm=(v.name||'').trim();if(!nm){toast('Indiquez le nom');return;}
+    if(f){f.name=nm;f.marque=v.marque;f.capacite=v.capacite;f.zone=v.zone;f.freq=v.freq;
+      mgrLog('Friteuse modifiée',nm);}
+    else{state.friteuses.push({id:'h'+Date.now(),clientId:CID,name:nm,marque:v.marque||'',capacite:v.capacite||'',
+      zone:v.zone||'',freq:v.freq,polarity:0,changedAt:new Date(),status:'ok'});
+      state.huiles=state.friteuses;mgrLog('Friteuse ajoutée',nm);}
+    tbRender('mgrfrit');toast(f?'Friteuse modifiée':'Friteuse ajoutée');});}
+function tbMgrCodeSave(){
+  var e=(state.employees||[]).find(function(x){return x.id===tbUser;});if(!e)return;
+  var g=function(i){return ((document.getElementById(i)||{}).value||'').trim();};
+  var cur=g('mc_cur'),nw=g('mc_new'),cf=g('mc_cf');
+  var msg=document.getElementById('mc_msg');
+  var say=function(t){if(msg)msg.textContent=t;};
+  if(cur!==String(e.pin||'')){say('Code actuel incorrect.');return;}
+  if(!/^\d{4}$/.test(nw)){say('Le nouveau code doit faire 4 chiffres.');return;}
+  if(nw!==cf){say('La confirmation ne correspond pas.');return;}
+  if((state.employees||[]).some(function(x){return x.clientId===CID&&x.id!==e.id&&String(x.pin||'')===nw;})){
+    say('Ce code est déjà utilisé par un collègue — choisissez-en un autre.');return;}
+  e.pin=nw;mgrLog('Changement de code','Code personnel modifié');
+  tbRender('mgrme');toast('Code modifié');}
+
 function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(e){}tbCurrent=s;const b=document.getElementById('tb_body');const back=document.getElementById('tb_back');const foot=document.getElementById('tb_foot');
   if(s!=='fidval'&&typeof tbFidScanStop==='function')tbFidScanStop(false);
   const tbName=state.tabletName||(state.clients.find(c=>c.id===CID)||{}).name||'';
   const tbLogo=(state.branding&&state.branding.logo)||'';
   document.getElementById('tb_est').innerHTML=(tbLogo?'<img src="'+tbLogo+'" style="width:26px;height:26px;border-radius:50%;object-fit:cover;vertical-align:-7px;margin-right:8px;border:1px solid var(--line)">':'')+escH(tbName);
-  back.style.display=(s==='modules'||s==='pin'||s==='inactive')?'none':'inline-flex';
-  foot.style.display=(s==='modules'||s==='identify'||s==='pin'||s==='inactive')?'none':'flex';
+  if(TB_MGR&&s!=='identify'&&s!=='modules'&&s!=='pin'){
+    var _me=(state.employees||[]).find(function(x){return x.id===tbUser;})||{};
+    document.getElementById('tb_est').innerHTML+='<span class="mgrtag" style="margin-left:10px">MANAGER</span><span class="tsub" style="margin-left:7px;font-size:11.5px">'+escH(_me.name||'')+' · actions enregistrées</span>';}
+  if(s==='identify'||s==='modules')TB_MGR=false;
+  back.style.display=(s==='modules'||s==='pin'||s==='inactive'||s==='mgrpin')?'none':'inline-flex';
+  foot.style.display=(s==='modules'||s==='identify'||s==='pin'||s==='inactive'||s==='mgrpin')?'none':'flex';
   const cid=CID;const eqs=cEquip(cid).filter(e=>e.active!==false);
   const tm=state.tabletMods||{};
   if(s==='inactive'){
@@ -5288,6 +5418,64 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
     +'<input id="tb_pin" type="password" inputmode="numeric" maxlength="6" style="width:100%;box-sizing:border-box;text-align:center;font-size:28px;letter-spacing:12px;padding:12px;border:1.5px solid #e5ebf1;border-radius:14px" onkeydown="if(event.key===\'Enter\')tbPinTry()">'
     +'<button class="btn block" style="margin-top:14px" onclick="tbPinTry()">Déverrouiller</button>'
     +'<div id="tb_pinmsg" style="color:#b83504;font-weight:700;font-size:13px;margin-top:10px"></div></div>';
+  } else if(s==='mgrpin'){
+    var _m=(state.employees||[]).find(function(x){return x.id===TB_MGRPIN;})||{};
+    b.innerHTML='<div style="max-width:380px;margin:40px auto;text-align:center">'
+    +'<div style="width:64px;height:64px;border-radius:50%;background:var(--brand-l);color:var(--brand-d);display:grid;place-items:center;font-size:22px;font-weight:800;margin:0 auto 12px">'+escH(_m.ini||'')+'</div>'
+    +'<h2 style="margin-bottom:2px">'+escH(_m.name||'')+'</h2>'
+    +'<p style="color:var(--muted);margin-bottom:18px">Profil manager — saisissez votre code à 4 chiffres</p>'
+    +'<input id="mgr_pin" type="password" inputmode="numeric" maxlength="4" style="width:100%;box-sizing:border-box;text-align:center;font-size:28px;letter-spacing:14px;padding:12px;border:1.5px solid var(--line);border-radius:14px" onkeydown="if(event.key===\'Enter\')tbMgrPinTry()">'
+    +'<button class="btn block" style="margin-top:14px" onclick="tbMgrPinTry()">Ouvrir ma session</button>'
+    +'<button class="btn ghost block" style="margin-top:8px" onclick="TB_MGR=false;tbRender(\'identify\')">Retour</button>'
+    +'<div id="mgr_pinmsg" style="color:#b83504;font-weight:700;font-size:13px;margin-top:10px"></div>'
+    +'<p class="tsub" style="margin-top:14px;font-size:12px">Code oublié ? Votre responsable le régénère depuis le back-office.</p></div>';
+    setTimeout(function(){var i=document.getElementById('mgr_pin');if(i)i.focus();},60);
+  } else if(s==='mgrme'){
+    var me=(state.employees||[]).find(function(x){return x.id===tbUser;})||{};
+    b.innerHTML='<div class="tb-title-k">Mon espace</div><div class="tb-title" style="margin-bottom:4px">'+escH(me.name||'')+'</div>'
+    +'<p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:18px">Manager · code personnel à 4 chiffres</p>'
+    +'<div style="max-width:420px;margin:0 auto">'
+    +'<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn sm" style="flex:1">Mon code</button><button class="btn ghost sm" style="flex:1" onclick="tbGo(\'mgrteam\')">Mon équipe</button></div>'
+    +'<div class="field"><label>Code actuel</label><input id="mc_cur" type="password" inputmode="numeric" maxlength="4"></div>'
+    +'<div class="field"><label>Nouveau code — 4 chiffres</label><input id="mc_new" type="password" inputmode="numeric" maxlength="4"></div>'
+    +'<div class="field"><label>Confirmer</label><input id="mc_cf" type="password" inputmode="numeric" maxlength="4"></div>'
+    +'<button class="btn block" onclick="tbMgrCodeSave()">Enregistrer</button>'
+    +'<div id="mc_msg" style="color:#b83504;font-weight:700;font-size:13px;margin-top:10px;text-align:center"></div>'
+    +'<p class="tsub" style="margin-top:14px;font-size:12px">Un code déjà utilisé par un collègue est refusé : chaque signature doit identifier une seule personne.</p></div>';
+  } else if(s==='mgrteam'){
+    var team=(state.employees||[]).filter(function(e){return e.clientId===cid;});
+    b.innerHTML='<div class="tb-title-k">Mon espace</div><div class="tb-title" style="margin-bottom:18px">Mon équipe</div>'
+    +'<div style="max-width:640px;margin:0 auto">'
+    +'<div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn ghost sm" style="flex:1" onclick="tbRender(\'mgrme\')">Mon code</button><button class="btn sm" style="flex:1">Mon équipe</button></div>'
+    +'<div class="tlist">'
+    +team.map(function(e){
+      return '<div class="row"><div class="ic" style="background:var(--brand-l);color:var(--brand-d);font-weight:800">'+escH(e.ini||'')+'</div>'
+      +'<div><div class="nm">'+escH(e.name)+(e.manager?'<span class="mgrtag">MANAGER</span>':'')+'</div>'
+      +'<div class="sub">'+escH(e.role||'')+(e.active===false?' · désactivé':'')+' · code '+(e.pin?'défini':'aucun')+'</div></div>'
+      +'<div class="rt"><button class="btn ghost sm" onclick="tbTeamEdit(\''+e.id+'\')">Modifier</button></div></div>';}).join('')
+    +'<div class="row" onclick="tbTeamEdit(\'\')"><div class="ic" style="background:#e3f2fb;color:#006fab">＋</div><div><div class="nm" style="color:var(--brand-d)">Ajouter un salarié</div><div class="sub">Il apparaîtra aussitôt sur l\'écran d\'identification</div></div></div>'
+    +'</div><p class="tsub" style="margin-top:14px;font-size:12px">Un salarié se désactive, il ne se supprime pas : son historique de pointage et ses signatures doivent rester consultables.</p></div>';
+  } else if(s==='mgrtasks'){
+    var tks=(state.postes||[]).filter(function(t){return t.clientId===cid&&!t.archived;});
+    var zs=[];tks.forEach(function(t){if(zs.indexOf(t.zone)<0)zs.push(t.zone);});
+    (state.zones||[]).filter(function(z){return z.clientId===cid&&!z.archived;}).forEach(function(z){if(zs.indexOf(z.name)<0)zs.push(z.name);});
+    b.innerHTML='<div class="tb-title-k">Plan de nettoyage</div><div class="tb-title" style="margin-bottom:6px">Gérer les tâches</div>'
+    +'<p style="text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px">Vos changements sont visibles aussitôt par l\'équipe et dans le back-office.</p>'
+    +'<div style="max-width:700px;margin:0 auto">'
+    +(zs.length?zs.map(function(z){
+      var zt=tks.filter(function(t){return t.zone===z;});
+      return '<div style="font-weight:800;color:var(--muted);font-size:13px;margin:14px 2px 8px">'+escH((z||'').toUpperCase())+' · '+zt.length+' tâche(s)</div><div class="tlist">'
+       +zt.map(function(t){return '<div class="row"><div><div class="nm">'+escH(t.name)+'</div><div class="sub">'+escH(t.freq||'')+'</div></div><div class="rt"><button class="btn ghost sm" onclick="tbTaskEdit(\''+t.id+'\')">Modifier</button></div></div>';}).join('')
+       +'<div class="row" onclick="tbTaskEdit(\'\',\''+escH(z).replace(/\x27/g,'')+'\')"><div><div class="nm" style="color:var(--brand-d)">＋ Ajouter une tâche dans cette zone</div></div></div></div>';
+      }).join(''):'<div style="text-align:center;color:var(--muted);padding:24px">Aucune zone pour le moment.</div>')
+    +'<div style="margin-top:18px;text-align:center"><button class="btn ghost" onclick="tbZoneAdd()">＋ Nouvelle zone</button></div></div>';
+  } else if(s==='mgrfrit'){
+    var frs=(state.friteuses||[]).filter(function(f){return f.clientId===cid&&!f.archived;});
+    b.innerHTML='<div class="tb-title-k">Friteuses</div><div class="tb-title" style="margin-bottom:18px">Gérer les friteuses</div>'
+    +'<div style="max-width:640px;margin:0 auto"><div class="tlist">'
+    +(frs.length?frs.map(function(f){return '<div class="row"><div><div class="nm">'+escH(f.name)+'</div><div class="sub">'+escH(f.marque||'—')+' · '+escH(f.capacite||'—')+' · '+escH(f.zone||'—')+' · contrôle '+escH(f.freq||'Quotidien').toLowerCase()+'</div></div><div class="rt"><button class="btn ghost sm" onclick="tbFritEdit(\''+f.id+'\')">Modifier</button></div></div>';}).join(''):'')
+    +'<div class="row" onclick="tbFritEdit(\'\')"><div class="ic" style="background:#ffebe3;color:#b83504">＋</div><div><div class="nm" style="color:var(--brand-d)">Ajouter une friteuse</div><div class="sub">Elle apparaîtra aussitôt dans le suivi des huiles</div></div></div>'
+    +'</div></div>';
   } else if(s==='modules'){
     b.innerHTML='<div class="modwrap"><div class="tb-title-k">Tablette opérationnelle</div><div class="tb-title">Choisissez un module</div><div class="modgrid">'
     +(tm.badge!==false?'<div class="modcard" onclick="tbGo(\'badge\')"><div class="k">● Module</div><h3>Badgeuse</h3><p>Pointage arrivée / départ des employés.</p><div class="arr">Ouvrir →</div></div>':'')
@@ -5337,7 +5525,7 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
   } else if(s==='stockmenu'){
     const su=(state.employees.find(e=>e.id===tbStockUser)||{});
     b.innerHTML='<div class="tb-title-k">Stock · '+escH(su.name||'')+'</div><div class="tb-title">Que voulez-vous faire ?</div><div class="modgrid">'
-    +'<div class="modcard" onclick="tbGo(\'stockinv\')"><div class="k">● Stock</div><h3>📋 Inventaire</h3><p>Compter les produits et recaler le stock.</p><div class="arr">Ouvrir →</div></div>'
+    +'<div class="modcard" onclick="'+(tbIsMgr(su)?'tbGo(\'stockinv\')':'tbMgrDenied()')+'"><div class="k">● Stock</div><h3>'+(tbIsMgr(su)?'📋':'🔒')+' Inventaire</h3><p>'+(tbIsMgr(su)?'Compter les produits et recaler le stock.':'Réservé aux managers.')+'</p><div class="arr">Ouvrir →</div></div>'
     +'<div class="modcard" onclick="tbGo(\'stockin\')"><div class="k">● Stock</div><h3>➕ Réception</h3><p>Ajouter une quantité reçue au stock.</p><div class="arr">Ouvrir →</div></div>'
     +'<div class="modcard" onclick="tbGo(\'stockout\')"><div class="k">● Stock</div><h3>➖ Sortie / Perte</h3><p>Retirer une quantité du stock.</p><div class="arr">Ouvrir →</div></div>'
     +'</div>';
@@ -5375,6 +5563,7 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
     +h6('dlclabel','Étiquetage DLC','Étiquettes DLC','Imprimez vos étiquettes DLC secondaires.','#f0e9fd',0)
     +h6('recep','Livraisons','Réception marchandises','Enregistrez et suivez vos réceptions.','#fdf6e3',0)
     +h6('trace','Ouvertures produits','Traçabilité produits','Enregistrez ouvertures & productions maison.','#fde9f1',0)
+    +(TB_MGR?h6('mgrme','Manager','Mon espace','Changez votre code et gérez votre équipe.','#e3f2fb',0):'')
     +'</div>';
   } else if(s==='temp'){
     b.innerHTML='<div class="tb-title-k">Hygiène · Températures</div><div class="tb-title">Relevé des températures</div><div class="split2">'
@@ -5382,8 +5571,8 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
     +'<div class="bigcard" onclick="tbCat=\'chaud\';tbGo(\'eqlist\')"><h3>Chaud</h3><p>Bain-marie, armoires chaudes, vitrines chaudes</p>'+(eqs.filter(e=>e.cat==='chaud'&&!todayRel(cid).some(r=>r.equipId===e.id)).length?'<div class="cnt">'+eqs.filter(e=>e.cat==='chaud'&&!todayRel(cid).some(r=>r.equipId===e.id)).length+' à faire</div>':'')+'</div>'
     +'</div>'
     +'<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px">'
-     +'<button class="btn" onclick="tbGo(\'eqadd\')">＋ Ajouter un équipement</button>'
-     +'<button class="btn ghost" onclick="tbGo(\'temphist\')">🕘 Historique</button></div>';
+     +'<button class="btn ghost" onclick="tbGo(\'temphist\')">🕘 Historique</button></div>'
+     +'<p class="tsub" style="text-align:center;margin-top:14px;font-size:12px">Les équipements et leurs seuils se règlent uniquement depuis le back-office.</p>';
   } else if(s==='eqlist'){
     const list=eqs.filter(e=>!e.archived&&(tbCat==='froid'?isFroid(e):e.cat==='chaud'));
     b.innerHTML='<div class="tb-title-k">'+(tbCat==='froid'?' Équipements Froid':' Équipements Chaud')+'</div><div class="tb-title" style="margin-bottom:18px">Sélectionnez un équipement</div><div class="eqgrid">'
@@ -5391,18 +5580,20 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
   } else if(s==='clean'){
     const tasks=state.postes.filter(p=>p.clientId===cid&&!p.archived);const zones=[...new Set(tasks.map(t=>t.zone))];
     b.innerHTML='<div class="tb-title-k">Plan de nettoyage</div><div class="tb-title" style="margin-bottom:18px">Nettoyages des postes</div>'
-    +'<div style="max-width:760px;margin:0 auto">'+tbHistBtn('clean')+tbDateField(1)+'</div>'
+    +'<div style="max-width:760px;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+tbHistBtn('clean')+'<span style="margin-left:auto">'+tbMgrBtn('Gérer les tâches',"tbGo('mgrtasks')")+'</span></div>'
+    +'<div style="max-width:760px;margin:0 auto">'+tbDateField(1)+'</div>'
     +zones.map(z=>'<div style="font-weight:800;color:var(--muted);font-size:13px;margin:14px 2px 8px"> '+z.toUpperCase()+'</div><div class="tlist">'+tasks.filter(t=>t.zone===z).map(t=>'<div class="row '+(t.done?'done':'')+'" onclick="tbToggleClean(\''+t.id+'\')"><div class="ic" style="background:'+(t.done?'#e3f2fb':'#eff4f8')+'">'+(t.done?'✓':'○')+'</div><div><div class="nm">'+t.name+'</div><div class="sub">'+t.freq+(t.done?' · '+t.by:'')+'</div></div><div class="rt">'+(t.done?'<span class="chip ok">fait</span>':'<span class="chip warn">à faire</span>')+'</div></div>').join('')+'</div>').join('');
   } else if(s==='oil'){
     const oils=state.friteuses.filter(h=>h.clientId===cid&&!h.archived);
     b.innerHTML='<div class="tb-title-k">Friteuses</div><div class="tb-title" style="margin-bottom:18px">Suivi des huiles</div>'
-    +'<div style="max-width:760px;margin:0 auto">'+tbHistBtn('oil')+tbDateField(1)+'</div><div class="tlist">'
-    +(oils.length?oils.map(h=>'<div class="row"><div><div class="nm">'+h.name+'</div><div class="sub">'+(h.marque||'')+' '+(h.capacite||'')+' · polarité '+h.polarity+'% · seuil 24%</div></div><div class="rt">'+(h.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>')+'<button class="btn sm" onclick="event.stopPropagation();tbTestOil(\''+h.id+'\')">Tester</button></div></div>').join(''):'<div style="text-align:center;color:var(--muted)">Aucune friteuse configurée — ajoutez-en dans le back-office.</div>')+'</div>';
+    +'<div style="max-width:760px;margin:0 auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+tbHistBtn('oil')+'<span style="margin-left:auto">'+tbMgrBtn('Gérer les friteuses',"tbGo('mgrfrit')")+'</span></div>'
+    +'<div style="max-width:760px;margin:0 auto">'+tbDateField(1)+'</div><div class="tlist">'
+    +(oils.length?oils.map(h=>'<div class="row"><div><div class="nm">'+h.name+'</div><div class="sub">'+(h.marque||'')+' '+(h.capacite||'')+' · polarité '+h.polarity+'% · seuil 24%</div></div><div class="rt">'+(h.status==='alerte'?'<span class="chip bad">à changer</span>':'<span class="chip ok">OK</span>')+'<button class="btn sm" onclick="event.stopPropagation();tbTestOil(\''+h.id+'\')">Tester</button></div></div>').join(''):'<div style="text-align:center;color:var(--muted)">Aucune friteuse configurée.'+(TB_MGR?' Touchez « Gérer les friteuses » pour en ajouter une.':' Un manager peut en ajouter depuis « Gérer les friteuses ».')+'</div>')+'</div>';
   } else if(s==='dlclabel'){
     const prods=state.dlcProducts.filter(p=>p.clientId===cid&&p.active!==false&&!p.archived);
     b.innerHTML='<div class="tb-title-k">Étiquetage DLC</div><div class="tb-title" style="margin-bottom:18px">Imprimer une étiquette</div>'
     +'<div style="max-width:520px;margin:0 auto">'
-    +'<div style="display:flex;justify-content:center;gap:9px;margin-bottom:16px"><button class="btn ghost sm" onclick="tbOpenHist(\'dlc\')">🕘 Historique</button><button class="btn ghost sm" onclick="tbGo(\'dlcprod\')">⚙️ Gérer les produits</button></div>'
+    +'<div style="display:flex;justify-content:center;gap:9px;margin-bottom:16px"><button class="btn ghost sm" onclick="tbOpenHist(\'dlc\')">🕘 Historique</button>'+tbMgrBtn('Gérer les produits',"tbGo('dlcprod')")+'</div>'
     +tbDateField(1)+(prods.length?'<div class="field"><label>Produit</label><select id="dl_prod">'+prods.map(p=>'<option value="'+p.id+'">'+p.name+'</option>').join('')+'</select></div><div class="field"><label>Type d\'étiquette</label><select id="dl_type"><option value="ouvert">Ouvert le</option><option value="decongele">Décongelé le</option><option value="fabrique">Fabriqué le</option></select></div><button class="btn block" onclick="tbPrintLabel()"> Imprimer l\'étiquette DLC</button>':'<div style="text-align:center;color:var(--muted)">Aucun produit configuré — ajoutez-en dans le back-office (Configuration DLC).</div>')+'</div>';
   } else if(s==='recep'){
     b.innerHTML=tbFourScreen(cid);
@@ -5449,8 +5640,8 @@ function tbRender(s,isBack){try{if(typeof kbClose==='function')kbClose();}catch(
     } else {
       const fd=docs.filter(d=>d.folderId===open.id);
       b.innerHTML='<div class="tb-title-k">Documents</div><div class="tb-title" style="margin-bottom:6px">'+escH(open.name)+'</div>'
-      +'<div style="max-width:760px;margin:0 auto"><div style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><button class="btn ghost sm" onclick="tbDocFolder=null;tbRender(\'documents\')">← Dossiers</button><label class="btn sm" style="margin-left:auto;cursor:pointer">↑ Importer<input type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx" onchange="tbDocUpload(\''+open.id+'\',event)"></label></div>'
-      +(fd.length?('<div class="drive-files">'+fd.map(d=>{const ext=(d.type||d.name.split('.').pop()||'').toLowerCase();return '<div class="drive-file"><div class="dfi dfi-'+docKind(ext)+'">'+ext.slice(0,4).toUpperCase()+'</div><div class="dfd"><div class="nm" style="word-break:break-word">'+escH(d.name)+'</div><div class="sub">'+(d.at&&d.at.toLocaleDateString?d.at.toLocaleDateString('fr-FR'):'')+(d.size?' · '+docFmtSize(d.size):'')+'</div></div><div class="dfa">'+(d.url?'<button class="btn sm" onclick="window.open(\''+d.url+'\',\'_blank\')">Ouvrir</button> ':'')+'<button class="btn ghost sm" onclick="tbDelDoc(\''+d.id+'\')">Suppr.</button></div></div>';}).join('')+'</div>')
+      +'<div style="max-width:760px;margin:0 auto"><div style="display:flex;gap:8px;align-items:center;margin-bottom:14px"><button class="btn ghost sm" onclick="tbDocFolder=null;tbRender(\'documents\')">← Dossiers</button>'+(TB_MGR?'<label class="btn sm" style="margin-left:auto;cursor:pointer">↑ Importer un fichier<input type="file" multiple hidden accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,.doc,.docx,.xls,.xlsx,.csv,.txt,.ppt,.pptx" onchange="tbDocUpload(\''+open.id+'\',event)"></label>':'<span style="margin-left:auto">'+tbMgrBtn('Importer un fichier','tbMgrDenied()','btn sm')+'</span>')+'</div>'
+      +(fd.length?('<div class="drive-files">'+fd.map(d=>{const ext=(d.type||d.name.split('.').pop()||'').toLowerCase();return '<div class="drive-file"><div class="dfi dfi-'+docKind(ext)+'">'+ext.slice(0,4).toUpperCase()+'</div><div class="dfd"><div class="nm" style="word-break:break-word">'+escH(d.name)+'</div><div class="sub">'+(d.at&&d.at.toLocaleDateString?d.at.toLocaleDateString('fr-FR'):'')+(d.size?' · '+docFmtSize(d.size):'')+'</div></div><div class="dfa">'+(d.url?'<button class="btn sm" onclick="window.open(\''+d.url+'\',\'_blank\')">Ouvrir</button> ':'')+'</div></div>';}).join('')+'</div>')
       :'<div style="text-align:center;color:var(--muted);font-size:13px;padding:20px">Dossier vide — importez vos premiers fichiers.</div>')
       +'<div id="doc_progress" style="text-align:center;margin-top:10px;font-size:13px;color:#005a8c;font-weight:700"></div></div>';
     }
@@ -5480,7 +5671,7 @@ function tbArchEntries(cid){
 function tbArchRows(cid){const es=tbArchEntries(cid);
   setTimeout(()=>{const c=document.getElementById('arch_count');if(c)c.textContent=es.length+' enreg.';},0);
   if(!es.length)return '<div style="text-align:center;color:var(--muted);padding:26px">Aucun enregistrement.</div>';
-  return es.map(x=>'<div class="row"><div class="ic" style="background:'+x.bg+'">'+x.icon+'</div><div><div class="nm">'+x.title+'</div><div class="sub">'+x.sub+'</div></div><div class="rt">'+x.badge+'<button class="btn ghost sm" onclick="tbArchDel(\''+x.coll+'\',\''+x.id+'\')">🗄 Archiver</button></div></div>').join('');
+  return es.map(x=>'<div class="row"><div class="ic" style="background:'+x.bg+'">'+x.icon+'</div><div><div class="nm">'+x.title+'</div><div class="sub">'+x.sub+'</div></div><div class="rt">'+x.badge+'</div></div>').join('');
 }
 function tbArchDel(coll,id){openConfirm('Archiver cet enregistrement ?','Il disparaît de la tablette, mais <b>il reste conservé et visible depuis le back-office</b> : rien n\'est effacé.',()=>{
   if(coll==='postes'){const p=state.postes.find(x=>x.id===id);if(p){p.done=false;p.by=null;p.at=null;}}
@@ -5647,7 +5838,7 @@ function rhPostesHtml(jobs,emps){return '<div class="panel"><div class="ph"><h3>
   +jobs.map(j=>'<tr><td><span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:'+j.color+'"></span></td><td class="tname">'+j.name+'</td><td>'+emps.filter(e=>e.jobId===j.id).length+'</td><td style="text-align:right">'+rowActions('formJob','jobs',j.id,'rh_etab')+'</td></tr>').join('')+'</tbody></table></div></div>';}
 function rhEmpsHtml(emps){const act=emps.filter(e=>e.active!==false),arch=emps.filter(e=>e.active===false);const list=RH_SHOW_ARCH?arch:act;
   return '<div class="panel"><div class="ph"><div><h3>Employés ('+act.length+')</h3><div class="sub">'+arch.length+' employé(s) archivé(s)</div></div><div class="actions"><button class="btn ghost sm" onclick="RH_SHOW_ARCH=!RH_SHOW_ARCH;renderClient(\'rh_etab\')">'+(RH_SHOW_ARCH?'← Voir actifs':'🗃 Voir archivés')+'</button><button class="btn sm" onclick="formEmp()">＋ Nouvel employé</button></div></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Nom</th><th>Poste</th><th>Compteurs</th><th>Contact</th><th>Contrat</th><th>Statut</th><th style="text-align:right">Actions</th></tr></thead><tbody>'
-  +(list.length?list.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return '<tr><td class="tname">'+e.name+'</td><td><span class="chip" style="background:'+((j.color||'#7d8899')+'22')+';color:'+(j.color||'#55637a')+';font-size:10.5px;letter-spacing:.5px">'+escH((j.name||e.role||'—').toUpperCase())+'</span></td>'
+  +(list.length?list.map(e=>{const j=state.jobs.find(x=>x.id===e.jobId)||{};return '<tr><td class="tname">'+escH(e.name)+(e.manager?'<span class="mgrtag">MANAGER</span>':'')+(e.manager?'<div class="tsub" style="font-size:11px">code tablette : '+escH(e.pin||'—')+'</div>':'')+'</td><td><span class="chip" style="background:'+((j.color||'#7d8899')+'22')+';color:'+(j.color||'#55637a')+';font-size:10.5px;letter-spacing:.5px">'+escH((j.name||e.role||'—').toUpperCase())+'</span></td>'
    +'<td style="white-space:nowrap"><span class="chip" style="background:#f3e8ff;color:#7c3aed;font-size:10.5px;padding:2px 7px">🌴 '+(e.cpRest||0)+'j</span> <span class="chip" style="background:#e0e7ff;color:#4f46e5;font-size:10.5px;padding:2px 7px">🕐 '+(e.rttRest||0)+'j</span> <span class="chip" style="background:#dbeafe;color:#2563eb;font-size:10.5px;padding:2px 7px">☕ '+(e.recupRest||0)+'j</span></td>'
    +'<td class="tsub">'+escH(e.contactInfo||'-')+'</td><td class="tsub">'+(e.contract||0)+' h</td><td>'+(e.active===false?'<span class="chip muted">ARCHIVÉ</span>':'<span class="chip ok">ACTIF</span>')+'</td>'
    +'<td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="formEmp(\''+e.id+'\')">✎ Modifier</button> <button class="btn ghost sm" onclick="rhArchiveEmp(\''+e.id+'\')">'+(e.active===false?'↩ Réactiver':'🗃 Archiver')+'</button></td></tr>';}).join(''):'<tr><td colspan="7" class="empty" style="padding:24px;text-align:center">'+(RH_SHOW_ARCH?'Aucun employé archivé.':'Aucun employé — ajoutez votre équipe.')+'</td></tr>')+'</tbody></table></div></div>';}
@@ -5676,12 +5867,13 @@ function rhNewPin(){let p='',guard=0;do{p=String(Math.floor(1000+Math.random()*9
   while(guard<40&&(state.employees||[]).some(function(x){return x.clientId===CID&&String(x.pin||'')===p;}));return p;}
 function rhPinOf(e){if(!e)return '';if(!e.pin)e.pin=rhNewPin();return String(e.pin);}
 function formEmp(id){const e=id?state.employees.find(x=>x.id===id):null;const jobs=state.jobs.filter(j=>j.clientId===CID);
-  openForm(id?'Modifier l\'employé':'Nouvel employé',[{key:'name',label:'Nom complet',value:e?e.name:''},{key:'job',label:'Poste',type:'select',options:jobs.map(j=>j.name),value:e?(jobs.find(j=>j.id===e.jobId)||{}).name:(jobs[0]||{}).name},{key:'contract',label:'Contrat (h/semaine)',type:'number',value:e?e.contract:35},{key:'contact',label:'Contact (email ou téléphone)',value:e?(e.contactInfo||''):'',ph:'optionnel'},{key:'pin',label:'Code personnel (4 chiffres)',value:e?(e.pin||''):'',ph:'laissez vide : généré automatiquement'},{key:'hire',label:'Date d\'embauche',type:'date',value:e?(e.hireDate||''):''}],
+  openForm(id?'Modifier l\'employé':'Nouvel employé',[{key:'name',label:'Nom complet',value:e?e.name:''},{key:'job',label:'Poste',type:'select',options:jobs.map(j=>j.name),value:e?(jobs.find(j=>j.id===e.jobId)||{}).name:(jobs[0]||{}).name},{key:'contract',label:'Contrat (h/semaine)',type:'number',value:e?e.contract:35},{key:'contact',label:'Contact (email ou téléphone)',value:e?(e.contactInfo||''):'',ph:'optionnel'},{key:'mgr',label:'Rôle sur la tablette',type:'select',options:['Salarié','Manager'],value:(e&&e.manager)?'Manager':'Salarié'},{key:'pin',label:'Code personnel (4 chiffres)',value:e?(e.pin||''):'',ph:'laissez vide : généré automatiquement'},{key:'hire',label:'Date d\'embauche',type:'date',value:e?(e.hireDate||''):''}],
   v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}const job=jobs.find(j=>j.name===v.job)||jobs[0];
     const pin=String(v.pin||'').replace(/\D/g,'').slice(0,4);
     if(v.pin&&pin.length!==4){toast('Le code personnel doit faire 4 chiffres');return;}
-    if(e){e.name=v.name;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.contract=+v.contract;e.contactInfo=v.contact||'';e.pin=pin||e.pin||rhNewPin();if(v.hire)e.hireDate=v.hire;}
-    else{const ini=v.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();state.employees.push({id:'em'+Date.now(),clientId:CID,name:v.name,role:job?job.name:'',ini:ini,jobId:job?job.id:null,active:true,contract:+v.contract,hStd:+v.contract,hReal:0,contactInfo:v.contact||'',pin:pin||rhNewPin(),hireDate:v.hire||new Date().toISOString().slice(0,10),cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});}
+    if(pin&&(state.employees||[]).some(function(x){return x.clientId===CID&&x.id!==(e?e.id:'')&&String(x.pin||'')===pin;})){toast('Ce code est déjà utilisé par un autre salarié');return;}
+    if(e){e.name=v.name;e.jobId=job?job.id:e.jobId;e.role=job?job.name:e.role;e.contract=+v.contract;e.contactInfo=v.contact||'';e.pin=pin||e.pin||rhNewPin();e.manager=(v.mgr==='Manager');if(v.hire)e.hireDate=v.hire;}
+    else{const ini=v.name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();state.employees.push({id:'em'+Date.now(),clientId:CID,name:v.name,role:job?job.name:'',ini:ini,jobId:job?job.id:null,active:true,manager:(v.mgr==='Manager'),contract:+v.contract,hStd:+v.contract,hReal:0,contactInfo:v.contact||'',pin:pin||rhNewPin(),hireDate:v.hire||new Date().toISOString().slice(0,10),cpInit:25,cpRest:25,rttInit:0,rttRest:0,recupInit:0,recupRest:0,joursTravailles:0});}
     renderClient('rh_etab');toast(e?'Employé modifié':'Employé ajouté — dispo sur la tablette');});}
 function rhArchiveEmp(id){const e=state.employees.find(x=>x.id===id);if(!e)return;
   if(e.active===false){e.active=true;renderClient('rh_etab');toast('Employé réactivé');return;}
@@ -6012,7 +6204,10 @@ async function tbFidRedeem(t){
     if(msg){msg.style.color='#b83504';msg.textContent='Erreur : '+(j.error||'?');}
   }catch(e){if(msg){msg.style.color='#b83504';msg.textContent='Erreur réseau.';}}
 }
-function tbLogin(id){tbUser=id;tbStack=[];tbRender('haccp');}
+function tbLogin(id){
+  var e=(state.employees||[]).find(function(x){return x.id===id;});
+  if(tbIsMgr(e)&&String(e.pin||'')){TB_MGRPIN=id;tbStack=[];tbRender('mgrpin');return;}
+  TB_MGR=false;tbUser=id;tbStack=[];tbRender('haccp');}
 let tbBadgeUser=null;
 function tbBadgeWho(id){tbBadgeUser=id;tbGo('badgeact');}
 /* La photo de pointage est déclenchée par le salarié lui-même : il se cadre,
@@ -6089,7 +6284,9 @@ function badgePoint(name){
   else{state.badges.push({id:'bg'+Date.now(),clientId:CID,empId:emp.id||'',name:name,at:now.toISOString(),type:'in'});
     toast(name.split(' ')[0]+' — arrivée enregistrée à '+fmtTime(now));}
   setTimeout(()=>{tbStack=[];tbRender('modules');},700);}
-function tbToggleClean(id){const t=state.postes.find(p=>p.id===id);t.done=!t.done;t.by=t.done?(state.employees.find(e=>e.id===tbUser)||{}).name||'—':null;t.at=t.done?tbAt():null;tbRender('clean');toast(t.done?'✓ Nettoyage signé : '+t.name:'Décoché');}
+function tbToggleClean(id){const t=state.postes.find(p=>p.id===id);if(!t)return;
+  if(t.done){toast('Déjà signé par '+(t.by||'un collègue')+' — une correction se fait depuis le back-office');return;}
+  t.done=!t.done;t.by=t.done?(state.employees.find(e=>e.id===tbUser)||{}).name||'—':null;t.at=t.done?tbAt():null;tbRender('clean');toast(t.done?'✓ Nettoyage signé : '+t.name:'Décoché');}
 /* ============ IMPRIMANTE D'ÉTIQUETTES — BLUETOOTH ============ */
 const PRN_SERVICES=['000018f0-0000-1000-8000-00805f9b34fb','0000ff00-0000-1000-8000-00805f9b34fb','0000ffe0-0000-1000-8000-00805f9b34fb','0000fee7-0000-1000-8000-00805f9b34fb','49535343-fe7d-4ae5-8fa9-9fafd205e455','e7810a71-73ae-499d-8c15-faa9aef0c3f2','0000ff80-0000-1000-8000-00805f9b34fb','0000fff0-0000-1000-8000-00805f9b34fb'];
 const PRN_FORMATS=[
@@ -6278,11 +6475,11 @@ function tbFourScreen(cid){
     return head+'<div class="tbempty"><div class="cd">'
       +'<div class="ic">📦</div>'
       +'<p>Aucun fournisseur configuré.</p>'
-      +'<button class="btn" onclick="tbFourForm()">＋ Ajouter un fournisseur</button>'
+      +tbMgrBtn('Ajouter un fournisseur','tbFourForm()','btn')
       +'</div></div>';}
   return head
   +'<div style="max-width:760px;margin:0 auto">'
-  +'<div style="display:flex;justify-content:center;margin-bottom:16px"><button class="btn ghost sm" onclick="tbOpenHist(\'recep\')">🕘 Historique</button></div>'
+  +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:16px"><button class="btn ghost sm" onclick="tbOpenHist(\'recep\')">🕘 Historique</button><span style="margin-left:auto">'+tbMgrBtn('Gérer les fournisseurs','tbFourForm()')+'</span></div>'
   +'<div class="fourgrid">'
   +fs.map(function(f){
      return '<button class="fourc" onclick="tbFourPick(\''+f.id+'\')">'
