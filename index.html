@@ -2992,7 +2992,7 @@ var TR_NAF_LIB={'5610A':'Restauration traditionnelle','5610B':'Cafétérias et a
 var TR={siret:'',ok:false,ent:null,busy:false,sent:false};
 
 function trOpen(plan){
-  TR={siret:'',ok:false,ent:null,busy:false,sent:false,plan:plan||''};
+  TR={siret:'',ok:false,ent:null,busy:false,sent:false,plan:plan||'',form:{},cgu:false};
   var m=document.getElementById('tr_mask');
   if(!m){document.body.insertAdjacentHTML('beforeend',
     '<div class="modal-mask" id="tr_mask"><div class="modal" style="width:560px">'
@@ -3001,10 +3001,23 @@ function trOpen(plan){
     +'<div class="mb" id="tr_body"></div></div></div>');
    m=document.getElementById('tr_mask');}
   m.classList.add('on');trRender();
-  setTimeout(function(){var i=document.getElementById('tr_siret');if(i)i.focus();},60);}
+  setTimeout(function(){var i=document.getElementById('tr_nom');if(i)i.focus();},60);}
 function trClose(){var m=document.getElementById('tr_mask');if(m)m.classList.remove('on');}
 
 function trSiretClean(v){return String(v||'').replace(/\D/g,'');}
+/* trRender() reconstruit le formulaire : on capture la saisie avant chaque rendu. */
+function trGrab(){
+  var g=function(id){var el=document.getElementById(id);return el?String(el.value||'').trim():undefined;};
+  var f=TR.form||(TR.form={});
+  ['nom','ville','contact','email','phone'].forEach(function(k){
+    var v=g('tr_'+k);if(v!==undefined)f[k]=v;});
+  var n=g('tr_note');if(n!==undefined)f.message=n;
+  var t=document.getElementById('tr_type');if(t)f.type=t.value;
+  var si=document.getElementById('tr_sites');if(si)f.sites=si.value;
+  var c=document.getElementById('tr_cgu');if(c)TR.cgu=c.checked;
+  var sr=document.getElementById('tr_siret');if(sr)TR.siret=String(sr.value||'').trim();
+  return f;}
+function trForget(){trGrab();TR.ok=false;TR.ent=null;trRender();}
 function trNafC(v){return String(v||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();}
 function trNaf(){return trNafC(TR.ent&&TR.ent.naf);}
 function trNaf25(){return trNafC(TR.ent&&TR.ent.naf25);}
@@ -3020,6 +3033,7 @@ function trNafLib(){var n=trNaf();
   return (TR.ent&&TR.ent.nafLabel)||TR_NAF_LIB[n]||TR_NAF_LIB[trNaf25()]||'';}
 
 async function trFetch(){
+  trGrab();
   var raw=trSiretClean((document.getElementById('tr_siret')||{}).value);
   var show=function(cls,t){var msg=document.getElementById('tr_msg');
     if(msg){msg.className='tr-msg '+cls;msg.innerHTML=t;}};
@@ -3045,7 +3059,13 @@ async function trFetch(){
       address:[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ')||s.adresse||'',
       cp:s.code_postal||'',city:s.libelle_commune||'',
       ferme:(e.etat_administratif&&e.etat_administratif!=='A')};
-    TR.siret=TR.ent.siret;TR.ok=true;TR.busy=false;trRender();
+    TR.siret=TR.ent.siret;TR.ok=true;TR.busy=false;
+    /* « Remplir » : l'annuaire fait autorité sur le nom et la ville. */
+    TR.form=TR.form||{};
+    TR.form.nom=TR.ent.commercial||TR.ent.legal||TR.form.nom||'';
+    TR.form.ville=TR.ent.city||TR.form.ville||'';
+    var ta=trTypeAuto();if(ta)TR.form.type=ta;
+    trRender();
     if(TR.ent.ferme)show('warn','Attention : cet établissement est indiqué comme fermé au répertoire officiel. Vous pouvez quand même envoyer la demande, nous vérifierons avec vous.');
     else if(!trInScope())show('warn','Votre activité n\'est pas de la restauration. Vous pouvez envoyer la demande : nous regarderons ensemble si Vigie correspond à votre besoin.');
     else show('','');
@@ -3055,7 +3075,8 @@ async function trFetch(){
 
 function trValid(){
   var g=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
-  if(!TR.ok)return 'Vérifiez d\'abord votre SIRET.';
+  if(g('tr_nom').length<2)return 'Indiquez le nom de votre établissement.';
+  if(g('tr_ville').length<2)return 'Indiquez votre ville.';
   if(g('tr_contact').length<2)return 'Indiquez votre nom.';
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(g('tr_email')))return 'Indiquez un email valide.';
   var t=trSiretClean(g('tr_phone'));
@@ -3070,13 +3091,16 @@ async function trSubmit(){
   if(err){trErr(err);return;}
   var g=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
   /* on lit TOUS les champs avant de re-rendre : trRender() reconstruit le formulaire */
-  var row={siret:TR.ent.siret,siren:TR.ent.siren,legal_name:TR.ent.legal,commercial_name:TR.ent.commercial,
-    naf:trNaf()||trNaf25(),naf_label:trNafLib(),in_scope:trInScope(),
-    address:TR.ent.address,postal_code:TR.ent.cp,city:TR.ent.city,
-    est_type:g('tr_type')||trTypeAuto(),nb_sites:Number(g('tr_sites'))||1,
-    contact:g('tr_contact'),email:g('tr_email'),phone:g('tr_phone'),
+  var e=TR.ent||{};
+  var row={siret:e.siret||null,siren:e.siren||null,legal_name:e.legal||null,
+    commercial_name:g('tr_nom'),
+    naf:(trNaf()||trNaf25())||null,naf_label:trNafLib()||null,
+    in_scope:(TR.ent?trInScope():null),
+    address:e.address||null,postal_code:e.cp||null,city:g('tr_ville'),
+    est_type:g('tr_type')||trTypeAuto()||null,nb_sites:Number(g('tr_sites'))||1,
+    contact:g('tr_contact'),email:g('tr_email'),phone:g('tr_phone')||null,
     message:g('tr_note')||null,source:'vitrine'+(TR.plan?' · '+TR.plan:'')};
-  TR.form=row;
+  trGrab();
   TR.busy=true;trRender();
   try{
     var res=await SB.from('trial_requests').insert(row);
@@ -3105,22 +3129,29 @@ function trRender(){
     return;}
 
   var e=TR.ent;
+  var f=TR.form||{};
   var h='<p style="font-size:13.5px;color:var(--slate);line-height:1.6;margin-bottom:16px">'
-   +'15 jours pour tester tous les modules, sans engagement et sans carte bancaire. '
-   +'Nous vous demandons votre SIRET pour préparer votre compte avec les bonnes informations.</p>';
+   +'15 jours pour tester tous les modules, sans engagement et sans carte bancaire.</p>';
 
-  /* --- étape 1 : SIRET --- */
-  h+='<div class="tr-step'+(TR.ok?' done':'')+'"><span class="n">1</span>Votre établissement</div>'
-   +'<div class="field"><label>Numéro SIRET</label><div style="display:flex;gap:8px">'
+  /* --- étape 1 : l'établissement. Le nom suffit ; le SIRET ne sert qu'à remplir plus vite. --- */
+  h+='<div class="tr-step done"><span class="n">1</span>Votre établissement</div>'
+   +'<div class="cm-grid" style="display:grid;grid-template-columns:1.4fr 1fr;gap:0 12px">'
+   +'<div class="field"><label>Nom de l\'établissement</label>'
+   +'<input id="tr_nom" placeholder="Crust Clichy" value="'+escH(f.nom||(e&&(e.commercial||e.legal))||'')+'"></div>'
+   +'<div class="field"><label>Ville</label>'
+   +'<input id="tr_ville" placeholder="Clichy" value="'+escH(f.ville||(e&&e.city)||'')+'"></div></div>'
+
+   +'<div class="field"><label>Numéro SIRET <span class="tsub" style="font-weight:500">(facultatif)</span></label>'
+   +'<div style="display:flex;gap:8px">'
    +'<input id="tr_siret" inputmode="numeric" placeholder="14 chiffres" style="flex:1" value="'+escH(TR.siret||'')+'"'
    +' onkeydown="if(event.key===\'Enter\'){event.preventDefault();trFetch();}">'
-   +'<button type="button" class="btn ghost"'+(TR.busy?' disabled style="opacity:.5"':'')+' onclick="trFetch()">'+(TR.busy?'…':'Vérifier')+'</button></div>'
-   +'<div class="tsub" style="margin-top:6px">Il figure sur vos factures et sur votre extrait Kbis.</div></div>';
+   +'<button type="button" class="btn ghost"'+(TR.busy?' disabled style="opacity:.5"':'')+' onclick="trFetch()">'+(TR.busy?'…':'Remplir')+'</button></div>'
+   +'<div class="tsub" style="margin-top:6px">Renseignez-le et le nom, la ville et l\'adresse se remplissent tout seuls — votre compte est prêt plus vite.</div></div>';
 
   if(e){
     h+='<div class="tr-card'+(trInScope()?'':' off')+'">'
      +'<div class="nm">'+escH(e.commercial||e.legal)+'</div>'
-     +'<div class="mt">'+escH(e.legal)+(e.commercial&&e.commercial!==e.legal?'':'')+'</div>'
+     +'<div class="mt">'+escH(e.legal)+'</div>'
      +'<div class="mt">'+escH([e.address,e.cp,e.city].filter(Boolean).join(' · '))+'</div>'
      +(function(){var l=trNafLib(),c=trNaf()||trNaf25();
         if(!l&&!c)return '';
@@ -3129,23 +3160,22 @@ function trRender(){
         ?'<span class="chip ok">✓ Activité reconnue</span>'
         :'<span class="chip warn">Activité hors restauration</span>')
       +(e.ferme?' <span class="chip bad">Établissement fermé</span>':'')+'</div>'
-     +'<button class="btn ghost sm" style="margin-top:11px" onclick="TR.ok=false;TR.ent=null;trRender()">Ce n\'est pas mon établissement</button>'
+     +'<button class="btn ghost sm" style="margin-top:11px" onclick="trForget()">Ce n\'est pas mon établissement</button>'
      +'</div>';}
 
   /* --- étape 2 : contact --- */
-  h+='<div class="tr-step'+(TR.ok?'':' off')+'" style="margin-top:18px"><span class="n">2</span>Vous contacter</div>';
-  if(!TR.ok){h+='<div class="tsub" style="margin-bottom:4px">Vérifiez votre SIRET pour continuer.</div>';}
-  else{
-    var f=TR.form||{};
+  h+='<div class="tr-step" style="margin-top:18px"><span class="n">2</span>Vous contacter</div>';
+  {
     h+='<div class="cm-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">'
      +'<div class="field"><label>Votre nom</label><input id="tr_contact" placeholder="Jean Dupont" value="'+escH(f.contact||'')+'"></div>'
      +'<div class="field"><label>Téléphone</label><input id="tr_phone" inputmode="tel" placeholder="06 12 34 56 78" value="'+escH(f.phone||'')+'"></div>'
      +'<div class="field" style="grid-column:1/-1"><label>Email professionnel</label><input id="tr_email" type="email" placeholder="vous@votre-restaurant.fr" value="'+escH(f.email||'')+'"></div>'
      +'<div class="field"><label>Type d\'établissement</label><select id="tr_type">'
-     +['Restaurant','Fast-food','Pizzeria','Boulangerie','Pâtisserie','Bar / Café','Traiteur','Restauration collective','Hôtel-restaurant','Boucherie','Épicerie','Autre']
-       .map(function(t){return '<option'+(t===trTypeAuto()?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
+     +(function(){var cur=f.type||trTypeAuto();
+       return ['Restaurant','Fast-food','Pizzeria','Boulangerie','Pâtisserie','Bar / Café','Traiteur','Restauration collective','Hôtel-restaurant','Boucherie','Épicerie','Autre']
+        .map(function(t){return '<option'+(t===cur?' selected':'')+'>'+t+'</option>';}).join('');})()+'</select></div>'
      +'<div class="field"><label>Nombre d\'établissements</label><select id="tr_sites">'
-     +[1,2,3,4,5,10,20].map(function(n){return '<option value="'+n+'">'+(n===1?'1 établissement':n+' établissements'+(n>=10?' ou plus':''))+'</option>';}).join('')+'</select></div>'
+     +[1,2,3,4,5,10,20].map(function(n){return '<option value="'+n+'"'+(String(n)===String(f.sites||1)?' selected':'')+'>'+(n===1?'1 établissement':n+' établissements'+(n>=10?' ou plus':''))+'</option>';}).join('')+'</select></div>'
      +'<div class="field" style="grid-column:1/-1"><label>Un mot sur votre besoin <span class="tsub" style="font-weight:500">(facultatif)</span></label>'
      +'<textarea id="tr_note" rows="2" placeholder="Ce que vous cherchez à mettre en place…">'+escH(f.message||'')+'</textarea></div>'
      +'</div>'
@@ -3155,7 +3185,7 @@ function trRender(){
    +'<div style="display:flex;gap:10px;margin-top:16px;align-items:center">'
    +'<div class="tsub" style="flex:1;min-width:120px">Sans carte bancaire<br>sans engagement</div>'
    +'<button class="btn ghost" style="white-space:nowrap" onclick="trClose()">Annuler</button>'
-   +'<button class="btn" style="white-space:nowrap'+((TR.ok&&!TR.busy)?'':';opacity:.45')+'"'+((TR.ok&&!TR.busy)?'':' disabled')+' onclick="trSubmit()">'
+   +'<button class="btn" style="white-space:nowrap'+(TR.busy?';opacity:.45':'')+'"'+(TR.busy?' disabled':'')+' onclick="trSubmit()">'
    +(TR.busy?'Envoi…':'Demander mes 15 jours')+'</button></div>';
 
   b.innerHTML=h;}
