@@ -451,6 +451,24 @@
   .eqlibc .nt{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.35}
   .eqlibc .tick{position:absolute;top:7px;left:7px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
   .eqlibc.on .tick{background:var(--brand);border-color:var(--brand)}
+  .navbadge{background:#ff4e12;color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:8px;vertical-align:1px}
+  .tk{border:1px solid var(--line);border-radius:16px;background:var(--card);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .tk.new{border-color:#ffc9b7}
+  .tk-h{display:flex;align-items:flex-start;gap:13px;padding:14px 17px;border-bottom:1px solid var(--line);background:var(--bg);flex-wrap:wrap}
+  .tk-av{width:38px;height:38px;border-radius:11px;background:#0a1020;color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px;flex:none;font-family:var(--disp)}
+  .tk-who{font-weight:800;font-size:15px;letter-spacing:-.2px}
+  .tk-mail{font-size:12px;color:var(--muted)}
+  .tk-meta{margin-left:auto;text-align:right;font-size:11.5px;color:var(--muted);white-space:nowrap}
+  .tk-sub{padding:13px 17px 4px;font-weight:700;font-size:14.5px}
+  .tk-body{padding:0 17px 12px}
+  .msg{display:flex;margin:9px 0}
+  .msg .bub{max-width:78%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.55;white-space:pre-wrap}
+  .msg.cli .bub{background:var(--bg);border:1px solid var(--line)}
+  .msg.sup{justify-content:flex-end}
+  .msg.sup .bub{background:#0a1020;color:#fff}
+  .msg .who{font-size:10.5px;color:var(--muted);margin-top:4px}
+  .tk-f{display:flex;gap:8px;padding:12px 17px;border-top:1px solid var(--line);background:var(--bg);flex-wrap:wrap;align-items:center}
+  .tk-f input[type=text]{flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-family:inherit;font-size:13.5px}
   .bempty{text-align:center;padding:46px 24px}
   .bempty .ic{width:62px;height:62px;border-radius:18px;background:var(--brand-l);display:grid;place-items:center;font-size:27px;margin:0 auto 16px}
   .bempty h3{font-size:19px;margin:0 0 6px;letter-spacing:-.2px}
@@ -549,12 +567,16 @@
   .dp-list{max-height:230px;overflow:auto;border:1px solid #e5ebf1;border-radius:10px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .dp-grp{margin-bottom:12px}
   .dp-grp-t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7d8899;margin:8px 0 6px}
-  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
-  .cat-card{display:flex;align-items:center;gap:10px;border:1px solid #e5ebf1;border-radius:12px;padding:8px 10px;background:#fff}
-  .cat-thumb{width:44px;height:44px;border-radius:9px;background:#eff4f8;display:grid;place-items:center;font-size:22px;overflow:hidden;flex:0 0 auto}
-  .cat-thumb img{width:100%;height:100%;object-fit:cover}
-  .cat-info{flex:1;min-width:0}
-  .cat-act{display:flex;gap:2px;flex:0 0 auto}
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+  .cat-card{display:flex;flex-direction:column;border:1px solid #e5ebf1;border-radius:14px;padding:12px;background:#fff;text-align:center;transition:.14s}
+  .cat-card:hover{border-color:#b9d7ea;box-shadow:var(--shadow)}
+  .cat-thumb{width:100%;height:96px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:34px;overflow:hidden;margin-bottom:9px}
+  .cat-thumb img{max-width:100%;max-height:96px;width:auto;height:auto;object-fit:contain}
+  .cat-info{min-width:0;flex:1}
+  .cat-info .tname{font-size:13px;font-weight:700;line-height:1.32;white-space:normal;word-break:break-word}
+  .cat-info .tsub{font-size:11px;line-height:1.35;margin-top:3px}
+  .cat-act{display:flex;gap:6px;justify-content:center;margin-top:10px;padding-top:9px;border-top:1px solid #eff4f8}
+  .cat-act .btn{padding:5px 10px;font-size:11.5px}
   @media(max-width:920px){
     .hero .wrap{grid-template-columns:1fr}.phone-mock{display:none}
     .feat-grid,.pricing,.grid3{grid-template-columns:1fr}
@@ -804,7 +826,7 @@
       <div class="nav-i" onclick="adminNav('alerts',this)">Alertes réseau</div>
       <div class="nav-i" onclick="adminNav('veille',this)">Veille &amp; prospection</div>
       <div class="nav-i" onclick="adminNav('crm',this)">Base de données client</div>
-      <div class="nav-i" onclick="adminNav('support',this)">Support</div>
+      <div class="nav-i" onclick="adminNav('support',this)">Support<span id="sup_badge" class="navbadge" style="display:none">0</span></div>
       <div class="cat">Gestion système</div>
       <div class="nav-i" onclick="adminNav('system',this)">Réseaux & franchises</div>
       <div class="cat">Bibliothèques</div>
@@ -1193,9 +1215,13 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'<div id="acrm_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
     adminCrmLoad();
   } else if(adminView==='support'){
-    m.innerHTML='<div class="topbar"><div><h1>Support</h1><div class="sub">Tickets ouverts par vos restaurateurs — répondez directement ici</div></div><div class="actions"><select onchange="window._SUPADM_F=this.value;supAdmLoad()" style="padding:9px 12px;border:1px solid #ccd6e0;border-radius:10px"><option value="">Tous les statuts</option><option value="open">Ouverts</option><option value="answered">Répondus</option><option value="closed">Fermés</option></select><button class="btn ghost sm" onclick="supAdmLoad()">↻ Actualiser</button></div></div>'
+    var _np=(window.Notification&&Notification.permission)||'default';
+    m.innerHTML='<div class="topbar"><div><h1>Support</h1><div class="sub">Messages de vos restaurateurs — les demandes en attente de réponse remontent en haut</div></div><div class="actions">'
+    +(_np==='granted'?'<span class="chip ok">🔔 Notifications actives</span>':'<button class="btn ghost" onclick="supAskNotif()">🔔 Activer les notifications</button>')
+    +'<select onchange="window._SUPADM_F=this.value;supAdmLoad()" style="padding:9px 12px;border:1px solid #ccd6e0;border-radius:10px"><option value="">Tous les statuts</option><option value="open">Ouverts</option><option value="answered">Répondus</option><option value="closed">Fermés</option></select>'
+    +'<button class="btn ghost" onclick="supAdmLoad()">↻ Actualiser</button></div></div>'
     +'<div class="panel"><div class="pb" id="supadm_list"><div class="empty" style="padding:40px;text-align:center">Chargement…</div></div></div>';
-    supAdmLoad();
+    supAdmLoad();supAdmWatch();
   } else if(adminView==='system'){
     const nets=state.networks||[];
     const rows=nets.map(n=>{const count=(state.clients||[]).filter(c=>c.network===n.name).length;return '<tr><td class="tname">'+escH(n.name)+'</td><td>'+count+' client'+(count>1?'s':'')+'</td><td style="text-align:right;white-space:nowrap"><button class="btn ghost sm" onclick="netRename(\''+n.id+'\')"> Renommer</button> <button class="btn ghost sm" onclick="netDelete(\''+n.id+'\')">Suppr.</button></td></tr>';}).join('');
@@ -1216,7 +1242,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     const groups={};arr.forEach(it=>{const g=groupOf(it);(groups[g]=groups[g]||[]).push(it);});
     let cards='';
     if(!arr.length){cards='<div class="empty" style="padding:40px 20px">Aucun élément ici. Cliquez « ＋ Ajouter » pour en créer un.</div>';}
-    else{cards=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+' <span style="color:#a6b0be;font-weight:600">('+groups[g].length+')</span></div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(cur[0]==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+it.min+'→'+it.max+'°C</div>':'<div class="tsub">'+escH(it.sub||'—')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')" title="Modifier">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')" title="Supprimer">Suppr.</button></div></div>').join('')+'</div></div>').join('');}
+    else{cards=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+' <span style="color:#a6b0be;font-weight:600">('+groups[g].length+')</span></div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(cur[0]==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+((it.max==null||it.max==='')?('≥ '+it.min+' °C'):(it.min+' à '+it.max+' °C'))+'</div>':'<div class="tsub">'+escH(it.sub||'—')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')" title="Modifier">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')" title="Supprimer">Suppr.</button></div></div>').join('')+'</div></div>').join('');}
     if(cur[0]==='zone'){
       m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Bibliothèque de plans de nettoyage proposée aux restaurateurs en un clic</div></div><div class="actions"><button class="btn ghost" onclick="catSeed(\'zone\')">↓ Importer la base Vigie</button><button class="btn ghost" onclick="catNew(\'zone\')">＋ Zone</button><button class="btn" onclick="catNew(\'task\')">＋ Tâche</button></div></div>'
       +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
@@ -7943,17 +7969,92 @@ async function supReply(id){const inp=document.getElementById('sup_reply');const
     t.replies=reps;t.status='open';supOpenTicket(id);supLoad();
   }catch(e){toast('Erreur : '+(e.message||e));}}
 /* — côté admin — */
+function supIni(n){n=String(n||'?').trim();var t=n.split(/[\s-]+/);
+  return ((t[0]||'?')[0]+((t[1]||'')[0]||'')).toUpperCase();}
+function supNeedsReply(t){
+  if(t.status==='closed')return false;
+  var r=(t.replies||[]);
+  if(!r.length)return true;
+  return r[r.length-1].from!=='support';}
+function supLastAt(t){var r=(t.replies||[]);return (r.length?r[r.length-1].at:t.created_at);}
+function supBadge(n){var b=document.getElementById('sup_badge');if(!b)return;
+  if(n>0){b.textContent=n;b.style.display='';}else{b.style.display='none';}}
+function supNotify(n,noms){
+  try{if(window.Notification&&Notification.permission==='granted'){
+    new Notification(n+' nouveau'+(n>1?'x':'')+' message'+(n>1?'s':'')+' — Support Vigie',
+      {body:noms.join(', '),tag:'vigie-support'});}}catch(e){}
+  toast('💬 '+n+' nouveau'+(n>1?'x':'')+' message'+(n>1?'s':'')+' — '+noms.slice(0,2).join(', '));}
+function supAskNotif(){
+  if(!window.Notification){toast('Votre navigateur ne gère pas les notifications');return;}
+  Notification.requestPermission().then(function(p){
+    toast(p==='granted'?'Notifications activées':'Notifications refusées');
+    if(adminView==='support')renderAdmin('support');});}
+var SUP_SEEN=null,SUP_TIMER=null;
+function supAdmWatch(){
+  if(SUP_TIMER)clearInterval(SUP_TIMER);
+  SUP_TIMER=setInterval(function(){
+    if(!document.getElementById('admin')||!document.getElementById('admin').classList.contains('active'))return;
+    supAdmPoll();},60000);
+  supAdmPoll();}
+async function supAdmPoll(){
+  try{const {data}=await SB.from('support_tickets').select('id,est_name,est_code,status,replies,created_at');
+    const rows=data||[];
+    const att=rows.filter(supNeedsReply);
+    supBadge(att.length);
+    const key={};att.forEach(function(t){key[t.id]=supLastAt(t);});
+    if(SUP_SEEN){
+      const nouveaux=att.filter(function(t){return SUP_SEEN[t.id]!==key[t.id];});
+      if(nouveaux.length)supNotify(nouveaux.length,nouveaux.map(function(t){return t.est_name||t.est_code;}));
+    }
+    SUP_SEEN=key;
+    if(adminView==='support'&&document.getElementById('supadm_list'))supAdmLoad();
+  }catch(e){}}
+
 async function supAdmLoad(){const box=document.getElementById('supadm_list');if(!box)return;
   try{const {data,error}=await SB.from('support_tickets').select('*').order('created_at',{ascending:false});if(error)throw error;
     window._SUPADM=data||[];
+    const all=window._SUPADM;
+    const att=all.filter(supNeedsReply);
+    supBadge(att.length);
     const f=window._SUPADM_F||'';
-    const rows=(window._SUPADM||[]).filter(function(t){return !f||t.status===f;});
-    box.innerHTML=(rows.length?rows.map(function(t){
-      return '<div style="border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><b>'+escH(t.subject)+'</b>'+supChip(t.status)+(t.category?'<span class="chip" style="background:#eff4f8">'+escH(t.category)+'</span>':'')+'<span class="chip" style="background:#eff4f8">'+escH(t.est_name||t.est_code)+'</span><span class="tsub" style="margin-left:auto">'+supDT(t.created_at)+'</span></div>'
-      +'<div style="font-size:13.5px;margin-top:8px;white-space:pre-wrap">'+escH(t.message)+'</div>'+supAtts(t.attachments)
-      +((t.replies||[]).length?'<div style="margin-top:8px;border-left:3px solid #e5ebf1;padding-left:10px">'+(t.replies||[]).map(function(r){return '<div class="tsub" style="margin-bottom:4px"><b>'+(r.from==='support'?'Support':'Client')+'</b> · '+supDT(r.at)+' — '+escH(r.text)+supAtts(r.attachments)+'</div>';}).join('')+'</div>':'')
-      +'<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center"><input id="supadm_r_'+t.id+'" placeholder="Répondre au client…" style="flex:1;min-width:200px;padding:9px 11px;border:1px solid var(--line);border-radius:10px"><label class="btn ghost sm" style="cursor:pointer" title="Joindre un fichier">📎<input id="supadm_f_'+t.id+'" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt" style="display:none" onchange="var b=document.getElementById(\'supadm_b_'+t.id+'\');if(b)b.textContent=this.files.length?\'📎 \'+this.files.length:\'\'"></label><span id="supadm_b_'+t.id+'" class="tsub" style="font-weight:700"></span><button class="btn sm" onclick="supAdmReply(\''+t.id+'\')">Répondre</button>'
-      +(t.status!=='closed'?'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'closed\')">Fermer</button>':'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'open\')">Rouvrir</button>')+'</div></div>';}).join(''):'<div class="empty" style="padding:40px;text-align:center">Aucun ticket'+(f?' « '+f+' »':'')+'.</div>');
+    let rows=all.filter(function(t){return !f||t.status===f;});
+    /* Ceux qui attendent une réponse d'abord, puis du plus récent au plus ancien. */
+    rows=rows.slice().sort(function(a,b){
+      const na=supNeedsReply(a)?0:1,nb=supNeedsReply(b)?0:1;
+      if(na!==nb)return na-nb;
+      return String(supLastAt(b)).localeCompare(String(supLastAt(a)));});
+
+    const stat=function(n,l,c){return '<div class="mtile'+(c||'')+'"><div class="ml">'+l+'</div><div class="mv">'+n+'</div></div>';};
+    const head='<div class="stat4" style="margin-bottom:16px">'
+      +stat(att.length,'En attente de réponse',att.length?' bad':'')
+      +stat(all.filter(function(t){return t.status==='open';}).length,'Ouverts','')
+      +stat(all.filter(function(t){return t.status==='answered';}).length,'Répondus','')
+      +stat(all.filter(function(t){return t.status==='closed';}).length,'Fermés','')
+      +'</div>';
+
+    box.innerHTML=head+(rows.length?rows.map(function(t){
+      const attente=supNeedsReply(t);
+      const thread=[{from:'client',text:t.message,at:t.created_at,attachments:t.attachments}].concat(t.replies||[]);
+      return '<div class="tk'+(attente?' new':'')+'">'
+       +'<div class="tk-h"><div class="tk-av">'+escH(supIni(t.est_name||t.est_code))+'</div>'
+       +'<div style="min-width:0"><div class="tk-who">'+escH(t.est_name||t.est_code)+'</div>'
+       +'<div class="tk-mail">'+escH(t.email||'—')+' · code '+escH(t.est_code||'')+'</div></div>'
+       +'<div class="tk-meta">'+supDT(t.created_at)+'<div style="margin-top:5px">'
+       +(attente?'<span class="chip bad">à répondre</span> ':'')+supChip(t.status)+'</div></div></div>'
+       +'<div class="tk-sub">'+escH(t.subject||'(sans objet)')
+       +(t.category?' <span class="chip muted" style="font-weight:600">'+escH(t.category)+'</span>':'')+'</div>'
+       +'<div class="tk-body">'
+       +thread.map(function(r){const sup=(r.from==='support');
+         return '<div class="msg '+(sup?'sup':'cli')+'"><div><div class="bub">'+escH(r.text)+supAtts(r.attachments)+'</div>'
+          +'<div class="who" style="text-align:'+(sup?'right':'left')+'">'+(sup?'Vous':escH(t.est_name||'Client'))+' · '+supDT(r.at)+'</div></div></div>';}).join('')
+       +'</div>'
+       +'<div class="tk-f"><input type="text" id="supadm_r_'+t.id+'" placeholder="Répondre à '+escH((t.est_name||'ce client').split(' ')[0])+'…" onkeydown="if(event.key===\'Enter\')supAdmReply(\''+t.id+'\')">'
+       +'<label class="btn ghost sm" style="cursor:pointer" title="Joindre un fichier">📎<input id="supadm_f_'+t.id+'" type="file" multiple accept="image/*,.pdf" hidden></label>'
+       +'<button class="btn sm" onclick="supAdmReply(\''+t.id+'\')">Répondre</button>'
+       +(t.status!=='closed'?'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'closed\')">Fermer</button>'
+                            :'<button class="btn ghost sm" onclick="supAdmStatus(\''+t.id+'\',\'open\')">Rouvrir</button>')
+       +'</div></div>';}).join('')
+      :'<div class="panel"><div class="pb"><div class="bempty"><div class="ic">💬</div><h3>Aucun ticket'+(f?' « '+escH(f)+' »':'')+'</h3><p>Les demandes de vos restaurateurs arrivent ici. Vous recevez une notification dès qu\'un message vous attend.</p></div></div></div>');
   }catch(e){box.innerHTML='<div class="empty" style="padding:40px">Erreur : '+escH(e.message||'')+'</div>';}}
 async function supAdmReply(id){const inp=document.getElementById('supadm_r_'+id);const txt=(inp&&inp.value||'').trim();
   const fi=document.getElementById('supadm_f_'+id);const hasF=fi&&fi.files&&fi.files.length;
