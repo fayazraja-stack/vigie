@@ -1110,7 +1110,11 @@ const cRel=cid=>state.releves.filter(r=>r.clientId===cid).sort((a,b)=>b.at-a.at)
 function todayRel(cid){const t=new Date();t.setHours(0,0,0,0);return cRel(cid).filter(r=>r.at>=t);}
 const openAlerts=cid=>cRel(cid).filter(r=>r.status==='alerte');
 const eqById=id=>state.equip.find(e=>e.id===id);
-const seuilTxt=e=>!e?'—':(e.cat==='chaud'?('≥ '+e.min+' °C'):(e.cat==='froidneg'?('≤ '+e.max+' °C'):(e.min+' à '+e.max+' °C')));
+const seuilTxt=e=>!e?'—':(e.cat==='chaud'?('≥ '+e.min+' °C'):(e.min+' à '+e.max+' °C'));
+function relBad(e,v){if(!e)return false;v=Number(v);
+  if(e.min!=null&&e.min!==''&&v<Number(e.min))return true;
+  if(e.max!=null&&e.max!==''&&v>Number(e.max))return true;
+  return false;}
 const catLabel=c=>({chaud:' Chaud',froidpos:' Froid positif',froidneg:' Froid négatif'})[c]||c;
 const isFroid=e=>e.cat!=='chaud';
 function emojiImg(emoji,bg){return 'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" rx="16" fill="'+(bg||'#eff4f8')+'"/><text x="60" y="84" font-size="62" text-anchor="middle">'+emoji+'</text></svg>');}
@@ -7110,11 +7114,11 @@ let _formSave=null;
 function openForm(title,fields,onSave){_formSave=onSave;
   document.getElementById('form_title').textContent=title;
   document.getElementById('form_body').innerHTML=fields.map(f=>{
-    if(f.type==='select')return '<div class="field"><label>'+f.label+'</label><select data-k="'+f.key+'">'+f.options.map(o=>'<option '+(String(o)===String(f.value)?'selected':'')+'>'+o+'</option>').join('')+'</select></div>';
+    if(f.type==='select')return '<div class="field" id="fld_'+f.key+'"><label>'+f.label+'</label><select data-k="'+f.key+'"'+(f.onchange?' onchange="'+f.onchange+'"':'')+'>'+f.options.map(o=>'<option '+(String(o)===String(f.value)?'selected':'')+'>'+o+'</option>').join('')+'</select>'+(f.note?'<div class="tsub" id="note_'+f.key+'" style="font-size:11.5px;margin-top:5px">'+f.note+'</div>':'')+'</div>';
     if(f.type==='color'){const val=f.value||'#2563eb';return '<div class="field"><label>'+f.label+'</label><div class="palette">'+PALETTE.map(col=>'<span class="sw '+(col===val?'on':'')+'" style="background:'+col+'" data-col="'+col+'" onclick="pickColor(\''+col+'\')"></span>').join('')+'<input type="color" value="'+val+'" oninput="pickColor(this.value)" style="width:30px;height:26px;border:0;background:none;cursor:pointer"></div><input type="hidden" id="form_color" data-k="'+f.key+'" value="'+val+'"></div>';}
     if(f.type==='image')return '<div class="field"><label>'+f.label+'</label><div style="display:flex;align-items:center;gap:12px"><img id="form_imgprev" src="'+(f.value||emojiImg('','#eff4f8'))+'" style="width:56px;height:56px;border-radius:10px;object-fit:cover;border:1px solid var(--line)"><button type="button" class="btn ghost sm" onclick="openImagePicker(\''+f.lib+'\')"> Choisir / importer</button></div><input type="hidden" id="form_image" data-k="'+f.key+'" value="'+(f.value||'')+'"></div>';
     if(f.type==='textarea')return '<div class="field"><label>'+f.label+'</label><textarea data-k="'+f.key+'" rows="3" placeholder="'+(f.ph||'')+'">'+(f.value!=null?f.value:'')+'</textarea></div>';
-    return '<div class="field"><label>'+f.label+'</label><input data-k="'+f.key+'" type="'+(f.type||'text')+'" value="'+(f.value!=null?String(f.value).replace(/"/g,'&quot;'):'')+'" placeholder="'+(f.ph||'')+'"></div>';
+    return '<div class="field" id="fld_'+f.key+'"><label>'+f.label+'</label><input data-k="'+f.key+'" type="'+(f.type||'text')+'" value="'+(f.value!=null?String(f.value).replace(/"/g,'&quot;'):'')+'" placeholder="'+(f.ph||'')+'"></div>';
   }).join('');
   document.getElementById('form_mask').classList.add('on');}
 function formClose(){document.getElementById('form_mask').classList.remove('on');}
@@ -7282,15 +7286,36 @@ function formTask(id){const t=id?state.postes.find(x=>x.id===id):null;const zs=z
     {key:'freq',label:'Fréquence',type:'select',options:CLEAN_FREQS,value:t?t.freq:'Quotidien'}
   ],v=>{if(!v.name.trim()){toast('Indiquez la tâche');return;}if(t){Object.assign(t,{zone:v.zone,name:v.name,freq:v.freq});}else{state.postes.push({id:'p'+Date.now(),clientId:CID,zone:v.zone,name:v.name,freq:v.freq,done:false});}renderClient('h_zones');toast(t?'Tâche modifiée':'Tâche ajoutée — visible sur la tablette');});}
 
+var EQ_SEUILS={'froid positif':{min:0,max:4,note:'Réglementaire : entre 0 et +4 °C.'},
+ 'froid négatif':{min:-22,max:-18,note:'Réglementaire : entre −22 et −18 °C.'},
+ 'chaud':{min:63,max:null,note:'Réglementaire : maintien à +63 °C minimum, sans plafond.'}};
+function equipCatFill(v){
+  var s=EQ_SEUILS[v]||EQ_SEUILS['froid positif'];
+  var mn=document.querySelector('#form_body [data-k="min"]'),mx=document.querySelector('#form_body [data-k="max"]');
+  var fmx=document.getElementById('fld_max'),n=document.getElementById('note_cat');
+  if(mn)mn.value=s.min;
+  if(mx)mx.value=(s.max===null?'':s.max);
+  if(fmx)fmx.style.display=(s.max===null?'none':'');
+  if(n)n.textContent=s.note;}
 function formEquip(id){const e=id?state.equip.find(x=>x.id===id):null;
+  const cur=e?catSel(e.cat):'froid positif';
   openForm(id?'Modifier l\'équipement':'Nouvel équipement',[
     {key:'name',label:'Nom',value:e?e.name:'',ph:'Ex. Frigo dessert'},
     {key:'photo',label:'Photo',type:'image',lib:'equipPhotos',value:e?e.photo:''},
-    {key:'cat',label:'Catégorie',type:'select',options:['froid positif','froid négatif','chaud'],value:e?catSel(e.cat):'froid positif'},
+    {key:'cat',label:'Catégorie',type:'select',options:['froid positif','froid négatif','chaud'],value:cur,
+      onchange:'equipCatFill(this.value)',note:EQ_SEUILS[cur].note},
     {key:'loc',label:'Local',type:'select',options:['Cuisine','Salle','Réserve','Plonge'],value:e?e.loc:'Cuisine'},
-    {key:'min',label:'Seuil min (°C)',type:'number',value:e?e.min:0},
-    {key:'max',label:'Seuil max (°C)',type:'number',value:e?e.max:4}
-  ],v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}const o={name:v.name,photo:v.photo||null,cat:catKey(v.cat),loc:v.loc,min:+v.min,max:+v.max};if(e){Object.assign(e,o);}else{state.equip.push(Object.assign({id:'e'+Date.now(),clientId:CID,active:true,icon:''},o));}renderClient('h_equip');toast(e?'Équipement modifié':'Équipement ajouté — visible sur la tablette');});}
+    {key:'min',label:'Seuil min (°C)',type:'number',value:e?e.min:EQ_SEUILS[cur].min},
+    {key:'max',label:'Seuil max (°C)',type:'number',value:e?(e.max==null?'':e.max):(EQ_SEUILS[cur].max==null?'':EQ_SEUILS[cur].max)}
+  ],v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}
+    const chaud=(v.cat==='chaud');
+    const o={name:v.name,photo:v.photo||null,cat:catKey(v.cat),loc:v.loc,
+      min:+v.min,max:(chaud||String(v.max).trim()==='')?null:+v.max};
+    if(!chaud&&o.max!=null&&o.max<o.min){toast('Le seuil max doit être supérieur au seuil min');return;}
+    if(e){Object.assign(e,o);}else{state.equip.push(Object.assign({id:'e'+Date.now(),clientId:CID,active:true,icon:''},o));}
+    renderClient('h_equip');toast(e?'Équipement modifié':'Équipement ajouté — visible sur la tablette');});
+  setTimeout(function(){var s=EQ_SEUILS[cur],fmx=document.getElementById('fld_max');
+    if(fmx&&s.max===null)fmx.style.display='none';},0);}
 function catSel(c){return {froidpos:'froid positif',froidneg:'froid négatif',chaud:'chaud'}[c]||'froid positif';}
 function catKey(s){return {'froid positif':'froidpos','froid négatif':'froidneg','chaud':'chaud'}[s]||'froidpos';}
 
@@ -7882,11 +7907,11 @@ function kpKey(k){if(k==='-'){kpBuf=kpBuf.startsWith('-')?kpBuf.slice(1):'-'+kpB
 function updateKp(){const v=parseFloat(kpBuf);document.getElementById('kp_val').textContent=(kpBuf===''||kpBuf==='-')?'0.0':kpBuf;
   ['kp_del','kp_clr'].forEach(function(i){const b=document.getElementById(i);if(b)b.disabled=(kpBuf==='');});const st=document.getElementById('kp_status');const corr=document.getElementById('kp_corr');
   if(kpBuf===''||isNaN(v)){st.textContent='';const r0=document.getElementById('kp_val');if(r0)r0.style.color='';corr.classList.remove('on');return;}
-  const bad=v>kpEq.max||v<kpEq.min;
+  const bad=relBad(kpEq,v);
   const rv=document.getElementById('kp_val');
   if(bad){st.textContent='Hors seuil ('+seuilTxt(kpEq)+')';st.style.color='var(--bad)';if(rv)rv.style.color='var(--bad)';corr.classList.add('on');}
   else{st.textContent='✓ Conforme';st.style.color='var(--ok)';if(rv)rv.style.color='';corr.classList.remove('on');}}
-function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une valeur');return;}const bad=v>kpEq.max||v<kpEq.min;
+function kpSave(){const v=parseFloat(kpBuf);if(isNaN(v)){toast('Saisissez une valeur');return;}const bad=relBad(kpEq,v);
   state.releves.push({id:'r'+Date.now(),clientId:CID,equipId:kpEq.id,value:+v.toFixed(1),at:kpAt(),periode:kpPeriod,by:(state.employees.find(e=>e.id===tbUser)||{}).name||'Terrain',status:bad?'alerte':'ok',action:bad?document.getElementById('kp_action').value:null});
   kpClose();toast(bad?' Alerte enregistrée + action corrective':'✓ Relevé : '+v.toFixed(1)+' °C');tbRender(tbCurrent);}
 
