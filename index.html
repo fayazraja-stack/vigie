@@ -1112,7 +1112,10 @@ const openAlerts=cid=>cRel(cid).filter(r=>r.status==='alerte');
 const eqById=id=>state.equip.find(e=>e.id===id);
 const seuilTxt=e=>!e?'—':(e.cat==='chaud'?('≥ '+e.min+' °C'):(e.min+' à '+e.max+' °C'));
 function relBad(e,v){if(!e)return false;v=Number(v);
-  if(e.min!=null&&e.min!==''&&v<Number(e.min))return true;
+  /* Froid négatif : la réglementation ne pose qu'une limite haute (≤ −18 °C).
+     Le seuil min reste affiché comme consigne, mais descendre en dessous
+     n'est pas une non-conformité — un congélateur plus froid reste conforme. */
+  if(e.cat!=='froidneg'&&e.min!=null&&e.min!==''&&v<Number(e.min))return true;
   if(e.max!=null&&e.max!==''&&v>Number(e.max))return true;
   return false;}
 const catLabel=c=>({chaud:' Chaud',froidpos:' Froid positif',froidneg:' Froid négatif'})[c]||c;
@@ -7287,7 +7290,7 @@ function formTask(id){const t=id?state.postes.find(x=>x.id===id):null;const zs=z
   ],v=>{if(!v.name.trim()){toast('Indiquez la tâche');return;}if(t){Object.assign(t,{zone:v.zone,name:v.name,freq:v.freq});}else{state.postes.push({id:'p'+Date.now(),clientId:CID,zone:v.zone,name:v.name,freq:v.freq,done:false});}renderClient('h_zones');toast(t?'Tâche modifiée':'Tâche ajoutée — visible sur la tablette');});}
 
 var EQ_SEUILS={'froid positif':{min:0,max:4,note:'Réglementaire : entre 0 et +4 °C.'},
- 'froid négatif':{min:-22,max:-18,note:'Réglementaire : entre −22 et −18 °C.'},
+ 'froid négatif':{min:-22,max:-18,note:'Consigne −22 °C, alerte au-dessus de −18 °C. Plus froid que la consigne reste conforme.'},
  'chaud':{min:63,max:null,note:'Réglementaire : maintien à +63 °C minimum, sans plafond.'}};
 function equipCatFill(v){
   var s=EQ_SEUILS[v]||EQ_SEUILS['froid positif'];
