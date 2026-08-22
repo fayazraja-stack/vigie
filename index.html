@@ -1218,7 +1218,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     if(!arr.length){cards='<div class="empty" style="padding:40px 20px">Aucun élément ici. Cliquez « ＋ Ajouter » pour en créer un.</div>';}
     else{cards=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+' <span style="color:#a6b0be;font-weight:600">('+groups[g].length+')</span></div><div class="cat-grid">'+groups[g].map(it=>'<div class="cat-card" data-name="'+escH((it.name+' '+(it.sub||'')).toLowerCase())+'"><div class="cat-thumb">'+(it.photo?'<img src="'+it.photo+'">':'<span>'+(it.icon||'')+'</span>')+'</div><div class="cat-info"><div class="tname">'+escH(it.name)+'</div>'+(cur[0]==='equip'?'<div class="tsub">'+escH(catLabel(it.cat)||'')+' · '+it.min+'→'+it.max+'°C</div>':'<div class="tsub">'+escH(it.sub||'—')+'</div>')+'</div><div class="cat-act"><button class="btn ghost sm" onclick="catEdit(\''+it.key+'\')" title="Modifier">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+it.key+'\')" title="Supprimer">Suppr.</button></div></div>').join('')+'</div></div>').join('');}
     if(cur[0]==='zone'){
-      m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Bibliothèque de plans de nettoyage proposée aux restaurateurs en un clic</div></div><div class="actions"><button class="btn ghost" onclick="catNew(\'zone\')">＋ Zone</button><button class="btn" onclick="catNew(\'task\')">＋ Tâche</button></div></div>'
+      m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Bibliothèque de plans de nettoyage proposée aux restaurateurs en un clic</div></div><div class="actions"><button class="btn ghost" onclick="catSeed(\'zone\')">↓ Importer la base Vigie</button><button class="btn ghost" onclick="catNew(\'zone\')">＋ Zone</button><button class="btn" onclick="catNew(\'task\')">＋ Tâche</button></div></div>'
       +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
       +'<div class="panel"><div class="pb">'
       +(ZONE_LIB.length?ZONE_LIB.map(function(z){return '<div style="border:1px solid var(--line);border-radius:14px;margin-bottom:10px;padding:13px 15px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-size:20px">'+(z.icon||'🧽')+'</span><b style="font-size:15.5px">'+escH(z.name)+'</b><span class="chip muted">'+z.tasks.length+' tâches</span><div style="margin-left:auto;display:flex;gap:6px"><button class="btn ghost sm" onclick="catEditZone(\''+z.key+'\')">Modifier</button><button class="btn ghost sm" onclick="catDelete(\''+z.key+'\')">Suppr.</button></div></div>'
@@ -1227,7 +1227,7 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
       +'</div></div>';
       return;
     }
-    m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Votre base d\'équipements, friteuses et produits — sert à déployer chez les clients sans ressaisie</div></div><div class="actions"><button class="btn" onclick="catNew(\''+cur[0]+'\')">＋ Ajouter dans '+escH(cur[1].replace(/^\S+\s/,''))+'</button></div></div>'
+    m.innerHTML='<div class="topbar"><div><h1>Catalogue</h1><div class="sub">Vos bibliothèques d\'équipements, friteuses, produits et zones — modifiables ici, utilisées par tous les restaurateurs</div></div><div class="actions">'+(cur[0]==='equip'?'<button class="btn ghost" onclick="catSeed(\'equip\')">↓ Importer la base Vigie ('+EQUIP_LIB_DEFAULT.reduce(function(n,g){return n+g.items.length;},0)+')</button>':'')+'<button class="btn" onclick="catNew(\''+cur[0]+'\')">＋ Ajouter dans '+escH(cur[1].replace(/^\S+\s/,''))+'</button></div></div>'
     +'<div class="seg-mini" style="margin-bottom:16px">'+tabs.map(t=>'<button class="'+(t[0]===catTab?'active':'')+'" onclick="setCatTab(\''+t[0]+'\')">'+t[1]+' ('+(t[2]||[]).length+')</button>').join('')+'</div>'
     +'<div class="panel"><div class="pb"><input class="dp-search" id="cat_search" placeholder="Rechercher…" oninput="catFilter()" style="margin-bottom:16px">'+cards+'</div></div>';
   } else if(adminView==='clientDetail'){
@@ -1627,14 +1627,16 @@ let EQUIP_CATALOG=[
 ];
 /* ===== Bibliothèque de plans de nettoyage (zones & tâches types) ===== */
 const _T=(n,f,c,g)=>({name:n,freq:f||'Quotidien',com:c||'',cat:g||''});
+let ZONE_LIB=[];
 const CLEAN_FREQS=['Plusieurs fois par jour','Quotidien','Hebdomadaire','Bimensuel','Mensuel','Trimestriel','Semestriel','Annuel','Après chaque usage','À chaque service'];
-let ZONE_LIB=[
+let ZONE_LIB_DEFAULT=[
  {key:'cuisine',name:'Cuisine',icon:'🍳',tasks:[_T('Planches / couteaux','Quotidien'),_T('Plans de travail','Quotidien'),_T('Passe plat','Quotidien'),_T('Petit matériel (pinces, bacs gastro)','Quotidien'),_T('Sol cuisine (sol, siphon)','Quotidien'),_T('Hotte filtre','Hebdomadaire'),_T('Hotte structure','Hebdomadaire'),_T('Plinthes','Hebdomadaire'),_T('Murs','Hebdomadaire'),_T('Interrupteurs','Hebdomadaire'),_T('Portes','Hebdomadaire'),_T('Nettoyage quotidien','Quotidien'),_T('Plafond','Hebdomadaire'),_T('Étagères / racks de stockage (inox)','Hebdomadaire'),_T('Bacs GN + couvercles + grilles inox','Quotidien'),_T('Balance électronique','Quotidien','Nettoyage surface'),_T('Thermomètre(s) sonde + boîtier','Quotidien'),_T('Distributeur film/alu','Hebdomadaire'),_T('Bacs à marinade','Quotidien'),_T('Range-planches / support planches','Quotidien'),_T('Aiguiseur / fusil (nettoyage)','Hebdomadaire'),_T('Bac à graisses hotte (si présent)','Quotidien'),_T('Goulotte / rigole hotte','Hebdomadaire'),_T('Grilles d’aération / entrées d’air','Hebdomadaire'),_T('Extracteur / moteur accessible (contrôle)','Mensuel'),_T('Climatisation (filtres) / unité intérieure','Mensuel','Selon maintenance'),_T('Distributeur savon + essuie-mains (recharge + nettoyage)','Quotidien'),_T('Siphons / évacuations plonge','Hebdomadaire'),_T('Tables inox (prépa)','Quotidien'),_T('Étagères murales inox','Hebdomadaire'),_T('Chariots inox','Quotidien'),_T('Armoires inox (portes/poignées)','Quotidien'),_T('Bacs à ingrédients VRAC (extérieur)','Hebdomadaire','Zones contact : quotidien'),_T('Plafond zones hotte (profondeur)','Mensuel','Selon niveau de gras'),_T('Supports poubelles / couvercles','Quotidien'),_T('Local poubelles / zone conteneurs','Hebdomadaire'),_T('Bacs extérieurs (désinfection)','Mensuel'),_T('Balais / raclettes','Quotidien'),_T('Seaux / franges / serpillières','Quotidien'),_T('Presse à frange','Hebdomadaire'),_T('Autolaveuse (si présent)','Hebdomadaire'),_T('Armoire produits d’entretien','Hebdomadaire'),_T('Supports brosses / porte-balais','Hebdomadaire'),_T('Doseurs sauces / pompes à sauce','Quotidien','Si présents')]},
  {key:'equipementscuisine',name:'Équipements cuisine',icon:'⚙️',tasks:[_T('Chambre froide positive','Quotidien','','Froid'),_T('Chambre froide négative','Quotidien','','Froid'),_T('Frigo de service (poignées, joints, grille)','Quotidien','','Froid'),_T('Lave-vaisselle (filtres, bras, joints)','Quotidien','','Lavage / eau'),_T('Lave main','Quotidien','','Lavage / eau'),_T('Friteuse','Quotidien','','Cuisson / chaud'),_T('Plancha','Quotidien','','Cuisson / chaud'),_T('Grill','Quotidien','','Cuisson / chaud'),_T('Chauffe frites','Quotidien','','Cuisson / chaud'),_T('Four à naan','Quotidien','','Cuisson / chaud'),_T('Plaques','Quotidien','','Cuisson / chaud'),_T('Four','Quotidien','','Cuisson / chaud'),_T('Micro-ondes','Quotidien','','Cuisson / chaud'),_T('Salamandre','Quotidien','','Cuisson / chaud'),_T('Table réfrigérée (tour 2/3 portes) - surfaces/poignées','Quotidien','Hebdo : joints + grilles','Froid'),_T('Saladette / table à ingrédients (bacs + couvercles)','Quotidien','Bacs GN + couvercles + rails · Vitres + bacs + zone moteur extérieur','Froid'),_T('Vitrine réfrigérée cuisine (mise en place)','Quotidien','Comme \'vitrine réfrigérée cuisine (mise en place)\'','Froid'),_T('Armoire réfrigérée positive (poignées + extérieur)','Quotidien','Hebdo : joints + grilles','Froid'),_T('Congélateur coffre (extérieur)','Quotidien','Hebdo : intérieur','Froid'),_T('Cellule de refroidissement / surgélateur','Hebdomadaire','Mensuel : nettoyage profondeur','Froid'),_T('Machine à glaçons (bac + pelle)','Quotidien','Mensuel : détartrage/assainissement','Froid'),_T('Robot coupe / cutter','Quotidien','','Préparation'),_T('Mixeur plongeant','Quotidien','','Préparation'),_T('Batteur / mélangeur','Quotidien','','Préparation'),_T('Pétrin (extérieur)','Quotidien','Hebdo : détails et recoins','Préparation'),_T('Laminoir','Quotidien','','Préparation'),_T('Trancheuse','Quotidien','Si utilisée','Préparation'),_T('Hachoir à viande','Quotidien','Si utilisé','Préparation'),_T('Presse-agrumes','Quotidien','','Préparation'),_T('Bain-marie','Quotidien','','Cuisson / chaud'),_T('Cuiseur à riz','Quotidien','','Cuisson / chaud'),_T('Cuiseur à pâtes / marmite / faitout pro','Quotidien','','Cuisson / chaud'),_T('Brûleur wok / wok burner','Quotidien','','Cuisson / chaud'),_T('Toaster / salamandre (surface et bac)','Quotidien','','Cuisson / chaud'),_T('Panini / presse à sandwich','Quotidien','','Cuisson / chaud'),_T('Étuve / maintien au chaud','Quotidien','','Cuisson / chaud'),_T('Lampes chauffantes / passe chaud','Quotidien','','Cuisson / chaud'),_T('Système filtration friteuse (si présent)','Quotidien','Hebdo selon usage','Lavage / eau'),_T('Lave-verres','Quotidien','Si présent','Lavage / eau'),_T('Plonge (bacs, égouttoirs, douchette)','Quotidien','','Lavage / eau'),_T('Adoucisseur d’eau (contrôle sel)','Mensuel','Si présent','Lavage / eau'),_T('Osmoseur / cartouches (contrôle)','Mensuel','Si présent','Lavage / eau'),_T('Machine sous vide','Quotidien','Si présent','Préparation'),_T('Thermoplongeur / bain de cuisson (SV)','Quotidien','Si présent','Cuisson / chaud'),_T('Armoire de fermentation / pousse','Quotidien','Si présent','Cuisson / chaud'),_T('Table réfrigérée (tour 2/3 portes)','Quotidien','Surfaces/poignées quotidien; joints+grilles hebdo','Froid'),_T('Table à pizza positif','Quotidien','Quotidien surfaces/poignées; hebdo joints+grilles','Froid / Prépa'),_T('Armoire 1 porte positive','Quotidien','Poignées/ext quotidien; joints+grilles hebdo · Comme armoire positive 1 porte','Froid'),_T('Armoire 1 porte négatif','Quotidien','Extérieur quotidien; intérieur/étagères hebdo · Doublon d’image','Froid'),_T('Armoire 2 portes positive','Quotidien','Extérieur/poignées; joints+grilles hebdo','Froid'),_T('Armoire 2 portes négatif','Quotidien','Extérieur quotidien; intérieur/étagères hebdo','Froid'),_T('Arrière bar','Quotidien','Poignées/portes quotidien; clayettes/joints hebdo','Froid / Boissons'),_T('Vitrine à dessert','Quotidien','Vitres + grilles + bac de récupération si présent','Froid / Vente'),_T('Buffet chaud','Quotidien','Bacs + vitres pare-haleine + surfaces inox','Chaud'),_T('DHB','Quotidien','Surfaces + bacs/tiroirs + poignées','Chaud'),_T('Chauffe poulet','Quotidien','Plateaux + grilles + vitres','Chaud'),_T('Garde chaud pizza','Quotidien','Clayettes + vitres + poignée','Chaud'),_T('Placard chauffant','Quotidien','Intérieur si projections + surfaces','Chaud'),_T('Vitrine chauffante','Quotidien','Bacs GN + vitres + ventilation extérieure','Chaud')]},
  {key:'comptoir',name:'Comptoir',icon:'🧾',tasks:[_T('Caisse','Quotidien'),_T('TPE','Quotidien'),_T('Vitrine à dessert (grille, vitre)','Quotidien'),_T('Frigo à boisson (grille, vitre)','Quotidien'),_T('Arrière bar (grille, vitre)','Quotidien'),_T('Blender','Quotidien'),_T('Machine à glace pasteurisée','Hebdomadaire'),_T('Machine à café','Quotidien')]},
  {key:'salle',name:'Salle',icon:'🍽️',tasks:[_T('Table','Quotidien'),_T('Chaises','Quotidien'),_T('Sol','Quotidien'),_T('Bornes','Quotidien'),_T('Arrière bar','Quotidien','','Froid'),_T('Poubelle','Quotidien'),_T('Chariots à plateau','Quotidien'),_T('Façade','Hebdomadaire')]},
  {key:'sanitaires',name:'Sanitaires',icon:'🚻',tasks:[_T('L’ensemble','Plusieurs fois par jour')]},
 ];
+ZONE_LIB=ZONE_LIB_DEFAULT;
 let PRODUCT_CATALOG=[
   {key:'sauce',name:'Sauce tomate maison',sub:'Sauces & bases'},{key:'pate',name:'Pâte à pizza',sub:'Sauces & bases'},
   {key:'mozza',name:'Mozzarella',sub:'Produits laitiers'},{key:'creme',name:'Crème pâtissière',sub:'Pâtisserie'},
@@ -1974,7 +1976,7 @@ function vgTempChart(cid){
 
 /* ================= BIBLIOTHÈQUE D'ÉQUIPEMENTS ================= */
 var EQ_IMG='eq/';
-var EQUIP_LIB=[
+var EQUIP_LIB_DEFAULT=[
  {g:'Froid positif',cat:'froidpos',items:[
   {k:'armoire-1p-pos',n:'Armoire réfrigérée 1 porte',img:1},
   {k:'armoire-2p-pos',n:'Armoire réfrigérée 2 portes',img:1},
@@ -2031,8 +2033,21 @@ var EQUIP_LIB=[
   {k:'distributeur-chaud',n:'Distributeur de boissons chaudes',e:'☕'}
  ]}
 ];
+var EQUIP_LIB=EQUIP_LIB_DEFAULT;
+var EQ_CATS=[['froidpos','Froid positif'],['froidneg','Froid négatif'],['chaud','Chaud']];
+/* Reconstruit la bibliothèque à partir du catalogue super-admin.
+   Tant que le catalogue est vide, la base intégrée sert de repli. */
+function eqlibFromCatalog(){
+  var rows=(EQUIP_CATALOG||[]).filter(function(r){return r.cat;});
+  if(!rows.length){EQUIP_LIB=EQUIP_LIB_DEFAULT;return;}
+  EQUIP_LIB=EQ_CATS.map(function(c){
+    return {g:c[1],cat:c[0],items:rows.filter(function(r){return r.cat===c[0];}).map(function(r){
+      var ph=r.photo||'';var img=(ph.indexOf(EQ_IMG)===0);
+      return {k:r.key,n:r.name,img:img?1:0,url:(!img&&ph)?ph:'',e:r.icon||'',note:r.sub||'',
+        min:(r.min!=null?r.min:undefined),max:(r.max!=null?r.max:undefined)};})};
+  }).filter(function(g){return g.items.length;});}
 function eqlibItem(k){var r=null;EQUIP_LIB.forEach(function(g){g.items.forEach(function(it){if(it.k===k)r={it:it,g:g};});});return r;}
-function eqlibImg(it){return it.img?(EQ_IMG+it.k+'.jpg'):emojiImg(it.e||'🌡️','#eff4f8');}
+function eqlibImg(it){return it.img?(EQ_IMG+it.k+'.jpg'):(it.url||emojiImg(it.e||'🌡️','#eff4f8'));}
 function eqlibSeuil(g,it){
   var s=EQ_SEUILS[{froidpos:'froid positif',froidneg:'froid négatif',chaud:'chaud'}[g.cat]];
   return {min:(it.min!=null?it.min:s.min),max:(it.max!=null?it.max:s.max)};}
@@ -2105,7 +2120,7 @@ function eqlibApply(){
     var s=eqlibSeuil(f.g,f.it);
     state.equip.push({id:'e'+Date.now()+Math.random().toString(36).slice(2,6),clientId:CID,
       name:nm,cat:f.g.cat,loc:EQL_ZONE,min:s.min,max:s.max,active:true,icon:'',
-      photo:(f.it.img?(location.origin+location.pathname.replace(/[^/]*$/,'')+EQ_IMG+f.it.k+'.jpg'):emojiImg(f.it.e||'🌡️','#eff4f8'))});
+      photo:(f.it.img?(location.origin+location.pathname.replace(/[^/]*$/,'')+EQ_IMG+f.it.k+'.jpg'):(f.it.url||emojiImg(f.it.e||'🌡️','#eff4f8')))});
     made++;});
   document.getElementById('info_mask').classList.remove('on');
   renderClient('h_equip');
@@ -8130,6 +8145,33 @@ async function catSave(){const g=id=>document.getElementById(id);const name=g('c
   show('#eff4f8','#46536a','Enregistrement…');
   try{const {error}=await SB.from('catalog').upsert(row);if(error)throw error;await loadCatalog();catClose();renderAdmin('catalog');toast('Catalogue mis à jour');}catch(e){show('#fff4ef','#b83504','Erreur : '+(e.message||e));}
 }
+/* Importe la base intégrée dans le catalogue pour la rendre modifiable depuis l'admin. */
+async function catSeed(kind){
+  var rows=[];
+  if(kind==='equip'){
+    EQUIP_LIB_DEFAULT.forEach(function(g){g.items.forEach(function(it){
+      var s=EQ_SEUILS[{froidpos:'froid positif',froidneg:'froid négatif',chaud:'chaud'}[g.cat]];
+      rows.push({id:it.k,kind:'equip',name:it.n,sub:it.note||null,cat:g.cat,
+        tmin:(it.min!=null?it.min:s.min),tmax:(it.max!=null?it.max:s.max),
+        icon:it.e||'',photo:(it.img?(EQ_IMG+it.k+'.jpg'):null),active:true});});});
+  } else if(kind==='zone'){
+    ZONE_LIB_DEFAULT.forEach(function(z){
+      rows.push({id:'z-'+slugCode(z.name),kind:'zone',name:z.name,sub:null,cat:null,tmin:null,tmax:null,icon:z.icon||'🧽',photo:null,active:true});
+      (z.tasks||[]).forEach(function(t,i){
+        rows.push({id:'t-'+slugCode(z.name)+'-'+i,kind:'task',name:t.name,sub:z.name,cat:t.freq||'Quotidien',tmin:null,tmax:null,icon:'',photo:null,active:true});});});
+  }
+  if(!rows.length)return;
+  openConfirm('Importer la base intégrée',
+    'Ajouter les '+rows.length+' élément(s) de la base Vigie dans votre catalogue ? Vous pourrez ensuite les modifier ou les supprimer un par un. Les éléments portant le même identifiant seront écrasés.',
+    async function(){
+      try{
+        for(var i=0;i<rows.length;i+=200){
+          var {error}=await SB.from('catalog').upsert(rows.slice(i,i+200));
+          if(error)throw error;}
+        await loadCatalog();renderAdmin('catalog');toast(rows.length+' élément(s) importé(s)');
+      }catch(e){toast('Erreur : '+(e.message||e));}
+    },'Importer');
+}
 function catDelete(key){openConfirm('Supprimer l\'élément','Retirer cet élément du catalogue ? (les clients déjà déployés ne sont pas affectés)',async()=>{try{const {error}=await SB.from('catalog').delete().eq('id',key);if(error)throw error;await loadCatalog();renderAdmin('catalog');toast('Élément supprimé du catalogue');}catch(e){toast('Erreur : '+(e.message||e));}});}
 document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option><option value="zone">Zone de nettoyage</option><option value="task">Tâche de nettoyage</option></select></div><div class="field cat-sub-field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Viandes, Poissons…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field cat-task-field"><label>Zone de rattachement</label><input id="cat_zone" placeholder="Ex. Cuisine, Bar, Sanitaires…"></div><div class="field cat-task-field"><label>Fréquence</label><select id="cat_freq"><option>Quotidien</option><option>2x / jour</option><option>Après usage</option><option>Hebdomadaire</option><option>Mensuel</option><option>Trimestriel</option></select></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder=""></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#eff4f8;display:none"><label class="btn ghost sm" style="cursor:pointer">↑ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()"> Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
 
@@ -8278,6 +8320,8 @@ async function loadCatalog(){
       const zr=data.filter(r=>r.kind==='zone'),tr=data.filter(r=>r.kind==='task');
       if(zr.length){ZONE_LIB=zr.map(function(z){return {key:z.id,name:z.name,icon:z.icon||'🧽',
         tasks:tr.filter(function(t){return (t.sub||'')===z.name;}).map(function(t){return {name:t.name,freq:t.cat||'Quotidien',com:'',cat:''};})};});}
+      else ZONE_LIB=ZONE_LIB_DEFAULT;
+      try{eqlibFromCatalog();}catch(e){console.warn('eqlibFromCatalog',e);}
     }
   }catch(e){console.warn('loadCatalog',e);}
 }
