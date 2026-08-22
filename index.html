@@ -548,7 +548,9 @@
   .cm-lab{font-size:12px;font-weight:700;color:#46536a;margin:10px 0 4px}
   .cm-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .cm-grid .field{margin:0}
-  .cm-mods{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  /* Le nombre de colonnes suit la largeur disponible : 3 ou 4 sur un grand écran,
+     2 sur un portable, 1 sur mobile — plutôt qu'un nombre figé qui déborde. */
+  .cm-mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(252px,1fr));gap:8px}
   .cm-mod{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;background:#f7fafc;border:1px solid #e5ebf1;border-radius:9px;padding:9px 11px;cursor:pointer}
   .cm-mod input{width:auto;margin:0}
   .side .locked{opacity:.55}
