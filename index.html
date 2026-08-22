@@ -441,15 +441,15 @@
   .kp-per button.on{background:var(--brand);border-color:var(--brand);color:#fff}
   .haccp6{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;max-width:980px;margin:0 auto}
   @media(max-width:860px){.haccp6{grid-template-columns:1fr 1fr;gap:10px}}
-  .eqlibgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:11px}
-  .eqlibc{position:relative;border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:10px;cursor:pointer;transition:.14s;text-align:center}
+  .eqlibgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:8px}
+  .eqlibc{position:relative;border:1.5px solid var(--line);border-radius:12px;background:#fff;padding:8px 7px;cursor:pointer;transition:.14s;text-align:center}
   .eqlibc:hover{border-color:#b9d7ea;box-shadow:var(--shadow)}
   .eqlibc.on{border-color:var(--brand);background:#f2f9fd;box-shadow:0 0 0 3px rgba(0,134,206,.13)}
-  .eqlibc .thumb{height:84px;display:grid;place-items:center;margin-bottom:7px}
-  .eqlibc .thumb img{max-width:100%;max-height:84px;object-fit:contain}
-  .eqlibc .nm{font-size:12.5px;font-weight:700;line-height:1.3}
-  .eqlibc .nt{font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.35}
-  .eqlibc .tick{position:absolute;top:7px;left:7px;width:20px;height:20px;border-radius:6px;border:1.5px solid var(--line);background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+  .eqlibc .thumb{height:58px;display:grid;place-items:center;margin-bottom:5px}
+  .eqlibc .thumb img{max-width:100%;max-height:58px;object-fit:contain}
+  .eqlibc .nm{font-size:11.5px;font-weight:700;line-height:1.28}
+  .eqlibc .nt{font-size:9.5px;color:var(--muted);margin-top:2px;line-height:1.3}
+  .eqlibc .tick{position:absolute;top:5px;left:5px;width:17px;height:17px;border-radius:5px;border:1.5px solid var(--line);background:#fff;display:grid;place-items:center;font-size:10px;font-weight:800;color:#fff}
   .eqlibc.on .tick{background:var(--brand);border-color:var(--brand)}
   .navbadge{background:#ff4e12;color:#fff;font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:8px;vertical-align:1px}
   .tk{border:1px solid var(--line);border-radius:16px;background:var(--card);margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow)}
@@ -567,16 +567,26 @@
   .dp-list{max-height:230px;overflow:auto;border:1px solid #e5ebf1;border-radius:10px;padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .dp-grp{margin-bottom:12px}
   .dp-grp-t{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#7d8899;margin:8px 0 6px}
-  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
-  .cat-card{display:flex;flex-direction:column;border:1px solid #e5ebf1;border-radius:14px;padding:12px;background:#fff;text-align:center;transition:.14s}
+  .cm-mod.dp-row{display:flex;align-items:center;gap:10px}
+  .dpth{width:34px;height:34px;border-radius:8px;background:#fff;border:1px solid #e5ebf1;display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+  .dpth img{max-width:100%;max-height:32px;object-fit:contain}
+  .dpth .ic{font-size:17px}
+  .dp-tx{display:flex;flex-direction:column;min-width:0;line-height:1.3}
+  .dp-nm{font-weight:600;font-size:13.5px}
+  .dp-sb{font-size:11px;color:var(--muted);margin-top:1px}
+  .cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(124px,1fr));gap:9px}
+  .cat-card{display:flex;flex-direction:column;border:1px solid #e5ebf1;border-radius:12px;padding:9px 8px 8px;background:#fff;text-align:center;transition:.14s;position:relative}
   .cat-card:hover{border-color:#b9d7ea;box-shadow:var(--shadow)}
-  .cat-thumb{width:100%;height:96px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:34px;overflow:hidden;margin-bottom:9px}
-  .cat-thumb img{max-width:100%;max-height:96px;width:auto;height:auto;object-fit:contain}
+  .cat-thumb{width:100%;height:62px;border-radius:8px;background:#fff;display:grid;place-items:center;font-size:26px;overflow:hidden;margin-bottom:7px}
+  .cat-thumb img{max-width:100%;max-height:62px;width:auto;height:auto;object-fit:contain}
   .cat-info{min-width:0;flex:1}
-  .cat-info .tname{font-size:13px;font-weight:700;line-height:1.32;white-space:normal;word-break:break-word}
-  .cat-info .tsub{font-size:11px;line-height:1.35;margin-top:3px}
-  .cat-act{display:flex;gap:6px;justify-content:center;margin-top:10px;padding-top:9px;border-top:1px solid #eff4f8}
-  .cat-act .btn{padding:5px 10px;font-size:11.5px}
+  .cat-info .tname{font-size:11.5px;font-weight:700;line-height:1.3;white-space:normal;word-break:break-word}
+  .cat-info .tsub{font-size:10px;line-height:1.3;margin-top:2px}
+  /* Les actions n'occupent la place que sur la carte survolée. */
+  .cat-act{display:flex;gap:4px;justify-content:center;margin-top:7px;padding-top:6px;border-top:1px solid #eff4f8;opacity:.35;transition:.14s}
+  .cat-card:hover .cat-act{opacity:1}
+  .cat-act .btn{padding:3px 7px;font-size:10.5px;border-radius:7px}
+  @media(min-width:1500px){.cat-grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}}
   @media(max-width:920px){
     .hero .wrap{grid-template-columns:1fr}.phone-mock{display:none}
     .feat-grid,.pricing,.grid3{grid-template-columns:1fr}
@@ -1210,8 +1220,8 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     +'</div></div>'
     +'<div id="veille_results"><div class="empty" style="padding:30px 20px">Saisissez un département puis cliquez « Rechercher ».</div></div>';
   } else if(adminView==='crm'){
-    m.innerHTML='<div class="topbar"><div><h1>Base de données client</h1><div class="sub">Coordonnées collectées via les jeux, tous établissements confondus</div></div><div class="actions"><button class="btn ghost" onclick="adminCrmExport()">↓ Export Excel</button></div></div>'
-    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="acrm_search" placeholder="Rechercher (nom, email, établissement…)" oninput="adminCrmFilter()"></div></div>'
+    m.innerHTML='<div class="topbar"><div><h1>Base de données client</h1><div class="sub">Coordonnées collectées par les jeux de fidélité — par établissement, par ville ou en liste complète</div></div><div class="actions"><button class="btn ghost" onclick="adminCrmLoad()">↻ Actualiser</button><button class="btn" onclick="adminCrmExport()">↓ Export Excel</button></div></div>'
+    +'<div class="panel" style="margin-bottom:16px"><div class="pb"><input class="dp-search" id="acrm_search" placeholder="Rechercher un nom, un email, un téléphone, un établissement, une ville…" oninput="adminCrmFilter()"></div></div>'
     +'<div id="acrm_body"><div class="empty" style="padding:24px">Chargement…</div></div>';
     adminCrmLoad();
   } else if(adminView==='support'){
@@ -1308,9 +1318,9 @@ function renderAdmin(v){adminView=v||adminView;const m=document.getElementById('
     const navBtns='<div class="dp-nav">'+(dpStep>1?'<button class="btn ghost" onclick="dpPrev()">← Précédent</button>':'<span></span>')+(dpStep<steps.length?'<button class="btn" onclick="dpNext()">Suivant →</button>':'<span></span>')+'</div>';
     m.innerHTML='<div class="topbar"><div><h1>Déploiement</h1><div class="sub">Assistant pas à pas — ajouter matériel / produits / modules à un ou plusieurs clients</div></div></div>'+stepper+'<div class="panel"><div class="pb">'+content+navBtns+'</div></div>';
     if(stepKey==='clients'){dpRenderClients();dpFillNetworkSelect();}
-    else if(stepKey==='equip'){dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';},dpSel.equip);}
+    else if(stepKey==='equip'){dpBuildPicker('dp_equip',EQUIP_CATALOG,function(it){return catLabel(it.cat)||'Autres';},dpSel.equip,'equip');}
     else if(stepKey==='frit'){catBoxes('dp_frit',FRITEUSE_CATALOG,dpSel.frit);}
-    else if(stepKey==='prod'){dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';},dpSel.prod);}
+    else if(stepKey==='prod'){dpBuildPicker('dp_prod',PRODUCT_CATALOG,function(it){return it.sub||'Autres';},dpSel.prod,'product');}
   }
 }
 let adminSelEst=null;
@@ -1337,8 +1347,30 @@ function dpUpdateCount(){const n=document.querySelectorAll('#dp_clients input:ch
 function dpFillNetworkSelect(){const s=document.getElementById('dp_network');if(!s)return;const nets=cmNetworks();s.innerHTML='<option value="">— Choisir un réseau —</option>'+nets.map(n=>'<option value="'+escH(n)+'">'+escH(n)+'</option>').join('');}
 function dpSelectNetwork(){const net=(document.getElementById('dp_network')||{}).value||'';document.querySelectorAll('#dp_clients input').forEach(cb=>{const c=(state.clients||[]).find(x=>x.est_code===cb.value);cb.checked=!!net&&c&&c.network===net;});const all=document.getElementById('dp_all');if(all)all.checked=false;dpUpdateCount();}
 function dpToggleModsPanel(){const p=document.getElementById('dp_modules');if(p)p.style.display=document.getElementById('dp_applymods').checked?'':'none';}
-function dpBuildPicker(containerId,catalog,groupOf,selected){const sel=selected||[];const groups={};(catalog||[]).forEach(it=>{const g=groupOf(it)||'Autres';(groups[g]=groups[g]||[]).push(it);});const c=document.getElementById(containerId);if(!c)return;
-  c.innerHTML=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cm-mods">'+groups[g].map(it=>'<label class="cm-mod" data-name="'+escH((it.name||'').toLowerCase())+'"><input type="checkbox" value="'+it.key+'"'+(sel.indexOf(it.key)>=0?' checked':'')+'> '+(it.photo?'<img src="'+it.photo+'" style="width:20px;height:20px;border-radius:5px;object-fit:cover">':(it.icon?it.icon+' ':''))+escH(it.name)+'</label>').join('')+'</div></div>').join('');}
+var DLC_DEF={ouvert:3,decongele:1,fabrique:3};
+function dlcDurs(it){var m=(it&&it.meta)||{};
+  return {ouvert:(m.ouvert!=null?m.ouvert:DLC_DEF.ouvert),
+          decongele:(m.decongele!=null?m.decongele:DLC_DEF.decongele),
+          fabrique:(m.fabrique!=null?m.fabrique:DLC_DEF.fabrique)};}
+function dlcTxt(it){var d=dlcDurs(it);
+  return [d.ouvert?'Ouvert '+d.ouvert+' j':'',d.decongele?'Décongelé '+d.decongele+' j':'',d.fabrique?'Fabriqué '+d.fabrique+' j':''].filter(Boolean).join(' · ');}
+function dpThumb(it,fallback){
+  if(it&&it.photo)return '<span class="dpth"><img src="'+escH(it.photo)+'" alt="" loading="lazy"></span>';
+  return '<span class="dpth"><span class="ic">'+((it&&it.icon)||fallback||'📦')+'</span></span>';}
+function dpBuildPicker(containerId,catalog,groupOf,selected,kind){const sel=selected||[];const groups={};(catalog||[]).forEach(it=>{const g=groupOf(it)||'Autres';(groups[g]=groups[g]||[]).push(it);});const c=document.getElementById(containerId);if(!c)return;
+  const fb=(kind==='product')?'🏷️':(kind==='friteuse'?'🍟':'🌡️');
+  const subOf=function(it){
+    if(kind==='product')return dlcTxt(it);
+    if(kind==='equip'&&it.cat)return (catLabel(it.cat)||'')+' · '+((it.max==null||it.max==='')?('≥ '+it.min+' °C'):(it.min+' à '+it.max+' °C'));
+    return it.sub||'';};
+  c.innerHTML=Object.keys(groups).sort().map(g=>'<div class="dp-grp"><div class="dp-grp-t">'+escH(g)+'</div><div class="cm-mods">'
+    +groups[g].map(function(it){const sb=subOf(it);
+      return '<label class="cm-mod dp-row" data-name="'+escH(((it.name||'')+' '+sb).toLowerCase())+'">'
+        +'<input type="checkbox" value="'+it.key+'"'+(sel.indexOf(it.key)>=0?' checked':'')+'>'
+        +dpThumb(it,fb)
+        +'<span class="dp-tx"><span class="dp-nm">'+escH(it.name)+'</span>'
+        +(sb?'<span class="dp-sb">'+escH(sb)+'</span>':'')+'</span></label>';}).join('')
+    +'</div></div>').join('');}
 function dpFilter(containerId,q){q=(q||'').toLowerCase().trim();document.querySelectorAll('#'+containerId+' label.cm-mod').forEach(l=>{const n=l.getAttribute('data-name')||'';l.style.display=(!q||n.indexOf(q)>=0)?'':'none';});document.querySelectorAll('#'+containerId+' .dp-grp').forEach(gr=>{const any=Array.from(gr.querySelectorAll('label.cm-mod')).some(l=>l.style.display!=='none');gr.style.display=any?'':'none';});}
 function dpSummaryHTML(){
   const clients=(state.clients||[]).filter(c=>dpSel.clients.indexOf(c.est_code)>=0);
@@ -1373,7 +1405,9 @@ async function dpDeployOne(code,eq,fr,pr,modules){
   d.equip=d.equip||[];d.friteuses=d.friteuses||[];d.dlcProducts=d.dlcProducts||[];
   eq.forEach((k,i)=>{const c2=EQUIP_CATALOG.find(x=>x.key===k)||{name:k,cat:'froidpos',min:0,max:4,icon:''};d.equip.push({id:'e'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,cat:c2.cat,loc:'',min:c2.min,max:c2.max,icon:c2.icon||'',photo:c2.photo||null,active:true});});
   fr.forEach((k,i)=>{const c2=FRITEUSE_CATALOG.find(x=>x.key===k)||{name:k};d.friteuses.push({id:'h'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,marque:'',capacite:'',zone:'Cuisine',freq:'Quotidien',polarity:0,status:'ok',changedAt:new Date().toISOString()});});
-  pr.forEach((k,i)=>{const c2=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};d.dlcProducts.push({id:'dp'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,photo:c2.photo||null,catId:'dc1',ouvert:3,decongele:1,fabrique:3,active:true});});
+  pr.forEach((k,i)=>{const c2=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};const du=dlcDurs(c2);
+    d.dlcProducts.push({id:'dp'+t+'x'+i+'_'+code,clientId:cid,name:c2.name,photo:c2.photo||null,catId:'dc1',
+      ouvert:du.ouvert,decongele:du.decongele,fabrique:du.fabrique,active:true});});
   const {error:e2}=await SB.from('app_state').upsert({est_code:code,data:d,client_id:'admin-deploy',updated_at:new Date().toISOString()});if(e2)throw e2;
   if(modules){const {error:e3}=await SB.from('establishments').update({modules}).eq('est_code',code);if(e3)throw e3;}
 }
@@ -2792,12 +2826,89 @@ async function adminCrmLoad(){
     ACRM_ROWS=(data||[]).filter(function(w){return w.customer_name||w.customer_email||w.customer_phone;});adminCrmRender();
   }catch(e){body.innerHTML='<div class="empty" style="padding:24px;color:#b83504">Erreur : '+escH(e.message||e)+'</div>';}
 }
+var ACRM_VIEW='est',ACRM_F={est:'',city:'',days:0},ACRM_OPEN={};
+function acrmEst(code){return (state.clients||[]).find(function(x){return x.est_code===code;})||{};}
+function acrmCity(code){return acrmEst(code).city||'Ville non renseignée';}
+function acrmRows(){
+  var lim=ACRM_F.days>0?(Date.now()-ACRM_F.days*864e5):0;
+  return ACRM_ROWS.filter(function(w){
+    if(ACRM_F.est&&w.est_code!==ACRM_F.est)return false;
+    if(ACRM_F.city&&acrmCity(w.est_code)!==ACRM_F.city)return false;
+    if(lim&&(!w.created_at||new Date(w.created_at).getTime()<lim))return false;
+    return true;});}
+function acrmKey(w){return ((w.customer_email||'')+'|'+(w.customer_phone||'')).toLowerCase();}
+function acrmStats(rows){
+  var uniq={},gagnes=0,remis=0,last=0;
+  rows.forEach(function(w){
+    var k=acrmKey(w);if(k!=='|')uniq[k]=1;
+    if(w.status!=='lost')gagnes++;
+    if(w.status==='redeemed')remis++;
+    var t=w.created_at?new Date(w.created_at).getTime():0;if(t>last)last=t;});
+  return {n:rows.length,uniq:Object.keys(uniq).length,gagnes:gagnes,remis:remis,last:last};}
+function acrmSetView(v){ACRM_VIEW=v;ACRM_OPEN={};adminCrmRender();}
+function acrmSetF(k,v){ACRM_F[k]=(k==='days')?Number(v):v;ACRM_OPEN={};adminCrmRender();}
+function acrmToggle(k){ACRM_OPEN[k]=!ACRM_OPEN[k];adminCrmRender();}
+function acrmReset(){ACRM_F={est:'',city:'',days:0};ACRM_OPEN={};adminCrmRender();}
+function acrmTable(rows,id){
+  return '<div style="overflow:auto"><table><thead><tr><th>Établissement</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot</th><th>Statut</th><th>Date</th></tr></thead><tbody'+(id?' id="'+id+'"':'')+'>'
+   +rows.map(function(w){var en=adminEstName(w.est_code);
+     return '<tr data-s="'+escH(((w.customer_name||'')+' '+(w.customer_email||'')+' '+(w.customer_phone||'')+' '+en+' '+acrmCity(w.est_code)).toLowerCase())+'">'
+      +'<td class="tname">'+escH(en)+'<div class="tsub">'+escH(acrmCity(w.est_code))+'</div></td>'
+      +'<td>'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td>'
+      +'<td>'+escH(w.prize||'—')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">remis</span>':(w.status==='lost'?'<span class="chip muted">perdu</span>':'<span class="chip warn">en attente</span>'))+'</td>'
+      +'<td class="tsub">'+veFmtDate(w.created_at)+'</td></tr>';}).join('')
+   +'</tbody></table></div>';}
 function adminCrmRender(){
-  const body=document.getElementById('acrm_body');if(!body)return;
-  if(!ACRM_ROWS.length){body.innerHTML='<div class="empty" style="padding:40px 20px">Aucune donnée client collectée pour le moment.</div>';return;}
-  body.innerHTML='<div class="panel"><div class="ph"><h3>'+ACRM_ROWS.length+' contact(s)</h3></div><div class="pb" style="padding:0;overflow:auto"><table><thead><tr><th>Établissement</th><th>Nom</th><th>Email</th><th>Téléphone</th><th>Lot</th><th>Statut</th><th>Date</th></tr></thead><tbody id="acrm_tbody">'
-   +ACRM_ROWS.map(function(w){const en=adminEstName(w.est_code);return '<tr data-s="'+escH(((w.customer_name||'')+' '+(w.customer_email||'')+' '+(w.customer_phone||'')+' '+en).toLowerCase())+'"><td class="tname">'+escH(en)+'</td><td>'+escH(w.customer_name||'—')+'</td><td>'+escH(w.customer_email||'—')+'</td><td>'+escH(w.customer_phone||'—')+'</td><td>'+escH(w.prize||'')+'</td><td>'+(w.status==='redeemed'?'<span class="chip ok">remis</span>':'<span class="chip warn">à remettre</span>')+'</td><td class="tsub">'+veFmtDate(w.claimed_at||w.created_at)+'</td></tr>';}).join('')
-   +'</tbody></table></div></div>';
+  var body=document.getElementById('acrm_body');if(!body)return;
+  if(!ACRM_ROWS.length){body.innerHTML='<div class="panel"><div class="pb"><div class="bempty"><div class="ic">🎁</div><h3>Aucune donnée collectée</h3><p>Dès qu\'un client joue à un jeu de fidélité et laisse ses coordonnées, il apparaît ici — avec son établissement et sa ville.</p></div></div></div>';return;}
+  var rows=acrmRows(),S=acrmStats(rows);
+  var ests={},cities={};
+  ACRM_ROWS.forEach(function(w){ests[w.est_code]=1;cities[acrmCity(w.est_code)]=1;});
+
+  var tile=function(n,l,s){return '<div class="mtile"><div class="ml">'+l+'</div><div class="mv">'+n+'</div><div class="ms">'+(s||'')+'</div></div>';};
+  var h='<div class="stat4" style="margin-bottom:16px">'
+   +tile(S.n,'Participations',ACRM_F.days?('sur '+ACRM_F.days+' jours'):'depuis le début')
+   +tile(S.uniq,'Joueurs uniques','identifiés par email ou téléphone')
+   +tile(S.gagnes,'Lots gagnés',S.n?Math.round(100*S.gagnes/S.n)+' % de gains':'')
+   +tile(S.remis,'Lots remis',S.gagnes?Math.round(100*S.remis/S.gagnes)+' % récupérés':'')
+   +'</div>';
+
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:16px">'
+   +'<span class="seg-mini">'+[['est','Par établissement'],['city','Par ville'],['all','Tous les contacts']].map(function(v){
+      return '<button class="'+(ACRM_VIEW===v[0]?'active':'')+'" onclick="acrmSetView(\''+v[0]+'\')">'+v[1]+'</button>';}).join('')+'</span>'
+   +'<select onchange="acrmSetF(\'est\',this.value)" style="padding:9px 11px;border:1px solid #ccd6e0;border-radius:10px;font-size:13px"><option value="">Tous les établissements</option>'
+   +Object.keys(ests).sort(function(a,b){return adminEstName(a).localeCompare(adminEstName(b),'fr');}).map(function(c){return '<option value="'+escH(c)+'"'+(ACRM_F.est===c?' selected':'')+'>'+escH(adminEstName(c))+'</option>';}).join('')+'</select>'
+   +'<select onchange="acrmSetF(\'city\',this.value)" style="padding:9px 11px;border:1px solid #ccd6e0;border-radius:10px;font-size:13px"><option value="">Toutes les villes</option>'
+   +Object.keys(cities).sort().map(function(c){return '<option value="'+escH(c)+'"'+(ACRM_F.city===c?' selected':'')+'>'+escH(c)+'</option>';}).join('')+'</select>'
+   +'<select onchange="acrmSetF(\'days\',this.value)" style="padding:9px 11px;border:1px solid #ccd6e0;border-radius:10px;font-size:13px">'
+   +[[0,'Tout l\'historique'],[7,'7 derniers jours'],[30,'30 derniers jours'],[90,'90 derniers jours']].map(function(o){return '<option value="'+o[0]+'"'+(ACRM_F.days===o[0]?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select>'
+   +((ACRM_F.est||ACRM_F.city||ACRM_F.days)?'<button class="btn ghost sm" onclick="acrmReset()">✕ Réinitialiser</button>':'')
+   +'</div>';
+
+  if(!rows.length){body.innerHTML=h+'<div class="panel"><div class="pb"><div class="bempty"><div class="ic">🔍</div><h3>Aucun contact sur cette sélection</h3><p>Élargissez la période ou retirez un filtre.</p></div></div></div>';return;}
+
+  if(ACRM_VIEW==='all'){
+    body.innerHTML=h+'<div class="panel"><div class="ph"><h3>'+rows.length+' contact(s)</h3></div><div class="pb" style="padding:0">'+acrmTable(rows,'acrm_tbody')+'</div></div>';
+    adminCrmFilter();return;}
+
+  var groups={};
+  rows.forEach(function(w){var k=(ACRM_VIEW==='est')?w.est_code:acrmCity(w.est_code);(groups[k]=groups[k]||[]).push(w);});
+  var keys=Object.keys(groups).sort(function(a,b){return groups[b].length-groups[a].length;});
+  h+=keys.map(function(k){
+    var g=groups[k],st=acrmStats(g),open=!!ACRM_OPEN[k];
+    var titre=(ACRM_VIEW==='est')?adminEstName(k):k;
+    var sous=(ACRM_VIEW==='est')?acrmCity(k):(function(){var e={};g.forEach(function(w){e[w.est_code]=1;});return Object.keys(e).length+' établissement(s)';})();
+    return '<div class="panel" style="margin-bottom:12px"><div class="ph" style="cursor:pointer;flex-wrap:wrap" onclick="acrmToggle(\''+escH(k).replace(/\x27/g,'')+'\')">'
+     +'<div><h3>'+escH(titre)+'</h3><div class="sub">'+escH(sous)+'</div></div>'
+     +'<div class="actions" style="gap:6px;align-items:center">'
+     +'<span class="chip muted">'+st.n+' participation(s)</span>'
+     +'<span class="chip blue">'+st.uniq+' joueur(s)</span>'
+     +'<span class="chip ok">'+st.remis+' remis</span>'
+     +'<span class="tsub" style="margin-left:6px">'+(st.last?veFmtDate(new Date(st.last).toISOString()):'—')+'</span>'
+     +'<span style="font-weight:800;color:var(--brand-d);margin-left:6px">'+(open?'▴':'▾')+'</span></div></div>'
+     +(open?'<div class="pb" style="padding:0">'+acrmTable(g)+'</div>':'')
+     +'</div>';}).join('');
+  body.innerHTML=h;
 }
 function adminCrmFilter(){const q=((document.getElementById('acrm_search')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#acrm_tbody tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
 function adminCrmExport(){if(!ACRM_ROWS.length){toast('Aucune donnée à exporter');return;}
@@ -8227,11 +8338,14 @@ function catFilter(){const q=((document.getElementById('cat_search')||{}).value|
 function catNew(kind){catEditId=null;catEditKind=kind||'equip';catPhoto=null;catFillForm({kind:catEditKind});catOpen('Nouvel élément du catalogue');}
 function catEditZone(key){const z=ZONE_LIB.find(function(x){return x.key===key;});if(!z)return;
   catEditId=key;catEditKind='zone';catPhoto=null;catFillForm({kind:'zone',name:z.name,icon:z.icon});catOpen('Modifier la zone');}
-function catEdit(key){let it=null,kind=null;[['equip',EQUIP_CATALOG],['friteuse',FRITEUSE_CATALOG],['product',PRODUCT_CATALOG]].forEach(kk=>{const f=(kk[1]||[]).find(x=>x.key===key);if(f){it=f;kind=kk[0];}});if(!it)return;catEditId=key;catEditKind=kind;catPhoto=it.photo||null;catFillForm({kind:kind,name:it.name,sub:it.sub,cat:it.cat,min:it.min,max:it.max,icon:it.icon});catOpen('Modifier l\'élément');}
+function catEdit(key){let it=null,kind=null;[['equip',EQUIP_CATALOG],['friteuse',FRITEUSE_CATALOG],['product',PRODUCT_CATALOG]].forEach(kk=>{const f=(kk[1]||[]).find(x=>x.key===key);if(f){it=f;kind=kk[0];}});if(!it)return;catEditId=key;catEditKind=kind;catPhoto=it.photo||null;catFillForm({kind:kind,name:it.name,sub:it.sub,cat:it.cat,min:it.min,max:it.max,icon:it.icon,meta:it.meta||{}});catOpen('Modifier l\'élément');}
 function catOpen(title){document.getElementById('cat_title').textContent=title;document.getElementById('cat_mask').classList.add('on');}
 function catClose(){document.getElementById('cat_mask').classList.remove('on');const l=document.getElementById('cat_lib');if(l)l.style.display='none';}
-function catFillForm(o){const g=id=>document.getElementById(id);g('cat_name').value=o.name||'';g('cat_kind').value=o.kind||'equip';g('cat_sub').value=o.sub||'';g('cat_cat').value=o.cat||'froidpos';g('cat_min').value=(o.min!=null?o.min:'');g('cat_max').value=(o.max!=null?o.max:'');g('cat_icon').value=o.icon||'';const cz=g('cat_zone');if(cz)cz.value=o.zone||'';const cf=g('cat_freq');if(cf)cf.value=o.freq||'Quotidien';catPhotoPrev();catKindChange();const msg=g('cat_msg');if(msg)msg.style.display='none';}
-function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');document.querySelectorAll('#cat_mask .cat-sub-field').forEach(e=>e.style.display=(k==='product')?'':'none');document.querySelectorAll('#cat_mask .cat-task-field').forEach(e=>e.style.display=(k==='task')?'':'none');}
+function catFillForm(o){const g=id=>document.getElementById(id);g('cat_name').value=o.name||'';g('cat_kind').value=o.kind||'equip';g('cat_sub').value=o.sub||'';g('cat_cat').value=o.cat||'froidpos';g('cat_min').value=(o.min!=null?o.min:'');g('cat_max').value=(o.max!=null?o.max:'');g('cat_icon').value=o.icon||'';const cz=g('cat_zone');if(cz)cz.value=o.zone||'';const cf=g('cat_freq');if(cf)cf.value=o.freq||'Quotidien';
+  const m=o.meta||{};['douv|ouvert','ddec|decongele','dfab|fabrique'].forEach(function(pair){
+    const k=pair.split('|'),el=g('cat_'+k[0]);if(el)el.value=(m[k[1]]!=null?m[k[1]]:'');});catPhotoPrev();catKindChange();const msg=g('cat_msg');if(msg)msg.style.display='none';}
+function catKindChange(){const k=document.getElementById('cat_kind').value;document.querySelectorAll('#cat_mask .cat-equip').forEach(e=>e.style.display=(k==='equip')?'':'none');document.querySelectorAll('#cat_mask .cat-sub-field').forEach(e=>e.style.display=(k==='product')?'':'none');document.querySelectorAll('#cat_mask .cat-task-field').forEach(e=>e.style.display=(k==='task')?'':'none');
+  document.querySelectorAll('#cat_mask .cat-prod-field').forEach(e=>e.style.display=(k==='product')?'':'none');}
 function catPhotoPrev(){const im=document.getElementById('cat_photo_prev');if(!im)return;if(catPhoto){im.src=catPhoto;im.style.display='';}else{im.style.display='none';}}
 function catPhotoUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{catPhoto=rd.result;catPhotoPrev();};rd.readAsDataURL(f);}
 function catPhotoClear(){catPhoto=null;catPhotoPrev();}
@@ -8242,7 +8356,10 @@ async function catSave(){const g=id=>document.getElementById(id);const name=g('c
   const show=(bg,fg,tx)=>{msg.style.display='block';msg.style.background=bg;msg.style.color=fg;msg.textContent=tx;};
   if(!name){show('#fff4ef','#b83504','Le nom est obligatoire.');return;}
   const id=catEditId||(slugCode(name)+'-'+Math.floor(Math.random()*10000));
-  const row={id:id,kind:kind,name:name,sub:kind==='task'?(g('cat_zone').value.trim()||null):(kind==='equip'?null:(g('cat_sub').value.trim()||null)),cat:kind==='equip'?g('cat_cat').value:(kind==='task'?g('cat_freq').value:null),tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true};
+  const row={id:id,kind:kind,name:name,sub:kind==='task'?(g('cat_zone').value.trim()||null):(kind==='equip'?null:(g('cat_sub').value.trim()||null)),cat:kind==='equip'?g('cat_cat').value:(kind==='task'?g('cat_freq').value:null),tmin:(kind==='equip'&&g('cat_min').value!=='')?Number(g('cat_min').value):null,tmax:(kind==='equip'&&g('cat_max').value!=='')?Number(g('cat_max').value):null,icon:g('cat_icon').value.trim()||null,photo:catPhoto||null,active:true,
+    meta:(kind==='product')?(function(){const o={},nb=function(i){const v=g(i).value;return v===''?null:Math.max(0,Number(v));};
+      const a=nb('cat_douv'),b=nb('cat_ddec'),c=nb('cat_dfab');
+      if(a!=null)o.ouvert=a;if(b!=null)o.decongele=b;if(c!=null)o.fabrique=c;return o;})():{}};
   show('#eff4f8','#46536a','Enregistrement…');
   try{const {error}=await SB.from('catalog').upsert(row);if(error)throw error;await loadCatalog();catClose();renderAdmin('catalog');toast('Catalogue mis à jour');}catch(e){show('#fff4ef','#b83504','Erreur : '+(e.message||e));}
 }
@@ -8274,7 +8391,7 @@ async function catSeed(kind){
     },'Importer');
 }
 function catDelete(key){openConfirm('Supprimer l\'élément','Retirer cet élément du catalogue ? (les clients déjà déployés ne sont pas affectés)',async()=>{try{const {error}=await SB.from('catalog').delete().eq('id',key);if(error)throw error;await loadCatalog();renderAdmin('catalog');toast('Élément supprimé du catalogue');}catch(e){toast('Erreur : '+(e.message||e));}});}
-document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option><option value="zone">Zone de nettoyage</option><option value="task">Tâche de nettoyage</option></select></div><div class="field cat-sub-field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Viandes, Poissons…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field cat-task-field"><label>Zone de rattachement</label><input id="cat_zone" placeholder="Ex. Cuisine, Bar, Sanitaires…"></div><div class="field cat-task-field"><label>Fréquence</label><select id="cat_freq"><option>Quotidien</option><option>2x / jour</option><option>Après usage</option><option>Hebdomadaire</option><option>Mensuel</option><option>Trimestriel</option></select></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder=""></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#eff4f8;display:none"><label class="btn ghost sm" style="cursor:pointer">↑ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()"> Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
+document.body.insertAdjacentHTML('beforeend','<div class="modal-mask" id="cat_mask"><div class="modal" style="width:560px;max-width:96vw"><div class="mh"><h3 id="cat_title">Élément du catalogue</h3><button class="x" onclick="catClose()">✕</button></div><div class="mb" style="max-height:74vh;overflow:auto"><div class="cm-grid"><div class="field"><label>Nom *</label><input id="cat_name" placeholder="Ex. Frigo pâtisserie"></div><div class="field"><label>Type</label><select id="cat_kind" onchange="catKindChange()"><option value="equip">Équipement</option><option value="friteuse">Friteuse</option><option value="product">Produit (DLC)</option><option value="zone">Zone de nettoyage</option><option value="task">Tâche de nettoyage</option></select></div><div class="field cat-sub-field"><label>Sous-catégorie</label><input id="cat_sub" placeholder="Ex. Viandes, Poissons…"></div><div class="field cat-equip"><label>Catégorie température</label><select id="cat_cat"><option value="froidpos">Froid positif</option><option value="froidneg">Froid négatif</option><option value="chaud">Chaud</option></select></div><div class="field cat-equip"><label>Seuil min (°C)</label><input id="cat_min" type="number"></div><div class="field cat-equip"><label>Seuil max (°C)</label><input id="cat_max" type="number"></div><div class="field cat-prod-field"><label>Ouvert le — durée (jours)</label><input id="cat_douv" type="number" min="0" placeholder="Ex. 3"></div><div class="field cat-prod-field"><label>Décongelé le — durée (jours)</label><input id="cat_ddec" type="number" min="0" placeholder="Ex. 1"></div><div class="field cat-prod-field"><label>Fabriqué le — durée (jours)</label><input id="cat_dfab" type="number" min="0" placeholder="Ex. 3"></div><div class="field cat-task-field"><label>Zone de rattachement</label><input id="cat_zone" placeholder="Ex. Cuisine, Bar, Sanitaires…"></div><div class="field cat-task-field"><label>Fréquence</label><select id="cat_freq"><option>Quotidien</option><option>2x / jour</option><option>Après usage</option><option>Hebdomadaire</option><option>Mensuel</option><option>Trimestriel</option></select></div><div class="field"><label>Icône (emoji, si pas de photo)</label><input id="cat_icon" placeholder=""></div></div><div class="cm-lab">Photo</div><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><img id="cat_photo_prev" src="" style="width:64px;height:64px;border-radius:10px;object-fit:cover;background:#eff4f8;display:none"><label class="btn ghost sm" style="cursor:pointer">↑ Uploader<input type="file" accept="image/*" hidden onchange="catPhotoUpload(event)"></label><button class="btn ghost sm" onclick="catPickFromLib()"> Photothèque</button><button class="btn ghost sm" onclick="catPhotoClear()">Retirer</button></div><div id="cat_lib" class="imggrid" style="grid-template-columns:repeat(6,1fr);margin-top:10px;display:none"></div><div class="msg" id="cat_msg" style="display:none;font-size:13px;padding:10px 12px;border-radius:9px;margin-top:12px"></div></div><div class="mf"><button class="btn ghost" onclick="catClose()">Annuler</button><button class="btn" onclick="catSave()">Enregistrer</button></div></div></div>');
 
 /* rapport imprimable */
 document.body.insertAdjacentHTML('beforeend','<div id="printReport"></div>');
@@ -8414,7 +8531,7 @@ function netDelete(id){const n=(state.networks||[]).find(x=>x.id===id);if(!n)ret
 }
 async function loadCatalog(){
   try{const {data}=await SB.from('catalog').select('*').eq('active',true).order('sub',{ascending:true});
-    if(data){const map=r=>({key:r.id,name:r.name,sub:r.sub||'',cat:r.cat||null,min:r.tmin,max:r.tmax,icon:r.icon||'',photo:r.photo||null});
+    if(data){const map=r=>({key:r.id,name:r.name,sub:r.sub||'',cat:r.cat||null,min:r.tmin,max:r.tmax,icon:r.icon||'',photo:r.photo||null,meta:r.meta||{}});
       EQUIP_CATALOG=data.filter(r=>r.kind==='equip').map(map);
       FRITEUSE_CATALOG=data.filter(r=>r.kind==='friteuse').map(map);
       PRODUCT_CATALOG=data.filter(r=>r.kind==='product').map(map);
@@ -8631,7 +8748,7 @@ function starterState(site, sel){
     ? S.frit.map((k,i)=>{const c=FRITEUSE_CATALOG.find(x=>x.key===k)||{name:k};return {id:'h'+t+i,clientId:cid,name:c.name,marque:'',capacite:'',zone:'Cuisine',freq:'Quotidien',polarity:0,status:'ok',changedAt:new Date()};})
     : [];
   const dlcProducts=(Array.isArray(S.prod)&&S.prod.length)
-    ? S.prod.map((k,i)=>{const c=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};return {id:'dp'+t+i,clientId:cid,name:c.name,photo:null,catId:'dc1',ouvert:3,decongele:1,fabrique:3,active:true};})
+    ? S.prod.map((k,i)=>{const c=PRODUCT_CATALOG.find(x=>x.key===k)||{name:k};const du=dlcDurs(c);return {id:'dp'+t+i,clientId:cid,name:c.name,photo:c.photo||null,catId:'dc1',ouvert:du.ouvert,decongele:du.decongele,fabrique:du.fabrique,active:true};})
     : [];
   return {
     clients:[{id:cid,name:site&&site.name?site.name:'Mon établissement',type:site&&site.type?site.type:'Restaurant',city:site&&site.city?site.city:'',plan:site&&site.plan?site.plan:'Starter',status:'actif',since:new Date().toISOString().slice(0,10),contact:site&&site.contact?site.contact:''}],
