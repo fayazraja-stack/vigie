@@ -263,6 +263,20 @@
   .modal .mh{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center}
   .modal .mh h3{font-size:17px}.modal .mh .x{margin-left:auto;border:0;background:#eff4f8;width:32px;height:32px;border-radius:9px;font-size:16px}
   .modal .mb{padding:20px}.modal .mf{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;justify-content:flex-end}
+  .tr-step{display:flex;align-items:center;gap:9px;font-family:var(--disp);font-weight:800;font-size:13.5px;margin:0 0 10px}
+  .tr-step .n{width:22px;height:22px;border-radius:50%;background:var(--brand);color:#fff;display:grid;place-items:center;font-size:12px;flex:none}
+  .tr-step.done .n{background:#0e9f6e}
+  .tr-step.off{color:var(--muted)}.tr-step.off .n{background:#ccd6e0}
+  .tr-card{background:var(--bg);border:1px solid var(--line);border-radius:var(--r-md);padding:13px 15px;margin:2px 0 4px}
+  .tr-card.off{background:#fff8f3;border-color:#f5d7ae}
+  .tr-card .nm{font-weight:800;font-size:14.5px;font-family:var(--disp)}
+  .tr-card .mt{font-size:12.5px;color:var(--muted);margin-top:3px;line-height:1.45}
+  .tr-chk{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:var(--slate);line-height:1.5;margin-top:2px}
+  .tr-chk input{width:17px;height:17px;margin:1px 0 0;accent-color:var(--brand);flex:none}
+  .tr-msg{font-size:12.5px;line-height:1.5;margin-top:12px}
+  .tr-msg.warn{background:#fdf1e3;border:1px solid #f5d7ae;color:#8a4a08;padding:10px 12px;border-radius:11px}
+  .tr-msg.info{color:var(--muted)}
+  .hero-note{font-size:12.5px;color:var(--muted);margin-top:11px}
   .field{margin-bottom:12px}.field label{display:block;font-size:12.5px;font-weight:700;margin-bottom:6px;color:var(--slate)}
   .field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:11px;font-size:14px;font-family:inherit}
   .field input:focus,.field select:focus{outline:2px solid var(--brand-l);border-color:var(--brand)}
@@ -772,7 +786,8 @@
     <a class="link" onclick="scrollToId('f-how')">Fonctionnement</a>
     <a class="link" onclick="scrollToId('f-price')">Tarifs</a>
     <span class="sp"></span>
-    <a class="btn sm" onclick="openLogin()">Se connecter</a>
+    <a class="link" onclick="openLogin()">Se connecter</a>
+    <a class="btn sm" onclick="trOpen()">Essai gratuit</a>
   </div></div>
   <div class="hero"><div class="wrap">
     <div>
@@ -780,8 +795,10 @@
       <h1>Pilotez votre restaurant : <span class="hl">HACCP</span>, équipe & marges.</h1>
       <p class="sub">Vigie réunit l'hygiène alimentaire, la gestion des équipes, le food cost et la fidélisation dans une seule plateforme. Vos équipiers saisissent tout sur tablette, vous pilotez à distance.</p>
       <div class="cta">
-        <a class="btn" onclick="openLogin()">Se connecter</a>
+        <a class="btn" onclick="trOpen()">Essayer gratuitement 15 jours</a>
+        <a class="btn ghost" onclick="openLogin()">Se connecter</a>
       </div>
+      <div class="hero-note">Sans carte bancaire · sans engagement · votre compte est prêt sous 24 h</div>
       <div class="trust"><span>✓ <b>HACCP</b> complet</span><span>✓ <b>RH & Planning</b></span><span>✓ <b>Food Cost</b></span><span>✓ <b>Fidélisation</b></span></div>
     </div>
     <div class="phone-mock"><div class="scr">
@@ -827,17 +844,17 @@
 
   <div class="sec" id="f-price" style="background:linear-gradient(180deg,#fff,#f5f8fb)"><div class="wrap">
     <div class="kicker">Tarifs</div><h2>Un prix par établissement</h2>
-    <p class="lead">Sans engagement. Choisissez vos modules.</p>
+    <p class="lead">Sans engagement. Choisissez vos modules. <b>Les 15 premiers jours sont gratuits, sans carte bancaire.</b></p>
     <div class="pricing">
       <div class="price"><h3>Starter</h3><div class="amt">49€<span>/mois</span></div><p style="color:var(--muted);font-size:13px">HACCP essentiel</p>
         <ul><li>Températures & nettoyage</li><li>DLC & réception</li><li>Tablette terrain</li><li>Historique 12 mois</li></ul>
-        <a class="btn ghost block" onclick="go('client')">Commencer</a></div>
+        <a class="btn ghost block" onclick="trOpen('Starter')">Essayer 15 jours</a></div>
       <div class="price pop"><div class="tag">LE PLUS CHOISI</div><h3>Business</h3><div class="amt">99€<span>/mois</span></div><p style="color:var(--muted);font-size:13px">HACCP + RH</p>
         <ul><li>Tout Starter, plus :</li><li>Suivi huiles & traçabilité</li><li>RH & Planning + badgeuse</li><li>Alertes temps réel & rapports PDF</li></ul>
-        <a class="btn block" onclick="go('client')">Commencer</a></div>
+        <a class="btn block" onclick="trOpen('Business')">Essayer 15 jours</a></div>
       <div class="price"><h3>Réseau</h3><div class="amt">Sur devis</div><p style="color:var(--muted);font-size:13px">Tout inclus</p>
         <ul><li>Tous les modules</li><li>Food Cost & Fidélisation</li><li>Multi-établissements consolidé</li><li>Accompagnement dédié</li></ul>
-        <a class="btn ghost block" onclick="go('admin')">Nous contacter</a></div>
+        <a class="btn ghost block" onclick="trOpen('Réseau')">Nous contacter</a></div>
     </div>
   </div></div>
 
@@ -2951,6 +2968,172 @@ function adminCrmRender(){
   body.innerHTML=h;
 }
 function adminCrmFilter(){const q=((document.getElementById('acrm_search')||{}).value||'').toLowerCase().trim();document.querySelectorAll('#acrm_tbody tr').forEach(function(tr){tr.style.display=(!q||(tr.getAttribute('data-s')||'').indexOf(q)>=0)?'':'none';});}
+/* ================= DEMANDE D'ESSAI GRATUIT (vitrine) ================= */
+var TR_JOURS=15;
+/* Codes NAF considérés dans la cible : division 56 (restauration) + métiers de bouche */
+var TR_NAF_OK=['5610A','5610B','5610C','5621Z','5629A','5629B','5630Z','1071C','1071D','4724Z','4722Z','4721Z','4729Z','5510Z','5520Z'];
+var TR_NAF_TYPE={'5610A':'Restaurant','5610B':'Cafétéria','5610C':'Fast-food','5621Z':'Traiteur',
+ '5629A':'Restauration collective','5629B':'Restauration collective','5630Z':'Bar / Café',
+ '1071C':'Boulangerie','1071D':'Pâtisserie','4724Z':'Boulangerie','4722Z':'Boucherie',
+ '4721Z':'Primeur','4729Z':'Épicerie','5510Z':'Hôtel-restaurant','5520Z':'Hébergement'};
+var TR={siret:'',ok:false,ent:null,busy:false,sent:false};
+
+function trOpen(plan){
+  TR={siret:'',ok:false,ent:null,busy:false,sent:false,plan:plan||''};
+  var m=document.getElementById('tr_mask');
+  if(!m){document.body.insertAdjacentHTML('beforeend',
+    '<div class="modal-mask" id="tr_mask"><div class="modal" style="width:560px">'
+    +'<div class="mh"><h3>Essayer Vigie gratuitement 15 jours</h3>'
+    +'<button class="x" style="margin-left:auto" onclick="trClose()">✕</button></div>'
+    +'<div class="mb" id="tr_body"></div></div></div>');
+   m=document.getElementById('tr_mask');}
+  m.classList.add('on');trRender();
+  setTimeout(function(){var i=document.getElementById('tr_siret');if(i)i.focus();},60);}
+function trClose(){var m=document.getElementById('tr_mask');if(m)m.classList.remove('on');}
+
+function trSiretClean(v){return String(v||'').replace(/\D/g,'');}
+function trNaf(){return String((TR.ent&&TR.ent.naf)||'').replace(/[^0-9A-Za-z]/g,'').toUpperCase();}
+function trInScope(){var n=trNaf();return !n||TR_NAF_OK.indexOf(n)>=0;}
+function trTypeAuto(){return TR_NAF_TYPE[trNaf()]||'';}
+
+async function trFetch(){
+  var raw=trSiretClean((document.getElementById('tr_siret')||{}).value);
+  var show=function(cls,t){var msg=document.getElementById('tr_msg');
+    if(msg){msg.className='tr-msg '+cls;msg.innerHTML=t;}};
+  if(raw.length!==14&&raw.length!==9){show('warn','Saisissez un SIRET à 14 chiffres, ou un SIREN à 9 chiffres.');return;}
+  TR.busy=true;trRender();show('info','Recherche de votre établissement…');
+  try{
+    var r=await fetch('https://recherche-entreprises.api.gouv.fr/search?q='+encodeURIComponent(raw)+'&page=1&per_page=1');
+    if(!r.ok)throw new Error('service momentanément indisponible');
+    var j=await r.json();var e=(j.results||[])[0];
+    if(!e){TR.busy=false;TR.ok=false;TR.ent=null;trRender();
+      show('warn','Aucune entreprise trouvée avec ce numéro. Vérifiez la saisie — le SIRET figure sur vos factures et sur votre extrait Kbis.');return;}
+    var s=e.siege||{};
+    var me=(e.matching_etablissements||[])[0]||{};
+    var ens=(me.liste_enseignes&&me.liste_enseignes[0])||e.sigle||'';
+    TR.ent={
+      siret:(me.siret||s.siret||raw),
+      siren:e.siren||raw.slice(0,9),
+      legal:e.nom_raison_sociale||e.nom_complet||'',
+      commercial:ens||e.nom_complet||'',
+      naf:me.activite_principale||s.activite_principale||e.activite_principale||'',
+      nafLabel:e.libelle_activite_principale||s.libelle_activite_principale||'',
+      address:[s.numero_voie,s.type_voie,s.libelle_voie].filter(Boolean).join(' ')||s.adresse||'',
+      cp:s.code_postal||'',city:s.libelle_commune||'',
+      ferme:(e.etat_administratif&&e.etat_administratif!=='A')};
+    TR.siret=TR.ent.siret;TR.ok=true;TR.busy=false;trRender();
+    if(TR.ent.ferme)show('warn','Attention : cet établissement est indiqué comme fermé au répertoire officiel. Vous pouvez quand même envoyer la demande, nous vérifierons avec vous.');
+    else if(!trInScope())show('warn','Votre activité n\'est pas de la restauration. Vous pouvez envoyer la demande : nous regarderons ensemble si Vigie correspond à votre besoin.');
+    else show('','');
+  }catch(err){TR.busy=false;trRender();
+    show('warn','La vérification n\'a pas abouti ('+(err.message||err)+'). Réessayez dans un instant.');}
+}
+
+function trValid(){
+  var g=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
+  if(!TR.ok)return 'Vérifiez d\'abord votre SIRET.';
+  if(g('tr_contact').length<2)return 'Indiquez votre nom.';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(g('tr_email')))return 'Indiquez un email valide.';
+  var t=trSiretClean(g('tr_phone'));
+  if(t&&!(t.length===10||t.length===12||t.length===11))return 'Le téléphone ne semble pas valide.';
+  if(!document.getElementById('tr_cgu').checked)return 'Merci d\'accepter que nous vous recontactions.';
+  return '';}
+
+function trErr(t){var msg=document.getElementById('tr_msg');
+  if(msg){msg.className='tr-msg warn';msg.textContent=t;}}
+async function trSubmit(){
+  var err=trValid();
+  if(err){trErr(err);return;}
+  var g=function(id){return ((document.getElementById(id)||{}).value||'').trim();};
+  /* on lit TOUS les champs avant de re-rendre : trRender() reconstruit le formulaire */
+  var row={siret:TR.ent.siret,siren:TR.ent.siren,legal_name:TR.ent.legal,commercial_name:TR.ent.commercial,
+    naf:trNaf(),naf_label:TR.ent.nafLabel,in_scope:trInScope(),
+    address:TR.ent.address,postal_code:TR.ent.cp,city:TR.ent.city,
+    est_type:g('tr_type')||trTypeAuto(),nb_sites:Number(g('tr_sites'))||1,
+    contact:g('tr_contact'),email:g('tr_email'),phone:g('tr_phone'),
+    message:g('tr_note')||null,source:'vitrine'+(TR.plan?' · '+TR.plan:'')};
+  TR.form=row;
+  TR.busy=true;trRender();
+  try{
+    var res=await SB.from('trial_requests').insert(row);
+    if(res.error){
+      var m=String(res.error.message||'');
+      if(m.indexOf('duplicate')>=0||m.indexOf('unique')>=0){
+        TR.busy=false;TR.sent=true;trRender();return;}
+      throw res.error;}
+    TR.busy=false;TR.sent=true;trRender();
+  }catch(e){TR.busy=false;trRender();
+    trErr('L\'envoi n\'a pas abouti : '+((e&&e.message)||e)+'. Réessayez ou écrivez-nous à hello@vigie.fr.');}
+}
+
+function trRender(){
+  var b=document.getElementById('tr_body');if(!b)return;
+
+  if(TR.sent){
+    b.innerHTML='<div style="text-align:center;padding:14px 4px 6px">'
+     +'<div style="width:64px;height:64px;border-radius:50%;background:var(--brand-l);display:grid;place-items:center;margin:0 auto 16px;font-size:28px">✓</div>'
+     +'<h3 style="font-size:19px;margin-bottom:9px">Votre demande est envoyée</h3>'
+     +'<p style="font-size:13.5px;color:var(--slate);line-height:1.6;max-width:400px;margin:0 auto 6px">'
+     +'Nous préparons votre établissement — équipements, zones de nettoyage et seuils de température — puis nous vous envoyons vos identifiants. '
+     +'Vos 15 jours d\'essai démarreront à ce moment-là, pas avant.</p>'
+     +'<p style="font-size:12.5px;color:var(--muted);margin-top:14px">Réponse sous 24 h ouvrées · hello@vigie.fr</p>'
+     +'<button class="btn" style="margin-top:20px" onclick="trClose()">Fermer</button></div>';
+    return;}
+
+  var e=TR.ent;
+  var h='<p style="font-size:13.5px;color:var(--slate);line-height:1.6;margin-bottom:16px">'
+   +'15 jours pour tester tous les modules, sans engagement et sans carte bancaire. '
+   +'Nous vous demandons votre SIRET pour préparer votre compte avec les bonnes informations.</p>';
+
+  /* --- étape 1 : SIRET --- */
+  h+='<div class="tr-step'+(TR.ok?' done':'')+'"><span class="n">1</span>Votre établissement</div>'
+   +'<div class="field"><label>Numéro SIRET</label><div style="display:flex;gap:8px">'
+   +'<input id="tr_siret" inputmode="numeric" placeholder="14 chiffres" style="flex:1" value="'+escH(TR.siret||'')+'"'
+   +' onkeydown="if(event.key===\'Enter\'){event.preventDefault();trFetch();}">'
+   +'<button type="button" class="btn ghost"'+(TR.busy?' disabled style="opacity:.5"':'')+' onclick="trFetch()">'+(TR.busy?'…':'Vérifier')+'</button></div>'
+   +'<div class="tsub" style="margin-top:6px">Il figure sur vos factures et sur votre extrait Kbis.</div></div>';
+
+  if(e){
+    h+='<div class="tr-card'+(trInScope()?'':' off')+'">'
+     +'<div class="nm">'+escH(e.commercial||e.legal)+'</div>'
+     +'<div class="mt">'+escH(e.legal)+(e.commercial&&e.commercial!==e.legal?'':'')+'</div>'
+     +'<div class="mt">'+escH([e.address,e.cp,e.city].filter(Boolean).join(' · '))+'</div>'
+     +(e.nafLabel?'<div class="mt" style="margin-top:6px">'+escH(e.nafLabel)+' <span class="tsub">('+escH(trNaf())+')</span></div>':'')
+     +'<div style="margin-top:9px">'+(trInScope()
+        ?'<span class="chip ok">✓ Activité reconnue</span>'
+        :'<span class="chip warn">Activité hors restauration</span>')
+      +(e.ferme?' <span class="chip bad">Établissement fermé</span>':'')+'</div>'
+     +'<button class="btn ghost sm" style="margin-top:11px" onclick="TR.ok=false;TR.ent=null;trRender()">Ce n\'est pas mon établissement</button>'
+     +'</div>';}
+
+  /* --- étape 2 : contact --- */
+  h+='<div class="tr-step'+(TR.ok?'':' off')+'" style="margin-top:18px"><span class="n">2</span>Vous contacter</div>';
+  if(!TR.ok){h+='<div class="tsub" style="margin-bottom:4px">Vérifiez votre SIRET pour continuer.</div>';}
+  else{
+    var f=TR.form||{};
+    h+='<div class="cm-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">'
+     +'<div class="field"><label>Votre nom</label><input id="tr_contact" placeholder="Jean Dupont" value="'+escH(f.contact||'')+'"></div>'
+     +'<div class="field"><label>Téléphone</label><input id="tr_phone" inputmode="tel" placeholder="06 12 34 56 78" value="'+escH(f.phone||'')+'"></div>'
+     +'<div class="field" style="grid-column:1/-1"><label>Email professionnel</label><input id="tr_email" type="email" placeholder="vous@votre-restaurant.fr" value="'+escH(f.email||'')+'"></div>'
+     +'<div class="field"><label>Type d\'établissement</label><select id="tr_type">'
+     +['Restaurant','Fast-food','Pizzeria','Boulangerie','Pâtisserie','Bar / Café','Traiteur','Restauration collective','Hôtel-restaurant','Boucherie','Épicerie','Autre']
+       .map(function(t){return '<option'+(t===trTypeAuto()?' selected':'')+'>'+t+'</option>';}).join('')+'</select></div>'
+     +'<div class="field"><label>Nombre d\'établissements</label><select id="tr_sites">'
+     +[1,2,3,4,5,10,20].map(function(n){return '<option value="'+n+'">'+(n===1?'1 établissement':n+' établissements'+(n>=10?' ou plus':''))+'</option>';}).join('')+'</select></div>'
+     +'<div class="field" style="grid-column:1/-1"><label>Un mot sur votre besoin <span class="tsub" style="font-weight:500">(facultatif)</span></label>'
+     +'<textarea id="tr_note" rows="2" placeholder="Ce que vous cherchez à mettre en place…">'+escH(f.message||'')+'</textarea></div>'
+     +'</div>'
+     +'<label class="tr-chk"><input type="checkbox" id="tr_cgu"'+(TR.cgu?' checked':'')+'> J\'accepte d\'être recontacté par Vigie au sujet de cette demande. Vos coordonnées ne servent qu\'à cela et ne sont transmises à personne.</label>';}
+
+  h+='<div class="tr-msg" id="tr_msg"></div>'
+   +'<div style="display:flex;gap:10px;margin-top:16px;align-items:center">'
+   +'<div class="tsub" style="flex:1;min-width:120px">Sans carte bancaire<br>sans engagement</div>'
+   +'<button class="btn ghost" style="white-space:nowrap" onclick="trClose()">Annuler</button>'
+   +'<button class="btn" style="white-space:nowrap'+((TR.ok&&!TR.busy)?'':';opacity:.45')+'"'+((TR.ok&&!TR.busy)?'':' disabled')+' onclick="trSubmit()">'
+   +(TR.busy?'Envoi…':'Demander mes 15 jours')+'</button></div>';
+
+  b.innerHTML=h;}
+
 /* ================= JOURNAL DES EXPORTS & PURGE RGPD ================= */
 var RGPD={log:null,err:'',mois:24,busy:false};
 function rgpdMoisLim(){return Date.now()-RGPD.mois*30.44*864e5;}
