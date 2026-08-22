@@ -5418,7 +5418,7 @@ function tbFritEdit(id){
     {key:'name',label:'Nom',value:f?f.name:'',ph:'Ex. Friteuse 3'},
     {key:'marque',label:'Marque',value:f?(f.marque||''):'',ph:'optionnel'},
     {key:'capacite',label:'Capacité',value:f?(f.capacite||''):'',ph:'Ex. 8L'},
-    {key:'zone',label:'Zone',value:f?(f.zone||''):'',ph:'Ex. Cuisine'},
+    {key:'zone',label:'Zone',type:'select',options:zoneOpts(f?f.zone:''),value:f?f.zone:zoneOpts('')[0]},
     {key:'freq',label:'Fréquence de contrôle',type:'select',options:CLEAN_FREQS,value:f?(f.freq||'Quotidien'):'Quotidien'}
   ],function(v){
     var nm=(v.name||'').trim();if(!nm){toast('Indiquez le nom');return;}
@@ -7144,6 +7144,12 @@ function applyPickedImage(url){const h=document.getElementById(_imgTargetVal);if
 function imgUpload(ev){const f=ev.target.files&&ev.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>applyPickedImage(rd.result);rd.readAsDataURL(f);}
 
 function zoneNames(){const z=state.zones.filter(x=>x.clientId===CID).map(x=>x.name);return z.length?z:['Cuisine'];}
+function zoneOpts(cur){
+  var z=(state.zones||[]).filter(function(x){return x.clientId===CID&&!x.archived;}).map(function(x){return x.name;});
+  (state.postes||[]).forEach(function(p){if(p.clientId===CID&&p.zone&&z.indexOf(p.zone)<0)z.push(p.zone);});
+  if(!z.length)z=['Cuisine'];
+  if(cur&&z.indexOf(cur)<0)z.unshift(cur);
+  return z;}
 /* --- Bibliothèque : sélection de zones & tâches types --- */
 let ZLIB_SEL={},ZLIB_FRQ={},ZLIB_Q='',ZLIB_STEP=1,ZLIB_OPEN={};
 function zlibOpen(){ZLIB_SEL={};ZLIB_FRQ={};ZLIB_Q='';ZLIB_STEP=1;ZLIB_OPEN={};
@@ -7307,7 +7313,8 @@ function formEquip(id){const e=id?state.equip.find(x=>x.id===id):null;
     {key:'photo',label:'Photo',type:'image',lib:'equipPhotos',value:e?e.photo:''},
     {key:'cat',label:'Catégorie',type:'select',options:['froid positif','froid négatif','chaud'],value:cur,
       onchange:'equipCatFill(this.value)',note:EQ_SEUILS[cur].note},
-    {key:'loc',label:'Local',type:'select',options:['Cuisine','Salle','Réserve','Plonge'],value:e?e.loc:'Cuisine'},
+    {key:'loc',label:'Zone',type:'select',options:zoneOpts(e?e.loc:''),value:e?e.loc:zoneOpts('')[0],
+      note:'Les zones proviennent de HACCP > Zones & Tâches.'},
     {key:'min',label:'Seuil min (°C)',type:'number',value:e?e.min:EQ_SEUILS[cur].min},
     {key:'max',label:'Seuil max (°C)',type:'number',value:e?(e.max==null?'':e.max):(EQ_SEUILS[cur].max==null?'':EQ_SEUILS[cur].max)}
   ],v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}
@@ -7327,8 +7334,10 @@ function formFriteuse(id){const f=id?state.friteuses.find(x=>x.id===id):null;
     {key:'name',label:'Nom',value:f?f.name:'',ph:'Ex. Friteuse 1'},
     {key:'marque',label:'Marque',value:f?f.marque:''},
     {key:'capacite',label:'Capacité',value:f?f.capacite:'',ph:'Ex. 8L'},
-    {key:'zone',label:'Zone',type:'select',options:['Cuisine','Réserve'],value:f?f.zone:'Cuisine'},
-    {key:'freq',label:'Fréquence nettoyage',type:'select',options:['Quotidien','Hebdomadaire'],value:f?f.freq:'Quotidien'}
+    {key:'zone',label:'Zone',type:'select',options:zoneOpts(f?f.zone:''),value:f?f.zone:zoneOpts('')[0],
+      note:'Les zones proviennent de HACCP > Zones & Tâches.'},
+    {key:'freq',label:'Fréquence de contrôle de l\'huile',type:'select',options:CLEAN_FREQS,value:f?f.freq:'Quotidien',
+      note:'Détermine à partir de quand la tablette signale un contrôle en retard.'}
   ],v=>{if(!v.name.trim()){toast('Indiquez le nom');return;}const o={name:v.name,marque:v.marque,capacite:v.capacite,zone:v.zone,freq:v.freq};if(f){Object.assign(f,o);}else{state.friteuses.push(Object.assign({id:'h'+Date.now(),clientId:CID,polarity:0,status:'ok',changedAt:new Date()},o));}renderClient('h_friteuses');toast(f?'Friteuse modifiée':'Friteuse ajoutée — visible sur la tablette');});}
 
 function formFour(id){const f=id?state.fournisseurs.find(x=>x.id===id):null;
